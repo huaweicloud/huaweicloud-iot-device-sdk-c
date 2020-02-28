@@ -44,7 +44,6 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 <h2 id="3.1">3.1 环境信息</h2>
 SDK需运行在Linux操作系统上。
 <h2 id="3.2">3.2 编译openssl库</h2>
-
 1. 访问openssl官网<https://www.openssl.org/source/>，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以下以上传到目录/home/test下为例），并使用如下命令解压：  
 
    tar -zxvf openssl-1.1.1d.tar.gz  
@@ -57,7 +56,8 @@ SDK需运行在Linux操作系统上。
    
    运行如下配置命令：  
 
-   ./config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl
+   ./config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl  
+   
    其中“prefix”是安装目录，“openssldir”是配置文件目录，“shared”作用是生成动态链接库（即.so库）。
 
    - 如果编译有问题配置命令加上no-asm（表示不使用汇编代码）
@@ -104,7 +104,7 @@ SDK需运行在Linux操作系统上。
    ![](./doc/openssl.png)
 
 <h2 id="3.3">3.3 编译paho库</h2>
-1. 访问github下载地址：<https://github.com/eclipse/paho.mqtt.c>, 下载paho.mqtt.c源码。
+1. 访问github下载地址<https://github.com/eclipse/paho.mqtt.c>, 下载paho.mqtt.c源码。
 
 2. 解压后上传到linux编译机。（如果开发者要使用自有的交叉编译工具链，请参考[3.2 编译openssl库](#3.2)）
 
@@ -144,7 +144,7 @@ SDK需运行在Linux操作系统上。
 6. 拷贝paho库文件
 	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下。
 <h2 id="3.4">3.4 上传profile及注册设备</h2>
-1. 将已开发完成的profile导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。
+1. 将已开发完成的profile导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。  
 	![](./doc/profile1.png)
 
 2. 点击“设备”，选中“设备注册”，点击右上角的创建，选择刚导入的产品模型，填写设备标识码（一般是IMEI、MAC地址等），“密钥”如果不自定义，平台会自动生成。全部填写完毕后，点击确认。（此处是网关注册）
@@ -208,14 +208,13 @@ SDK需运行在Linux操作系统上。
 	      ![](./doc/4_8.png)
 	  
 <h1 id="5">5.使用步骤</h1>
-以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。
+以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。  
 
 - **设置日志回调函数**
-  
 
 SDK以日志回调函数的方式供开发者使用，开发者可以根据自己的需求调用IOTA_SetPrintLogCallback函数设置。具体API接口的参数使用请参考SDK API接口文档。可参考demo（在src/demo文件夹下agent_lite_demo.c）中main()方法对IOTA_SetPrintLogCallback函数的调用。
 
-  void IOTA_SetPrintLogCallback(PFN_LOG_CALLBACK_HANDLER pfnLogCallbackHandler)
+  `void IOTA_SetPrintLogCallback(PFN_LOG_CALLBACK_HANDLER pfnLogCallbackHandler)`
 
   - 如果需要打印在控制台，可以参考demo中的myPrintLog函数中设置的vprintf(format, args);
 - 如果需要打印到系统日志文件中，可以参考demo中的myPrintLog函数中设置的vsyslog(level, format, args)函数。同时需要引入头文件#include "syslog.h"，并且定义宏#define _SYS_LOG。
@@ -225,7 +224,7 @@ SDK以日志回调函数的方式供开发者使用，开发者可以根据自�
   在发起业务前，需要先初始化Agent Lite相关资源，调用API接口IOTA_Init()，初始化Agent Lite资源。具体API接口的参数使用请参考Agent Lite API接口文档。可参考demo中main()方法对IOTA_Init()的调用。
   
 
-IOTA_Init(HW_CHAR *pcWorkPath)
+`IOTA_Init(HW_CHAR *pcWorkPath)`
 
 - **设备绑定配置**
   
@@ -233,22 +232,22 @@ IOTA_Init(HW_CHAR *pcWorkPath)
   
   
   
-  void setAuthConfig()
-  {
-      IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
-      IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
-	    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
-  //    IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,    EN_IOTA_CFG_AUTH_MODE_CERT); //证书模式
-    IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,     EN_IOTA_CFG_AUTH_MODE_SECRET); //密码模式
+  `void setAuthConfig()`
+  `{`
+      `IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
+      IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);`
+	    `IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
+    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);`
+  `//    IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,    EN_IOTA_CFG_AUTH_MODE_CERT); //证书模式`
+    `IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,     EN_IOTA_CFG_AUTH_MODE_SECRET); //密码模式`
   
-  #ifdef _SYS_LOG
-  //    IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LOCAL_NUMBER, LOG_LOCAL7);
-    IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LEVEL, LOG_INFO);
-  #endif
-}
+  `#ifdef _SYS_LOG`
+  `//    IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LOCAL_NUMBER, LOG_LOCAL7);`
+    `IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LEVEL, LOG_INFO);`
+  `#endif`
+`}`
 
-平台的IP（EN_IOTA_CFG_MQTT_ADDR）、端口（EN_IOTA_CFG_MQTT_PORT）可以在SP portal的应用对接信息中获取；
+   平台的IP（EN_IOTA_CFG_MQTT_ADDR）、端口（EN_IOTA_CFG_MQTT_PORT）可以在SP portal的应用对接信息中获取；
   设备ID（EN_IOTA_CFG_DEVICEID）、设备密钥（EN_IOTA_CFG_DEVICESECRET）是注册设备的时候返回的。
   当定义了_SYS_LOG（日志打印在系统文件中）时，日志的facility类型（EN_IOTA_CFG_LOG_LOCAL_NUMBER）、日志的显示级别（EN_IOTA_CFG_LOG_LEVEL）可以按需自定义。
 
@@ -256,14 +255,12 @@ IOTA_Init(HW_CHAR *pcWorkPath)
   
   SDK针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消息成功/失败、设备发布消息成功/失败、设备接收消息/命令等动作，以回调函数的方式供开发者调用，开发者可以针对不同的事件设置回调函数来实现业务处理逻辑。可以参考demo中main()方法中调用的setMyCallbacks()函数。
   
-
-  
-  void setAuthConfig()
+`void setAuthConfig()
   {
     IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
   IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
-	  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-	  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
+    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
+    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
 	//    IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_CERT); //证书模式
 	IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET); //密码模式
 
@@ -271,15 +268,16 @@ IOTA_Init(HW_CHAR *pcWorkPath)
 //    IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LOCAL_NUMBER, LOG_LOCAL7);
     IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LEVEL, LOG_INFO);
 #endif
-}
+}`
+
 平台的IP（EN_IOTA_CFG_MQTT_ADDR）、端口（EN_IOTA_CFG_MQTT_PORT）可以在SP portal的应用对接信息中获取；
 设备ID（EN_IOTA_CFG_DEVICEID）、设备密钥（EN_IOTA_CFG_DEVICESECRET）是注册设备的时候返回的。
 当定义了_SYS_LOG（日志打印在系统文件中）时，日志的facility类型（EN_IOTA_CFG_LOG_LOCAL_NUMBER）、日志的显示级别（EN_IOTA_CFG_LOG_LEVEL）可以按需自定义。
 回调函数配置Agent Lite3.0针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消息成功/失败、设备发布消息成功/失败、设备接收消息/命令等动作，以回调函数的方式供开发者调用，开发者可以针对不同的事件设置回调函数来实现业务处理逻辑。可以参考demo中main()方法中调用的setMyCallbacks()函数。
 
-void setMyCallbacks(){	
-IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleAuthSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleAuthFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisAuthSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisAuthFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);	IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);        IOTA_SetCallback(EN_IOTA_CALLBACK_MESSAGE_DOWN, HandleMessageDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_COMMAND_REQUEST, HandleCommandRequest);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_SET, HandlePropertiesSet);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_GET, HandlePropertiesGet);        IOTA_SetCallback(EN_IOTA_CALLBACK_EVENT_DOWN, HandleEventsDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_USER_TOPIC, HandleUserTopicMessageDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_DEVICE_SHADOW, HandleDeviceShadowRsp);
-}
+`void setMyCallbacks(){`	
+`IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleAuthSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleAuthFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisAuthSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisAuthFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);	IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);        IOTA_SetCallback(EN_IOTA_CALLBACK_MESSAGE_DOWN, HandleMessageDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_COMMAND_REQUEST, HandleCommandRequest);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_SET, HandlePropertiesSet);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_GET, HandlePropertiesGet);        IOTA_SetCallback(EN_IOTA_CALLBACK_EVENT_DOWN, HandleEventsDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_USER_TOPIC, HandleUserTopicMessageDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_DEVICE_SHADOW, HandleDeviceShadowRsp);`
+`}`
 	- 鉴权成功（EN_IOTA_CALLBACK_CONNECT_SUCCESS）后，将调用HandleAuthSuccess函数；
 	- 鉴权失败（EN_IOTA_CALLBACK_CONNECT_FAILURE）后，将调用HandleAuthFailure函数；
 	- 设备主动断链成功（EN_IOTA_CALLBACK_DISCONNECT_SUCCESS）后，将调用HandleDisAuthSuccess函数；
@@ -315,21 +313,21 @@ IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleAuthSuccess);	IOTA_SetC
   
   - 设备消息上报接口：
     
-    HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content)
+    `HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content)`
     
     通过该接口上报的数据平台不解析，数据可以转发到其他服务或者推送到应用服务器。object_device_id为需要上报的设备，name为消息名称，id为消息ID，content为上报的内容，topicParas是自定义topic的参数，NULL是用平台默认的topic上报数据。具体参数说明请查看API文档，可以参考demo中Test_MessageReport函数对该接口的调用。
     
-      void Test_MessageReport()
-  {
-  	//default topic
-		//	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", NULL);
+      `void Test_MessageReport()`
+  `{`
+  	`//default topic`
+		`//	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", NULL);`
   
-  	//user topic
-  	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg");
-  	if (messageId != 0) {
-  		PrintfLog(EN_LOG_LEVEL_ERROR, "AgentLiteDemo:   Test_MessageReport() failed, messageId %d\n", messageId);
-	}
-}
+  	`//user topic`
+  	`int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg");`
+  	`if (messageId != 0) {`
+  		`PrintfLog(EN_LOG_LEVEL_ERROR, "AgentLiteDemo:   Test_MessageReport() failed, messageId %d\n", messageId);`
+	`}`
+`}`
   
   - 设备属性上报接口：
     
@@ -337,30 +335,30 @@ IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleAuthSuccess);	IOTA_SetC
     
     通过该接口上报的数据平台会解析，并且结构体中的数据需跟profile中定义的属性保持一致，ST_IOTA_SERVICE_DATA_INFO为结构体数组，可以同时上报多个服务，serviceNum为上报的服务个数。入参具体说明请参考API文档，demo中的Test_propertiesReport函数演示了对该接口的调用方法。
     
-      void Test_propertiesReport()
-  {
-  	int serviceNum = 2;//网关要上报的service个数
-	ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
+      `void Test_propertiesReport()`
+  `{`
+  	`int serviceNum = 2;//网关要上报的service个数`
+	`ST_IOTA_SERVICE_DATA_INFO services[serviceNum];`
   
-  	//---------------the data of service1-------------------------------
-		char *service1 = "{\"Load\":\"5\",\"ImbA_strVal\":\"6\"}";
-		//	services[0].event_time = GetEventTimesStamp();
-  services[0].event_time = NULL;
-  	services[0].service_id = "parameter";
-	services[0].properties = service1;
+  	`//---------------the data of service1-------------------------------`
+		`char *service1 = "{\"Load\":\"5\",\"ImbA_strVal\":\"6\"}";`
+		`//	services[0].event_time = GetEventTimesStamp();`
+  `services[0].event_time = NULL;`
+  	`services[0].service_id = "parameter";`
+	`services[0].properties = service1;`
   
-  	//---------------the data of service2-------------------------------
-		char *service2 = "{\"PhV_phsA\":\"4\",\"PhV_phsB\":9}";
-  	//	services[1].event_time =  GetEventTimesStamp();
-  	services[0].event_time = NULL;
-  	services[1].service_id = "analog";
-	services[1].properties = service2;
+  	`//---------------the data of service2-------------------------------`
+		`char *service2 = "{\"PhV_phsA\":\"4\",\"PhV_phsB\":9}";`
+  	`//	services[1].event_time =  GetEventTimesStamp();`
+  	`services[0].event_time = NULL;`
+  	`services[1].service_id = "analog";`
+	`services[1].properties = service2;`
   
-  	int messageId = IOTA_PropertiesReport(services, serviceNum);
-  	if(messageId != 0) {
-  		PrintfLog(EN_LOG_LEVEL_ERROR, "AgentLiteDemo: Test_batchPropertiesReport() failed, messageId %d\n", messageId);
-  	}
-  	}
+  	`int messageId = IOTA_PropertiesReport(services, serviceNum);`
+  	`if(messageId != 0) {`
+  		`PrintfLog(EN_LOG_LEVEL_ERROR, "AgentLiteDemo: Test_batchPropertiesReport() failed, messageId %d\n", messageId);`
+  	`}`
+  	`}`
   
 - **设备接收消息/命令/属性**
   
@@ -392,37 +390,37 @@ IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleAuthSuccess);	IOTA_SetC
   
   子设备可以通过网关批量设备属性上报接口进行数据上报，接口如下：
   
-  HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[])
+  `HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[])`
   
   通过该接口上报的数据平台会解析，并且结构体中的数据需跟profile中定义的属性保持一致，ST_IOTA_DEVICE_DATA_INFO为结构体数组，可以同时上报多个子设备数据，每个子设备可以上报多个服务，deviceNum为上报的子设备个数，serviceLenList为每个子设备上报的服务个数。入参具体说明请参考API文档，demo中的Test_batchPropertiesReport函数演示了对该接口的调用方法。
   
-    void Test_BatchPropertiesReport()
-  {
-  	int deviceNum = 1;      //要上报的子设备的个数
-  	ST_IOTA_DEVICE_DATA_INFO devices[deviceNum]; //子设备要上报的结构体数组
-      int serviceList[deviceNum];  //对应存储每个子设备要上报的服务个数
-	    serviceList[0] = 2;       //子设备一要上报两个服务
-  //	serviceList[1] = 1;		  //子设备二要上报一个服务
-      char *device1_service1 = "{\"Load\":\"1\",\"ImbA_strVal\":\"3\"}"; //service1要上报的属性数据，必须是json格式
-      char *device1_service2 = "{\"PhV_phsA\":\"2\",\"PhV_phsB\":\"4\"}";//service2要上报的属性数据，必须是json格式
-  	devices[0].device_id = subDeviceId;
-  	devices[0].services[0].event_time = "20191209T081212Z";
-  	devices[0].services[0].service_id = "parameter";
-  	devices[0].services[0].properties = device1_service1;
-  	devices[0].services[1].event_time = "20191209T081212Z";
-  	devices[0].services[1].service_id = "analog";
-  	devices[0].services[1].properties = device1_service2;
-  	//	char *device2_service1 = "{\"AA\":\"2\",\"BB\":\"4\"}";
-  	//	devices[1].device_id = "subDevices22222";
-  	//	devices[1].services[0].event_time = "d2s1";
-  	//	devices[1].services[0].service_id = "device2_service11111111";
-  	//	devices[1].services[0].properties = device2_service1;
-  	int messageId = IOTA_BatchPropertiesReport(devices, deviceNum, serviceList);
-  	if(messageId != 0)
-  	{
-  		printfLog(EN_LOG_LEVEL_ERROR, "AgentLiteDemo: Test_BatchPropertiesReport() failed, messageId %d\n", messageId);
-  	}
-}
+    `void Test_BatchPropertiesReport()`
+  `{`
+  	`int deviceNum = 1;      //要上报的子设备的个数`
+  	`ST_IOTA_DEVICE_DATA_INFO devices[deviceNum]; //子设备要上报的结构体数组`
+      `int serviceList[deviceNum];  //对应存储每个子设备要上报的服务个数`
+	    `serviceList[0] = 2;       //子设备一要上报两个服务`
+  `//	serviceList[1] = 1;		  //子设备二要上报一个服务`
+      `char *device1_service1 = "{\"Load\":\"1\",\"ImbA_strVal\":\"3\"}"; //service1要上报的属性数据，必须是json格式`
+      `char *device1_service2 = "{\"PhV_phsA\":\"2\",\"PhV_phsB\":\"4\"}";//service2要上报的属性数据，必须是json格式`
+  	`devices[0].device_id = subDeviceId;`
+  	`devices[0].services[0].event_time = "20191209T081212Z";`
+  	`devices[0].services[0].service_id = "parameter";`
+  	`devices[0].services[0].properties = device1_service1;`
+  	`devices[0].services[1].event_time = "20191209T081212Z";`
+  	`devices[0].services[1].service_id = "analog";`
+  	`devices[0].services[1].properties = device1_service2;`
+  	`//	char *device2_service1 = "{\"AA\":\"2\",\"BB\":\"4\"}";`
+  	`//	devices[1].device_id = "subDevices22222";`
+  	`//	devices[1].services[0].event_time = "d2s1";`
+  	`//	devices[1].services[0].service_id = "device2_service11111111";`
+  	`//	devices[1].services[0].properties = device2_service1;`
+  	`int messageId = IOTA_BatchPropertiesReport(devices, deviceNum, serviceList);`
+  	`if(messageId != 0)`
+  	`{`
+  		`printfLog(EN_LOG_LEVEL_ERROR, "AgentLiteDemo: Test_BatchPropertiesReport() failed, messageId %d\n", messageId);`
+  	`}`
+`}`
   
 - **自定义tpoic**
 
