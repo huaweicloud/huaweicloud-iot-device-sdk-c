@@ -18,7 +18,8 @@
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
 
 <h1 id="2">2.SDK简介</h1>
-SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过调用SDK接口，便可实现设备与物联网平台的上下行通讯。SDK当前支持的功能有：
+SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过调用SDK接口，便可实现设备与物联网平台的上下行通讯。SDK当前支持的功能有：  
+
 - 支持物模型：设备消息/属性/事件上报，设备命令/消息/属性/事件接收
 
 - 支持子设备消息转发、子设备管理
@@ -43,12 +44,11 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 <h2 id="3.1">3.1 环境信息</h2>
 SDK需运行在Linux操作系统上。
 <h2 id="3.2">3.2 编译openssl库</h2>
-1. 访问openssl官网([https://www.openssl.org/source/](https://www.openssl.org/source/))，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以下以上传到目录/home/test下为例），并使用如下命令解压：
 
+1. 访问openssl官网<https://www.openssl.org/source//>，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以下以上传到目录/home/test下为例），并使用如下命令解压：  
+  
   tar -zxvf openssl-1.1.1d.tar.gz  
   ![](./doc/untarPkg.png)
-
-  
 
 2. 配置生成makefile文件
    执行以下命令进入openssl源码目录：
