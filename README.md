@@ -45,16 +45,17 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 SDK需运行在Linux操作系统上。
 <h2 id="3.2">3.2 编译openssl库</h2>
 
-1. 访问openssl官网<https://www.openssl.org/source//>，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以下以上传到目录/home/test下为例），并使用如下命令解压：  
-  
-  tar -zxvf openssl-1.1.1d.tar.gz  
-  ![](./doc/untarPkg.png)
+1. 访问openssl官网<https://www.openssl.org/source/>，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以下以上传到目录/home/test下为例），并使用如下命令解压：  
+
+   tar -zxvf openssl-1.1.1d.tar.gz  
+   ![](./doc/untarPkg.png)
 
 2. 配置生成makefile文件
    执行以下命令进入openssl源码目录：
 
-   cd openssl-1.1.1d  	
-   运行如下配置命令：
+   cd openssl-1.1.1d        
+   
+   运行如下配置命令：  
 
    ./config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl
    其中“prefix”是安装目录，“openssldir”是配置文件目录，“shared”作用是生成动态链接库（即.so库）。
@@ -69,18 +70,18 @@ SDK需运行在Linux操作系统上。
      ./config no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl --sysroot="{头文件所在路径}"
      ![](./doc/sysroot.png)
      
-     一般来说，头文件所在路径与“XXX-gcc/g++/ar/nm”等（XXX是交叉编译器名字的前缀）的所在目录不一样，在另外一个大目录下（如下图所示）。
+     一般来说，头文件所在路径与“XXX-gcc/g++/ar/nm”等（XXX是交叉编译器名字的前缀）的所在目录不一样，在另外一个大目录下（如下图所示）。   
      ![](./doc/header_file.png)
 
 3. （可选，使用系统的gcc可跳过该步骤）如果厂家使用自有的交叉编译工具链，需将交叉编译工具链解压。
-   gcc/g++/ar/ranlib/nm等文件的名字根据编译链的不同，文件名开头会有所不同，但文件名结尾是不变的，如arm架构比较常见的编译器是arm-linux-gc。
+   gcc/g++/ar/ranlib/nm等文件的名字根据编译链的不同，文件名开头会有所不同，但文件名结尾是不变的，如arm架构比较常见的编译器是arm-linux-gc。  
    ![](./doc/gcc.png)
 
 4. （可选，使用系统的gcc可跳过该步骤）修改Makefile文件。
-  - 配置完成后会在openssl源码目录下生成一个Makefile文件，打开查看内容，会看到CROSS_COMPILE的值是空的。
+  - 配置完成后会在openssl源码目录下生成一个Makefile文件，打开查看内容，会看到CROSS_COMPILE的值是空的。  
     ![](./doc/makefile1.png)
     
-  - 找到交叉编译工具xxx-gcc/g++/ar/nm等文件所在路径（其中“XXX-”是交叉编译工具文件名前缀），将CROSS_COMPILE的值修改为XXXgcc所在绝对路径+XXX--gcc的文件名前缀（参考下图）。如果生成的Makefile中没有CROSS_COMPILE参数，说明openssl版本比较旧，建议更新。
+  - 找到交叉编译工具xxx-gcc/g++/ar/nm等文件所在路径（其中“XXX-”是交叉编译工具文件名前缀），将CROSS_COMPILE的值修改为XXXgcc所在绝对路径+XXX--gcc的文件名前缀（参考下图）。如果生成的Makefile中没有CROSS_COMPILE参数，说明openssl版本比较旧，建议更新。  
     ![](./doc/makefile2.png)
 
 5. 编译出库。
@@ -103,7 +104,7 @@ SDK需运行在Linux操作系统上。
    ![](./doc/openssl.png)
 
 <h2 id="3.3">3.3 编译paho库</h2>
-1. 访问github下载地址：[https://github.com/eclipse/paho.mqtt.c](https://github.com/eclipse/paho.mqtt.c), 下载paho.mqtt.c源码。
+1. 访问github下载地址：<https://github.com/eclipse/paho.mqtt.c>, 下载paho.mqtt.c源码。
 
 2. 解压后上传到linux编译机。（如果开发者要使用自有的交叉编译工具链，请参考[3.2 编译openssl库](#3.2)）
 
