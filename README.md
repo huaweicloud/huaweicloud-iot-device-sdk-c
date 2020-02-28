@@ -255,6 +255,7 @@ SDK以日志回调函数的方式供开发者使用，开发者可以根据自�
   
   SDK针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消息成功/失败、设备发布消息成功/失败、设备接收消息/命令等动作，以回调函数的方式供开发者调用，开发者可以针对不同的事件设置回调函数来实现业务处理逻辑。可以参考demo中main()方法中调用的setMyCallbacks()函数。
   
+
 `void setAuthConfig()
   {
     IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
@@ -278,8 +279,9 @@ SDK以日志回调函数的方式供开发者使用，开发者可以根据自�
 `void setMyCallbacks(){`	
 `IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleAuthSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleAuthFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisAuthSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisAuthFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);	IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);        IOTA_SetCallback(EN_IOTA_CALLBACK_MESSAGE_DOWN, HandleMessageDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_COMMAND_REQUEST, HandleCommandRequest);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_SET, HandlePropertiesSet);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_GET, HandlePropertiesGet);        IOTA_SetCallback(EN_IOTA_CALLBACK_EVENT_DOWN, HandleEventsDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_USER_TOPIC, HandleUserTopicMessageDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_DEVICE_SHADOW, HandleDeviceShadowRsp);`
 `}`
-	- 鉴权成功（EN_IOTA_CALLBACK_CONNECT_SUCCESS）后，将调用HandleAuthSuccess函数；
-	- 鉴权失败（EN_IOTA_CALLBACK_CONNECT_FAILURE）后，将调用HandleAuthFailure函数；
+
+	- 鉴权成功（EN_IOTA_CALLBACK_CONNECT_SUCCESS）后，将调用HandleAuthSuccess函数；  
+	- 鉴权失败（EN_IOTA_CALLBACK_CONNECT_FAILURE）后，将调用HandleAuthFailure函数；  
 	- 设备主动断链成功（EN_IOTA_CALLBACK_DISCONNECT_SUCCESS）后，将调用HandleDisAuthSuccess函数；
 	- 设备主动断链失败（EN_IOTA_CALLBACK_DISCONNECT_FAILURE）后，将调用HandleDisAuthFailure函数；
 	- 链接断开（EN_IOTA_CALLBACK_CONNECTION_LOST）后，将调用HandleConnectionLost函数；
