@@ -143,8 +143,10 @@ SDK需运行在Linux操作系统上。
 
 6. 拷贝paho库文件
 	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下。
+	
 <h2 id="3.4">3.4 上传profile及注册设备</h2>
-1. 将已开发完成的profile导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。  
+1. 将已开发完成的profile导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。 
+
 	![](./doc/profile1.png)
 
 2. 点击“设备”，选中“设备注册”，点击右上角的创建，选择刚导入的产品模型，填写设备标识码（一般是IMEI、MAC地址等），“密钥”如果不自定义，平台会自动生成。全部填写完毕后，点击确认。（此处是网关注册）
@@ -173,12 +175,13 @@ SDK需运行在Linux操作系统上。
 	password_：设备密钥，设备注册时返回的值。
 	![](./doc/4_1.png)
 
-3. 执行make命令进行编译：
+4. 执行make命令进行编译：
 
 	make
 	
-4. 运行：	
+5. 运行：	
 	- 加载库文件
+	
 	  export LD_LIBRARY_PATH=./lib/
 
 	- 执行如下命令：
@@ -186,12 +189,15 @@ SDK需运行在Linux操作系统上。
 	  ./MQTT_Demo.o
 	
 	  在控制台上可以看到很多打印的日志：
-	  “login success”表示设备鉴权成功
-	  “MqttBase_onSubscribeSuccess”表示订阅成功
-	  “MqttBase_onPublishSuccess”表示发布数据成功
+	  “login success”表示设备鉴权成功   
+	  
+	  “MqttBase_onSubscribeSuccess”表示订阅成功   
+	  
+	  “MqttBase_onPublishSuccess”表示发布数据成功   
+	  
 	  ![](./doc/4_2.png)
 
-5. 查看设备运行情况：
+6. 查看设备运行情况：
 	- 网关设备在线：
 	  ![](./doc/4_3.png)
 	- 网关上报数据
@@ -230,9 +236,8 @@ SDK以日志回调函数的方式供开发者使用，开发者可以根据自�
   
   设备连接到IoT平台之前，需配置平台的地址、端口、设备Id及设备密钥。可以参考demo中main()方法中调用的setAuthConfig()函数。
   
-  
-  
-  `void setAuthConfig()`
+  ''' c
+  `void setAuthConfig()`  
   `{`
       `IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
       IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);`
@@ -246,9 +251,12 @@ SDK以日志回调函数的方式供开发者使用，开发者可以根据自�
     `IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LEVEL, LOG_INFO);`
   `#endif`
 `}`
+'''
 
-   平台的IP（EN_IOTA_CFG_MQTT_ADDR）、端口（EN_IOTA_CFG_MQTT_PORT）可以在SP portal的应用对接信息中获取；
-  设备ID（EN_IOTA_CFG_DEVICEID）、设备密钥（EN_IOTA_CFG_DEVICESECRET）是注册设备的时候返回的。
+   平台的IP（EN_IOTA_CFG_MQTT_ADDR）、端口（EN_IOTA_CFG_MQTT_PORT）可以在SP portal的应用对接信息中获取；   
+   
+  设备ID（EN_IOTA_CFG_DEVICEID）、设备密钥（EN_IOTA_CFG_DEVICESECRET）是注册设备的时候返回的。   
+  
   当定义了_SYS_LOG（日志打印在系统文件中）时，日志的facility类型（EN_IOTA_CFG_LOG_LOCAL_NUMBER）、日志的显示级别（EN_IOTA_CFG_LOG_LEVEL）可以按需自定义。
 
 - **回调函数配置**
@@ -277,7 +285,9 @@ SDK以日志回调函数的方式供开发者使用，开发者可以根据自�
 回调函数配置Agent Lite3.0针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消息成功/失败、设备发布消息成功/失败、设备接收消息/命令等动作，以回调函数的方式供开发者调用，开发者可以针对不同的事件设置回调函数来实现业务处理逻辑。可以参考demo中main()方法中调用的setMyCallbacks()函数。
 
 `void setMyCallbacks(){`	
+
 `IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleAuthSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleAuthFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisAuthSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisAuthFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);	IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);	IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);	IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);        IOTA_SetCallback(EN_IOTA_CALLBACK_MESSAGE_DOWN, HandleMessageDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_COMMAND_REQUEST, HandleCommandRequest);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_SET, HandlePropertiesSet);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_GET, HandlePropertiesGet);        IOTA_SetCallback(EN_IOTA_CALLBACK_EVENT_DOWN, HandleEventsDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_USER_TOPIC, HandleUserTopicMessageDown);        IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_DEVICE_SHADOW, HandleDeviceShadowRsp);`
+
 `}`
 
 	- 鉴权成功（EN_IOTA_CALLBACK_CONNECT_SUCCESS）后，将调用HandleAuthSuccess函数；  
