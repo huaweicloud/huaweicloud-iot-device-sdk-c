@@ -235,28 +235,30 @@ SDK以日志回调函数的方式供开发者使用，开发者可以根据自�
 - **设备绑定配置**
   
   设备连接到IoT平台之前，需配置平台的地址、端口、设备Id及设备密钥。可以参考demo中main()方法中调用的setAuthConfig()函数。
+
+```c
+
+void setAuthConfig(){
+  IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
+  IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
+  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
+  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
+//IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,  EN_IOTA_CFG_AUTH_MODE_CERT); //证书模式
+    IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,     EN_IOTA_CFG_AUTH_MODE_SECRET); //密码模式
+
+  #ifdef _SYS_LOG
+//IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LOCAL_NUMBER, LOG_LOCAL7);
+  IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LEVEL, LOG_INFO);
+  #endif
+
+}
+```
   
-  ''' c
-  `void setAuthConfig()`  
-  `{`
-      `IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
-      IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);`
-	    `IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);`
-  `//    IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,    EN_IOTA_CFG_AUTH_MODE_CERT); //证书模式`
-    `IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,     EN_IOTA_CFG_AUTH_MODE_SECRET); //密码模式`
-  
-  `#ifdef _SYS_LOG`
-  `//    IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LOCAL_NUMBER, LOG_LOCAL7);`
-    `IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LEVEL, LOG_INFO);`
-  `#endif`
-`}`
-'''
 
    平台的IP（EN_IOTA_CFG_MQTT_ADDR）、端口（EN_IOTA_CFG_MQTT_PORT）可以在SP portal的应用对接信息中获取；   
-   
+
   设备ID（EN_IOTA_CFG_DEVICEID）、设备密钥（EN_IOTA_CFG_DEVICESECRET）是注册设备的时候返回的。   
-  
+
   当定义了_SYS_LOG（日志打印在系统文件中）时，日志的facility类型（EN_IOTA_CFG_LOG_LOCAL_NUMBER）、日志的显示级别（EN_IOTA_CFG_LOG_LEVEL）可以按需自定义。
 
 - **回调函数配置**
