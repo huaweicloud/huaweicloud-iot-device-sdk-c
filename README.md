@@ -44,7 +44,6 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 <h2 id="3.1">3.1 环境信息</h2>
 SDK需运行在Linux操作系统上。
 <h2 id="3.2">3.2 编译openssl库</h2>  
-
 1. 访问openssl官网<https://www.openssl.org/source/>，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以上传到目录/home/test为例），并使用如下命令解压：  
 
    tar -zxvf openssl-1.1.1d.tar.gz  
@@ -105,7 +104,6 @@ SDK需运行在Linux操作系统上。
    ![](./doc/openssl.png)
 
 <h2 id="3.3">3.3 编译paho库</h2>  
-
 1. 访问github下载地址<https://github.com/eclipse/paho.mqtt.c>, 下载paho.mqtt.c源码。
 
 2. 解压后上传到linux编译机。（如果开发者要使用自有的交叉编译工具链，请参考[3.2 编译openssl库](#3.2)）
@@ -147,7 +145,8 @@ SDK需运行在Linux操作系统上。
 	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下。
 	
 <h2 id="3.4">3.4 上传profile及注册设备</h2>  
-1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。 
+
+1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。   
 	![](./doc/profile1.png)
 
 2. 点击“设备”，选中“设备注册”，点击右上角的创建，选择刚导入的产品模型，填写设备标识码（一般是IMEI、MAC地址等），“密钥”如果不自定义，平台会自动生成。全部填写完毕后，点击确认。（此处是网关注册）
@@ -161,6 +160,7 @@ SDK需运行在Linux操作系统上。
 	![](./doc/profile4.png)
 
 <h1 id="4">4.快速体验</h1>  
+
 1. 将SDK压缩包拷贝到Linux环境中，通过如下命令解压：
 	
 	tar -zxvf AgentLiteSDKDemo.tar.gz
@@ -303,7 +303,8 @@ void setMyCallbacks(){
   IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);	
   IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);	
   IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);     
-  IOTA_SetCallback(EN_IOTA_CALLBACK_MESSAGE_DOWN, HandleMessageDown);   IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_COMMAND_REQUEST, HandleCommandRequest);   
+  IOTA_SetCallback(EN_IOTA_CALLBACK_MESSAGE_DOWN, HandleMessageDown); 
+  IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_COMMAND_REQUEST, HandleCommandRequest);   
   IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_SET, HandlePropertiesSet);     
   IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_GET, HandlePropertiesGet);       
   IOTA_SetCallback(EN_IOTA_CALLBACK_EVENT_DOWN, HandleEventsDown);  
@@ -356,7 +357,7 @@ void setMyCallbacks(){
   //default topic
   // int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", NULL);
   
-  	//user topic
+  //user topic
   int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg");
   if (messageId != 0) {
   	  PrintfLog(EN_LOG_LEVEL_ERROR, "AgentLiteDemo:   Test_MessageReport() failed, messageId %d\n", messageId);
@@ -498,7 +499,7 @@ void Test_BatchPropertiesReport() {
   - 把编译后的TARGET文件由MQTT_Demo.o修改为libHWMQTT.so（名称可以自定义）
     ![](./doc/so3.png)
   - 修改完毕后执行make即可生成libHWMQTT.so文件  
-      
+    
     ![](./doc/so4.png)
 
 
