@@ -27,8 +27,8 @@
 #include "log_util.h"
 #include "string_util.h"
 #include "string.h"
-#include "ossl_typ.h"
-#include "hmac.h"
+#include <openssl/ossl_typ.h>
+#include <openssl/hmac.h>
 #include "iota_error_type.h"
 
 int EncryWithHMacSha256(const char *inputData, char **inputKey, int inEncryDataLen, char *outData) {

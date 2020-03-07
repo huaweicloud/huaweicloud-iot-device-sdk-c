@@ -29,7 +29,7 @@ $(TARGET):	$(OBJS)
 
 ##-----------base----------------##
 hmac_sha256.o: $(SRC_PATH)/base/hmac_sha256.c
-	$(CC) $(CFLAGS) -c $(SRC_PATH)/base/hmac_sha256.c -o hmac_sha256.o $(HEADER_PATH)/base/ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/openssl/ $(HEADER_PATH)/util/
+	$(CC) $(CFLAGS) -c $(SRC_PATH)/base/hmac_sha256.c -o hmac_sha256.o $(HEADER_PATH)/base/ $(HEADER_PATH)/agentlite/  $(HEADER_PATH)/util/ $(HEADER_PATH) 
 
 mqtt_base.o: $(SRC_PATH)/base/mqtt_base.c
 	$(CC) $(CFLAGS) -c $(SRC_PATH)/base/mqtt_base.c -o mqtt_base.o $(HEADER_PATH)/base/ $(HEADER_PATH)/util/ $(HEADER_PATH)/agentlite/
@@ -72,10 +72,10 @@ iota_login.o: $(SRC_PATH)/agentlite/iota_login.c
 	$(CC) $(CFLAGS) -c $(SRC_PATH)/agentlite/iota_login.c -o iota_login.o $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/agentlite/
 	
 iota_datatrans.o: $(SRC_PATH)/agentlite/iota_datatrans.c
-	$(CC) $(CFLAGS) -c $(SRC_PATH)/agentlite/iota_datatrans.c -o iota_datatrans.o $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/openssl/
+	$(CC) $(CFLAGS) -c $(SRC_PATH)/agentlite/iota_datatrans.c -o iota_datatrans.o $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH) 
 
 agent_lite_demo.o: $(SRC_PATH)/demo/agent_lite_demo.c
-	$(CC) $(CFLAGS) -c $(SRC_PATH)/demo/agent_lite_demo.c -o agent_lite_demo.o $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/
+	$(CC) $(CFLAGS) -c $(SRC_PATH)/demo/agent_lite_demo.c -o agent_lite_demo.o $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)
 	
 all:	$(TARGET)
 
