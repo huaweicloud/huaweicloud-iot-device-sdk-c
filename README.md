@@ -59,33 +59,14 @@ SDK需运行在Linux操作系统上。
 
    ./config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl  
    
-   其中“prefix”是安装目录，“openssldir”是配置文件目录，“shared”作用是生成动态链接库（即.so库）。
+   其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）。
 
    - 如果编译有问题配置命令加上no-asm（表示不使用汇编代码）
      
      ./config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl
      ![](./doc/no_asm.png)
 
-   - 如果遇到64位的编译链，需要添加sysroot参数，用如下命令配置。
-
-     ./config no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl --sysroot="{头文件所在路径}"
-     ![](./doc/sysroot.png)
-     
-     一般来说，头文件所在路径与“XXX-gcc/g++/ar/nm”等（XXX是交叉编译器名字的前缀）的所在目录不一样，在另外一个大目录下（如下图所示）。   
-     ![](./doc/header_file.png)
-
-3. （可选，使用系统的gcc可跳过该步骤）如果厂家使用自有的交叉编译工具链，需将交叉编译工具链解压。
-   gcc/g++/ar/ranlib/nm等文件的名字根据编译链的不同，文件名开头会有所不同，但文件名结尾是不变的，如arm架构比较常见的编译器是arm-linux-gc。  
-   ![](./doc/gcc.png)
-
-4. （可选，使用系统的gcc可跳过该步骤）修改Makefile文件。
-  - 配置完成后会在openssl源码目录下生成一个Makefile文件，打开查看内容，会看到CROSS_COMPILE的值是空的。  
-    ![](./doc/makefile1.png)
-    
-  - 找到交叉编译工具xxx-gcc/g++/ar/nm等文件所在路径（其中“XXX-”是交叉编译工具文件名前缀），将CROSS_COMPILE的值修改为XXXgcc所在绝对路径+XXX--gcc的文件名前缀（参考下图）。如果生成的Makefile中没有CROSS_COMPILE参数，说明openssl版本比较旧，建议更新。  
-    ![](./doc/makefile2.png)
-
-5. 编译出库。
+3. 编译出库。
    在openssl源码目录下，运行make depend命令添加依赖：
 
    make depend  
@@ -100,7 +81,7 @@ SDK需运行在Linux操作系统上。
 
    在配置的openssl安装目录下home/test/openssl找到lib目录，有生成的库文件：
 
-   libcrypto.so.1.1、libssl.so.1.1和软链接libcrypto.so、libssl.so
+   libcrypto.so.1.1、libssl.so.1.1和软链接libcrypto.so、libssl.so，请将这些文件拷贝到SDK的lib文件夹下。
 
    ![](./doc/openssl.png)
 
@@ -122,14 +103,11 @@ SDK需运行在Linux操作系统上。
 	- 在129行之后添加下面两行（自定义的openssl的头文件和库文件）
 	  
 	  CFLAGS += -I/home/test/openssl/include
-	  LDFLAGS += -L/home/test/openssl/lib
+	  LDFLAGS += -L/home/test/openssl/lib -lrt
 	  ![](./doc/paho_makefile1.png)
 	  
-	- 把195行、197行、199行、201行都改成对应的地址
+	- 把图中195行、197行、199行、201行都改成对应的地址
 	  ![](./doc/paho_makefile2.png)
-	
-	- 如果开发者用自有的工具链（64位需确认头文件的位置，可参考[3.2 编译openssl库](#3.2)），主要修改的地方为：编译器路径、编译选项和openssl目录，如下图所示：
-	  ![](./doc/paho64.png)
 	
 4. 编译
 	- 执行清空命令：
@@ -217,6 +195,7 @@ SDK需运行在Linux操作系统上。
 	      ![](./doc/4_8.png)
 	  
 <h1 id="5">5.使用步骤</h1>  
+
 以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。  
 
 - **设置日志回调函数**
