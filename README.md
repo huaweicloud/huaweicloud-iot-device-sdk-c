@@ -42,7 +42,7 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 
 <h1 id="3">3.准备工作</h1>
 <h2 id="3.1">3.1 环境信息</h2>
-SDK需运行在Linux操作系统上。
+SDK需运行在Linux操作系统上，并安装好gcc。
 <h2 id="3.2">3.2 编译openssl库</h2>  
 
 1. 访问openssl官网<https://www.openssl.org/source/>，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以上传到目录/home/test为例），并使用如下命令解压：  
@@ -89,7 +89,7 @@ SDK需运行在Linux操作系统上。
 
 1. 访问github下载地址<https://github.com/eclipse/paho.mqtt.c>, 下载paho.mqtt.c源码。
 
-2. 解压后上传到linux编译机。（如果开发者要使用自有的交叉编译工具链，请参考[3.2 编译openssl库](#3.2)）
+2. 解压后上传到linux编译机。
 
 3. 修改makefile
 	- 通过如下命令进行编辑Makefile
@@ -100,7 +100,7 @@ SDK需运行在Linux操作系统上。
 	  
 	  :set nu
 	
-	- 在129行之后添加下面两行（自定义的openssl的头文件和库文件）
+	- 在129行之后添加下面两行（[3.2](#3.2)中自定义的openssl的头文件和库文件位置）
 	  
 	  CFLAGS += -I/home/test/openssl/include
 	  LDFLAGS += -L/home/test/openssl/lib -lrt
@@ -143,11 +143,11 @@ SDK需运行在Linux操作系统上。
 
 1. 将SDK压缩包拷贝到Linux环境中，通过如下命令解压：
 	
-	tar -zxvf AgentLiteSDKDemo.tar.gz
+	unzip  huaweicloud-iot-device-sdk-c-master.zip
 	
 2. 进入到解压的文件夹下：
 	
-	cd AgentLiteSDKDemo.tar.gz
+	cd huaweicloud-iot-device-sdk-c-master
 
 3. 修改配置信息：
 	需要修改src/demo/agent_lite_demo.c文件中的如下参数：
@@ -453,13 +453,13 @@ void Test_BatchPropertiesReport() {
   请参考主目录下的**API文档**。
 
 - **编译并运行程序**
-1. 将Agent Lite Linux Demo压缩包拷贝到Linux环境中，通过如下命令解压：
+1. 将huaweicloud-iot-device-sdk-c-master.zip压缩包拷贝到Linux环境中，通过如下命令解压：
 	
-	tar -zxvf AgentLiteSDKDemo.tar.gz
+	unzip  huaweicloud-iot-device-sdk-c-master.zip
 	
 2. 进入到文件夹下：
 	
-	cd AgentLiteSDKDemo.tar.gz
+	cd huaweicloud-iot-device-sdk-c-master
 	
 3. 执行make命令进行编译：
 	
