@@ -27,26 +27,6 @@
 
 #include "stdarg.h"
 
-typedef enum {
-	EN_CALLBACK_CONNECT_SUCCESS = 0,
-	EN_CALLBACK_CONNECT_FAILURE = 1,
-	EN_CALLBACK_DISCONNECT_SUCCESS = 2,
-	EN_CALLBACK_DISCONNECT_FAILURE = 3,
-	EN_CALLBACK_CONNECTION_LOST = 4,
-	EN_CALLBACK_PUBLISH_SUCCESS = 5,
-	EN_CALLBACK_PUBLISH_FAILURE = 6,
-	EN_CALLBACK_SUBSCRIBE_SUCCESS = 7,
-	EN_CALLBACK_SUBSCRIBE_FAILURE = 8,
-	EN_CALLBACK_MESSAGE_DOWN = 9,
-	EN_CALLBACK_COMMAND_REQUEST = 10,
-	EN_CALLBACK_PROPERTIES_SET = 11,
-	EN_CALLBACK_PROPERTIES_GET = 12,
-	EN_CALLBACK_EVENT_DOWN = 14,
-	EN_CALLBACK_COMMAND_ARRIVED = 15,
-	EN_CALLBACK_USER_TOPIC = 16,
-	EN_CALLBACK_DEVICE_SHADOW = 17
-} EN_CALLBACK_SETTING;
-
 /**
  * @param context the application-self defined parameter, current is NULL
  * @param token the inner messageId(1-65535) of the uplink message in this MQTT SDK
@@ -60,8 +40,8 @@ typedef void (*LOG_CALLBACK_HANDLER)(int level, char *format, va_list args);
 void OnLoginSuccess(void *context, int token, int code, char *message);
 void OnMessageArrived(void *context, int token, int code, const char *topic, char *message);
 
-_DLLEXPORT int SetCallback(int item, CALLBACK_HANDLER callbackHandler);
-_DLLEXPORT void SetLogCallback(LOG_CALLBACK_HANDLER logCallbackHandler);
-_DLLEXPORT int SetCallbackWithTopic(int item, CALLBACK_HANDLER_WITH_TOPIC callbackHandler);
+int SetCallback(int item, CALLBACK_HANDLER callbackHandler);
+void SetLogCallback(LOG_CALLBACK_HANDLER logCallbackHandler);
+int SetCallbackWithTopic(int item, CALLBACK_HANDLER_WITH_TOPIC callbackHandler);
 
 #endif /* INCLUDE_SERVICE_CALLBACK_FUNC_H_ */

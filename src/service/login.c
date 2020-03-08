@@ -22,16 +22,16 @@
  *
  * */
 
-#include <base.h>
-#include <login.h>
-#include <mqtt_base.h>
+#include "base.h"
+#include "login.h"
+#include "mqtt_base.h"
 #include "iota_error_type.h"
 
-_DLLEXPORT int CreateConnection() {
+int CreateConnection() {
 	return MqttBase_CreateConnection();
 }
 
-_DLLEXPORT int ReleaseConnection() {
+int ReleaseConnection() {
 	return MqttBase_ReleaseConnection();
 }
 

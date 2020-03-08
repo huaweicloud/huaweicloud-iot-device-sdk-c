@@ -29,10 +29,10 @@
 #include "unistd.h"
 #endif
 
-#include "stdlib.h"
-#include "pthread.h"
-#include <string_util.h>
-#include <log_util.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include "string_util.h"
+#include "log_util.h"
 #include "mqtt_base.h"
 #include "hmac_sha256.h"
 #include "iota_error_type.h"
@@ -74,6 +74,7 @@ int mqttClientCreateFlag = 0; //this mqttClientCreateFlag is used to control the
 char *ca_path = NULL;
 char *cert_path = NULL;
 char *key_path = NULL;
+char *privateKeyPassword = NULL; //privateKeyPassword in cert mode device
 
 MQTTAsync client = NULL;
 
@@ -286,6 +287,7 @@ int MqttBase_init(char *workPath) {
 	password = NULL;
 	client = NULL;
 	authMode = 0;
+	privateKeyPassword = NULL;
 	if (initFlag) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_init() error, DO NOT init again\n");
 		return IOTA_INITIALIZATION_REPEATED;
@@ -366,22 +368,20 @@ int MqttBase_SetConfig(int item, char *value) {
 		case EN_MQTT_BASE_CONFIG_LOG_LOCAL_NUMBER: {
 			#ifdef _SYS_LOG
 			int tValue = String2Int(value);
-			if (tValue > 0)
-			{
+			if (tValue > 0) {
 				SetLogLocalNumber(tValue);
 			}
 			#endif
 			break;
 		}
 		case EN_MQTT_BASE_CONFIG_LOG_LEVEL: {
-		#ifdef _SYS_LOG
-		int tValue = String2Int(value);
-		if (tValue > 0)
-		{
-			SetLogLevel(tValue);
-		}
-		#endif
-		break;
+			#ifdef _SYS_LOG
+			int tValue = String2Int(value);
+			if (tValue > 0) {
+				SetLogLevel(tValue);
+			}
+			#endif
+			break;
 		}
 		case EN_MQTT_BASE_CONFIG_KEEP_ALIVE_TIME: {
 			int tValue = String2Int((const char*) value);
@@ -416,6 +416,11 @@ int MqttBase_SetConfig(int item, char *value) {
 			int tValue = String2Int(value);
 			gQOS = tValue;
 			PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_SetConfig(), QOS is changed to %d\n", gQOS);
+			break;
+		}
+		case EN_MQTT_BASE_PRIVATE_KEY_PASSWORD: {
+			MemFree(&privateKeyPassword);
+			CopyStrValue(&privateKeyPassword, (const char*) value, len);
 			break;
 		}
 		default:
@@ -569,7 +574,7 @@ int MqttBase_CreateConnection() {
 
 				ssl_opts.keyStore = cert_path;
 				ssl_opts.privateKey = key_path;
-				ssl_opts.privateKeyPassword = "1234";  //please fill in the real value
+				ssl_opts.privateKeyPassword = privateKeyPassword;
 			}
 
 			conn_opts.ssl = &ssl_opts;
@@ -682,6 +687,7 @@ int MqttBase_destory() {
 		MemFree(&key_path);
 	}
 
+	MemFree(&privateKeyPassword);
 	mqttClientCreateFlag = 0;
 
 	MQTTAsync_destroy(&client);

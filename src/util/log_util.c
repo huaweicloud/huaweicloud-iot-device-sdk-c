@@ -22,9 +22,9 @@
  *
  * */
 
-#include <log_util.h>
-#include <string_util.h>
-#include "stdio.h"
+#include "log_util.h"
+#include "string_util.h"
+#include <stdio.h>
 
 PRINTF_LOG_CALLBACK_HANDLER PrintfLogCb = NULL;
 void SetPrintfLogCallback(PRINTF_LOG_CALLBACK_HANDLER callback) {
@@ -67,21 +67,21 @@ void PrintfLog(int logLevel, char *_Format, ...) {
 	char *format = NULL;
 	char *prefix = NULL;
 	switch (logLevel) {
-	case EN_LOG_LEVEL_DEBUG:
-		prefix = "DEBUG ";
-		break;
-	case EN_LOG_LEVEL_INFO:
-		prefix = "INFO ";
-		break;
-	case EN_LOG_LEVEL_WARNING:
-		prefix = "WARNING ";
-		break;
-	case EN_LOG_LEVEL_ERROR:
-		prefix = "ERROR ";
-		break;
-	default:
-		prefix = "U ";
-		break;
+		case EN_LOG_LEVEL_DEBUG:
+			prefix = "DEBUG ";
+			break;
+		case EN_LOG_LEVEL_INFO:
+			prefix = "INFO ";
+			break;
+		case EN_LOG_LEVEL_WARNING:
+			prefix = "WARNING ";
+			break;
+		case EN_LOG_LEVEL_ERROR:
+			prefix = "ERROR ";
+			break;
+		default:
+			prefix = "U ";
+			break;
 	}
 
 	format = CombineStrings(2, prefix, _Format);

@@ -22,127 +22,125 @@
  *
  * */
 
-#include <base.h>
-#include <data_trans.h>
-#include <log_util.h>
-#include <mqtt_base.h>
-#include <string_util.h>
+#include "base.h"
+#include "data_trans.h"
+#include "log_util.h"
+#include "mqtt_base.h"
+#include "string_util.h"
 #include "cJSON.h"
 #include "iota_error_type.h"
 
-_DLLEXPORT int ReportDeviceData(char *payload, char *topicParas) {
+int ReportDeviceData(char *payload, char *topicParas) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-	if (username == 0) {
+	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
 		return IOTA_FAILURE;
 	}
 	char *topic = NULL;
 
 	if (topicParas == NULL) {
-		topic = CombineStrings(3, TOPIC_PREFIX_UP, username, TOPIC_SUFFIX_MESSAGEUP);
+		topic = CombineStrings(3, TOPIC_PREFIX, username, TOPIC_SUFFIX_MESSAGEUP);
 	} else {
-		topic = CombineStrings(4, TOPIC_PREFIX_UP, username, TOPIC_SUFFIX_USER_UP, topicParas);
+		topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_USER, topicParas);
 	}
 
 	return ReportData(topic, payload);
 }
 
-_DLLEXPORT int ReportDeviceProperties(char *payload) {
+int ReportDeviceProperties(char *payload) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-	if (username == 0) {
+	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
 		return IOTA_FAILURE;
 	}
-	char *topic = CombineStrings(3, TOPIC_PREFIX_UP, username, TOPIC_SUFFIX_PROP_UP);
+	char *topic = CombineStrings(3, TOPIC_PREFIX, username, TOPIC_SUFFIX_PROP_REP);
 
 	return ReportData(topic, payload);
 }
 
-_DLLEXPORT int ReportBatchDeviceProperties(char *payload) {
+int ReportBatchDeviceProperties(char *payload) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-	if (username == 0) {
+	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
 		return IOTA_FAILURE;
 	}
-	char *topic = CombineStrings(3, TOPIC_PREFIX_UP, username, TOPIC_SUFFIX_PROPS_UP);
+	char *topic = CombineStrings(3, TOPIC_PREFIX, username, TOPIC_SUFFIX_PROPS_REP);
 
 	return ReportData(topic, payload);
 }
 
-_DLLEXPORT int ReportCommandReponse(char *requestId, char *pcCommandRespense) {
+int ReportCommandReponse(char *requestId, char *pcCommandRespense) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-	if (username == 0) {
+	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
 		return IOTA_FAILURE;
 	}
-	char *topic = CombineStrings(4, TOPIC_PREFIX_UP, username, TOPIC_SUFFIX_COMMAND_RSP_UP, requestId);
+	char *topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_COMMAND_RSP_REQ, requestId);
 
 	return ReportData(topic, pcCommandRespense);
 }
 
-_DLLEXPORT int ReportPropSetReponse(char *requestId, char *pcCommandRespense) {
+int ReportPropSetReponse(char *requestId, char *pcCommandRespense) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-	if (username == 0) {
+	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
 		return IOTA_FAILURE;
 	}
-	char *topic = CombineStrings(4, TOPIC_PREFIX_UP, username, TOPIC_SUFFIX_PROP_SET_RSP_UP, requestId);
+	char *topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_PROP_SET_RSP_REQ, requestId);
 
 	return ReportData(topic, pcCommandRespense);
 }
 
-_DLLEXPORT int ReportPropGetReponse(char *requestId, char *pcCommandRespense) {
+int ReportPropGetReponse(char *requestId, char *pcCommandRespense) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-	if (username == 0) {
+	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
 		return IOTA_FAILURE;
 	}
-	char *topic = CombineStrings(4, TOPIC_PREFIX_UP, username, TOPIC_SUFFIX_PROP_GET_RSP_UP, requestId);
+	char *topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_PROP_GET_RSP_REQ, requestId);
 
 	return ReportData(topic, pcCommandRespense);
 }
 
-_DLLEXPORT int GetPropertiesRequest(char *requestId, char *pcCommandRespense)      //deprecated
-{
+int GetPropertiesRequest(char *requestId, char *pcCommandRespense) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-	if (username == 0) {
+	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
 		return IOTA_FAILURE;
 	}
-	char *topic = CombineStrings(4, TOPIC_PREFIX_UP, username, TOPIC_SUFFIX_SHADOW_UP, requestId);
+	char *topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_SHADOW_REQ, requestId);
 
 	PrintfLog(EN_LOG_LEVEL_INFO, "DataTrans: topic is %s\n", topic);
 
 	return ReportData(topic, pcCommandRespense);
 }
 
-_DLLEXPORT int EventUp(char *payload) {
+int EventUp(char *payload) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-	if (username == 0) {
+	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
 		return IOTA_FAILURE;
 	}
-	char *topic = CombineStrings(3, TOPIC_PREFIX_UP, username, TOPIC_SUFFIX_EVENT_UP);
+	char *topic = CombineStrings(3, TOPIC_PREFIX, username, TOPIC_SUFFIX_EVENT_UP);
 
 	PrintfLog(EN_LOG_LEVEL_INFO, "DataTrans: topic is %s\n", topic);
 
 	return ReportData(topic, payload);
 }
 
-//report sub device version or product information or subDevice scan result
-_DLLEXPORT int ReportSubDeviceInfo(char *payload)                       //deprecated
-{
+//report sub device version or product information or subDevice scan result, deprecated
+int ReportSubDeviceInfo(char *payload) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-	if (username == 0) {
+	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
 		return IOTA_FAILURE;
 	}
-	char *topic = CombineStrings(3, TOPIC_PREFIX_UP, username, TOPIC_SUFFIX_SUB_DEVICE_INFO_UP);
+	char *topic = CombineStrings(3, TOPIC_PREFIX, username, TOPIC_SUFFIX_SUB_DEVICE_INFO_UP);
 
 	return ReportData(topic, payload);
 }
 
-_DLLEXPORT int ReportData(char *topic, char *payload) {
+int ReportData(char *topic, char *payload) {
 	if (topic == NULL || payload == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: ReportDeviceData() error, the input is invalid.\n");
 		return IOTA_FAILURE;

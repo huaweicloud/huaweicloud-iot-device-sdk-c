@@ -25,24 +25,14 @@
 #ifndef INCLUDE_SUBSCRIBE_H_
 #define INCLUDE_SUBSCRIBE_H_
 
-#define TOPIC_PREFIX 				"$oc/devices/"
-#define TOPIC_SUFFIX_MESSAGEDOWN 	"/sys/messages/down"
-#define TOPIC_SUFFIX_COMMAND 		"/sys/commands/"
-#define TOPIC_SUFFIX_PROP_SET 		"/sys/properties/set/"
-#define TOPIC_SUFFIX_PROP_GET 		"/sys/properties/get/"
-#define TOPIC_SUFFIX_PROP_RSP 		"/sys/shadow/get/response/"
-#define TOPIC_SUFFIX_EVENT_DOWN 	"/sys/events/down"
-#define TOPIC_SUFFIX_USER 			"/user/"
-#define WILDCARD 					"#"
-
-_DLLEXPORT int SubscribeCommand(void);
-_DLLEXPORT void SubscribeAll(void);
-_DLLEXPORT int SubscribeMessageDown(void);
-_DLLEXPORT int SubscribePropSet(void);
-_DLLEXPORT int SubscribePropget(void);
-_DLLEXPORT int SubscribePropResp(void);
-_DLLEXPORT int SubscribeSubDeviceEvent(void);
-_DLLEXPORT int SubscribeUserTopic(char *topicParas);
-_DLLEXPORT int SubsribeTopic(char *topic);
+int SubscribeCommand(void);
+void SubscribeAll(void);
+int SubscribeMessageDown(void);
+int SubscribePropSet(void);
+int SubscribePropget(void);
+int SubscribePropResp(void);
+int SubscribeSubDeviceEvent(void);
+int SubscribeUserTopic(char *topicParas);
+int SubsribeTopic(char *topic);
 
 #endif /* INCLUDE_SUBSCRIBE_H_ */

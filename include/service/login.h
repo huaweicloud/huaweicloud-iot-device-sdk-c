@@ -25,8 +25,8 @@
 #ifndef LOGIN_H_
 #define LOGIN_H_
 
-_DLLEXPORT void onConnectionLost(void *context, char *cause);
-_DLLEXPORT int CreateConnection(void);
-_DLLEXPORT int ReleaseConnection(void);
+void onConnectionLost(void *context, char *cause);
+int CreateConnection(void);
+int ReleaseConnection(void);
 
 #endif /*LOGIN_H_*/

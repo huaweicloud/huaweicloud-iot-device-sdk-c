@@ -102,7 +102,8 @@ SDK需运行在Linux操作系统上，并安装好gcc。
 	
 	- 在129行之后添加下面两行（[3.2](#3.2)中自定义的openssl的头文件和库文件位置）
 	  
-	  CFLAGS += -I/home/test/openssl/include
+	  CFLAGS += -I/home/test/openssl/include  
+	  
 	  LDFLAGS += -L/home/test/openssl/lib -lrt
 	  ![](./doc/paho_makefile1.png)
 	  
@@ -156,7 +157,7 @@ SDK需运行在Linux操作系统上，并安装好gcc。
 	password_：设备密钥，设备注册时返回的值。
 	![](./doc/4_1.png)
 
-4. 执行make命令进行编译：
+4. 执行make命令进行编译（如果是32位的操作系统，请删除掉Makefile中的"-m64"）：
 
 	make
 	

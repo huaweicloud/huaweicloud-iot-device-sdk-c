@@ -39,7 +39,7 @@ typedef HW_VOID (*PFN_CALLBACK_HANDLER_WITH_TOPIC)(HW_VOID *context, HW_INT mess
 HW_API_FUNC HW_INT IOTA_Init(HW_CHAR *pcWorkPath);
 HW_API_FUNC HW_INT IOTA_Destroy(void);
 HW_API_FUNC HW_VOID IOTA_SetCallback(HW_INT iItem, PFN_CALLBACK_HANDLER pfnCallbackHandler);
-HW_API_FUNC void IOTA_SetCallbackWithTopic(HW_INT iItem, PFN_CALLBACK_HANDLER_WITH_TOPIC pfnCallbackHandler);
+HW_API_FUNC HW_VOID IOTA_SetCallbackWithTopic(HW_INT iItem, PFN_CALLBACK_HANDLER_WITH_TOPIC pfnCallbackHandler);
 HW_API_FUNC HW_VOID IOTA_SetPrintLogCallback(PFN_LOG_CALLBACK_HANDLER pfnLogCallbackHandler);
 
 typedef enum {

@@ -22,14 +22,14 @@
  *
  * */
 
-#include <base.h>
-#include <log_util.h>
-#include <mqtt_base.h>
-#include <string_util.h>
-#include <subscribe.h>
+#include "base.h"
+#include "log_util.h"
+#include "mqtt_base.h"
+#include "string_util.h"
+#include "subscribe.h"
 #include "iota_error_type.h"
 
-_DLLEXPORT int SubscribeMessageDown() {
+int SubscribeMessageDown() {
 	char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (userName == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeMessageDown() getUserName failed.\n");
@@ -39,7 +39,7 @@ _DLLEXPORT int SubscribeMessageDown() {
 	return SubsribeTopic(topic);
 }
 
-_DLLEXPORT int SubscribeCommand() {
+int SubscribeCommand() {
 	char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (userName == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeCommand() getUserName failed.\n");
@@ -49,7 +49,7 @@ _DLLEXPORT int SubscribeCommand() {
 	return SubsribeTopic(topic);
 }
 
-_DLLEXPORT int SubscribePropSet() {
+int SubscribePropSet() {
 	char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (userName == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropSet() getUserName failed.\n");
@@ -59,7 +59,7 @@ _DLLEXPORT int SubscribePropSet() {
 	return SubsribeTopic(topic);
 }
 
-_DLLEXPORT int SubscribePropget() {
+int SubscribePropget() {
 	char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (userName == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropget() getUserName failed.\n");
@@ -69,8 +69,7 @@ _DLLEXPORT int SubscribePropget() {
 	return SubsribeTopic(topic);
 }
 
-_DLLEXPORT int SubscribePropResp()                                         //deprecated
-{
+int SubscribePropResp() {
 	char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (userName == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropResp() getUserName failed.\n");
@@ -80,7 +79,7 @@ _DLLEXPORT int SubscribePropResp()                                         //dep
 	return SubsribeTopic(topic);
 }
 
-_DLLEXPORT int SubscribeSubDeviceEvent() {
+int SubscribeSubDeviceEvent() {
 	char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (userName == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeSubDeviceEvent() getUserName failed.\n");
@@ -90,7 +89,7 @@ _DLLEXPORT int SubscribeSubDeviceEvent() {
 	return SubsribeTopic(topic);
 }
 
-_DLLEXPORT int SubscribeUserTopic(char *topicParas) {
+int SubscribeUserTopic(char *topicParas) {
 	if (topicParas == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeUserTopic() the topicParas is invalid.\n");
 		return IOTA_FAILURE;
@@ -104,7 +103,7 @@ _DLLEXPORT int SubscribeUserTopic(char *topicParas) {
 	return SubsribeTopic(topic);
 }
 
-_DLLEXPORT int SubsribeTopic(char *topic) {
+int SubsribeTopic(char *topic) {
 	if (topic == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubsribeTopic() error, the topic is invalid.\n");
 		return IOTA_FAILURE;
@@ -118,7 +117,7 @@ _DLLEXPORT int SubsribeTopic(char *topic) {
 	return ret;
 }
 
-_DLLEXPORT void SubscribeAll() {
+void SubscribeAll() {
 	if (SubscribeMessageDown() < IOTA_SUCCESS) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeMessageDown failed.\n");
 	}

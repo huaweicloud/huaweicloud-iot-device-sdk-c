@@ -27,6 +27,7 @@
 
 #include <openssl/ossl_typ.h>
 #include "cJSON.h"
+#include "hw_type.h"
 
 #define MaxServiceReportNum 10  //set the max count of reported services
 

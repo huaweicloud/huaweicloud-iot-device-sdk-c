@@ -25,6 +25,25 @@
 #ifndef BASE_H_
 #define BASE_H_
 
+#define TOPIC_PREFIX 				    "$oc/devices/"
+#define TOPIC_SUFFIX_USER 			    "/user/"
+#define TOPIC_SUFFIX_MESSAGEUP 			"/sys/messages/up"
+#define TOPIC_SUFFIX_MESSAGEDOWN 	    "/sys/messages/down"
+#define TOPIC_SUFFIX_PROPS_REP 			"/sys/gateway/sub_devices/properties/report"
+#define TOPIC_SUFFIX_COMMAND 		    "/sys/commands/"
+#define TOPIC_SUFFIX_COMMAND_RSP_REQ 	"/sys/commands/response/request_id="
+#define TOPIC_SUFFIX_PROP_REP 			"/sys/properties/report"
+#define TOPIC_SUFFIX_PROP_SET 		    "/sys/properties/set/"
+#define TOPIC_SUFFIX_PROP_GET 		    "/sys/properties/get/"
+#define TOPIC_SUFFIX_PROP_SET_RSP_REQ 	"/sys/properties/set/response/request_id="
+#define TOPIC_SUFFIX_PROP_GET_RSP_REQ 	"/sys/properties/get/response/request_id="
+#define TOPIC_SUFFIX_SHADOW_REQ			"/sys/shadow/get/request_id="
+#define TOPIC_SUFFIX_PROP_RSP 		    "/sys/shadow/get/response/"
+#define TOPIC_SUFFIX_EVENT_UP 			"/sys/events/up"
+#define TOPIC_SUFFIX_EVENT_DOWN 	    "/sys/events/down"
+#define TOPIC_SUFFIX_SUB_DEVICE_INFO_UP "/sys/sub_device_manage/messages/up"
+#define WILDCARD 					    "#"
+
 //see also EN_MQTT_BASE_CALLBACK_SETTING in MqttBase.h
 typedef enum enum_BASE_CONFIG {
 	EN_BASE_CONFIG_USERNAME = 0,
@@ -41,15 +60,29 @@ typedef enum enum_BASE_CONFIG {
 	EN_BASE_CONFIG_QOS = 16,
 } ENUM_BASE_CONFIG;
 
-#if defined(WIN32) || defined(WIN64) && defined(EXPORT_SERVICE)
-#define _DLLEXPORT __declspec(dllexport)
-#else
-#define _DLLEXPORT
-#endif
+typedef enum {
+	EN_CALLBACK_CONNECT_SUCCESS = 0,
+	EN_CALLBACK_CONNECT_FAILURE = 1,
+	EN_CALLBACK_DISCONNECT_SUCCESS = 2,
+	EN_CALLBACK_DISCONNECT_FAILURE = 3,
+	EN_CALLBACK_CONNECTION_LOST = 4,
+	EN_CALLBACK_PUBLISH_SUCCESS = 5,
+	EN_CALLBACK_PUBLISH_FAILURE = 6,
+	EN_CALLBACK_SUBSCRIBE_SUCCESS = 7,
+	EN_CALLBACK_SUBSCRIBE_FAILURE = 8,
+	EN_CALLBACK_MESSAGE_DOWN = 9,
+	EN_CALLBACK_COMMAND_REQUEST = 10,
+	EN_CALLBACK_PROPERTIES_SET = 11,
+	EN_CALLBACK_PROPERTIES_GET = 12,
+	EN_CALLBACK_EVENT_DOWN = 14,
+	EN_CALLBACK_COMMAND_ARRIVED = 15,
+	EN_CALLBACK_USER_TOPIC = 16,
+	EN_CALLBACK_DEVICE_SHADOW = 17
+} EN_CALLBACK_SETTING;
 
-_DLLEXPORT int init(char *workPath);
-_DLLEXPORT int SetConfig(int item, char *value);
-_DLLEXPORT int destory(void);
+int init(char *workPath);
+int SetConfig(int item, char *value);
+int destory(void);
 
 #endif /*BASE_H_*/
 

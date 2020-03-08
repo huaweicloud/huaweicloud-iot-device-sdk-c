@@ -22,12 +22,12 @@
  *
  * */
 
-#include <string_util.h>
-#include <log_util.h>
-#include <mqtt_base.h>
-#include <base.h>
-#include <callback_func.h>
-#include <subscribe.h>
+#include "string_util.h"
+#include "log_util.h"
+#include "mqtt_base.h"
+#include "base.h"
+#include "callback_func.h"
+#include "subscribe.h"
 #include "string.h"
 #include "iota_error_type.h"
 
@@ -110,7 +110,7 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 
 }
 
-_DLLEXPORT int SetCallback(int item, CALLBACK_HANDLER callbackHandler) {
+int SetCallback(int item, CALLBACK_HANDLER callbackHandler) {
 	switch (item) {
 		case EN_CALLBACK_CONNECT_SUCCESS:
 			onAuthS = callbackHandler;
@@ -126,7 +126,7 @@ _DLLEXPORT int SetCallback(int item, CALLBACK_HANDLER callbackHandler) {
 	}
 }
 
-_DLLEXPORT int SetCallbackWithTopic(int item, CALLBACK_HANDLER_WITH_TOPIC callbackHandler) {
+int SetCallbackWithTopic(int item, CALLBACK_HANDLER_WITH_TOPIC callbackHandler) {
 	switch (item) {
 		case EN_CALLBACK_COMMAND_REQUEST:
 			onCommandReq = callbackHandler;
@@ -150,6 +150,6 @@ _DLLEXPORT int SetCallbackWithTopic(int item, CALLBACK_HANDLER_WITH_TOPIC callba
 	}
 }
 
-_DLLEXPORT void SetLogCallback(LOG_CALLBACK_HANDLER logCallbackHandler) {
+void SetLogCallback(LOG_CALLBACK_HANDLER logCallbackHandler) {
 	SetPrintfLogCallback(logCallbackHandler);
 }

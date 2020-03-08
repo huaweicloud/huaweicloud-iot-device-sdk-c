@@ -40,7 +40,8 @@ typedef enum {
 	EN_IOTA_CFG_CONNECT_TIMEOUT = 8,
 	EN_IOTA_CFG_RETRY_INTERVAL = 9,
 	EN_IOTA_CFG_RESET_SECRET_IN_PROGRESS = 10,
-	EN_IOTA_CFG_QOS = 11
+	EN_IOTA_CFG_QOS = 11,
+	EN_IOTA_CFG_PRIVATE_KEY_PASSWORD = 12 //private key password in cert mode device
 } EN_IOTA_CFG_TYPE;
 
 typedef enum enum_IOTA_CFG_AUTH_MODE {

@@ -22,23 +22,13 @@
  *
  * */
 
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include <string_util.h>
-#include <log_util.h>
-#include <base.h>
-#include "hw_type.h"
-#include <data_trans.h>
-#include "iota_datatrans.h"
-#include "cJSON.h"
-#include "iota_error_type.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <time.h>
 #include <errno.h>
 #include <signal.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/time.h>
@@ -47,7 +37,16 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
-#include <subscribe.h>
+#include "string.h"
+#include "string_util.h"
+#include "log_util.h"
+#include "base.h"
+#include "hw_type.h"
+#include "data_trans.h"
+#include "iota_datatrans.h"
+#include "cJSON.h"
+#include "iota_error_type.h"
+#include "subscribe.h"
 
 //message up
 HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas) {

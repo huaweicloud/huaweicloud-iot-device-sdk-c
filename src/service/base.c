@@ -22,19 +22,19 @@
  *
  * */
 
-#include <base.h>
-#include <mqtt_base.h>
+#include "base.h"
+#include "mqtt_base.h"
 #include "iota_error_type.h"
 
-_DLLEXPORT int init(char *workPath) {
+int init(char *workPath) {
 	return MqttBase_init(workPath);
 }
 
-_DLLEXPORT int destory() {
+int destory() {
 	return MqttBase_destory();
 }
 
-_DLLEXPORT int SetConfig(int item, char *value) {
+int SetConfig(int item, char *value) {
 	return MqttBase_SetConfig(item, value);
 }
 

@@ -23,7 +23,6 @@
  * */
 
 #include "hmac_sha256.h"
-
 #include "log_util.h"
 #include "string_util.h"
 #include "string.h"
