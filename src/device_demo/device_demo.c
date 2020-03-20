@@ -54,7 +54,7 @@
 char *workPath = ".";
 char *gatewayId = NULL;
 
-char *serverIp_ = "1.1.1.1";
+char *serverIp_ = "iot-acc.cn-north-4.myhuaweicloud.com";
 int port_ = 8883;
 
 char *username_ = "XXXXX"; //deviceId
