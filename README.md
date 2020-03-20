@@ -44,7 +44,6 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 <h2 id="3.1">3.1 环境信息</h2>
 SDK需运行在Linux操作系统上，并安装好gcc。
 <h2 id="3.2">3.2 编译openssl库</h2>  
-
 1. 访问openssl官网<https://www.openssl.org/source/>，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以上传到目录/home/test为例），并使用如下命令解压：  
 
    tar -zxvf openssl-1.1.1d.tar.gz  
@@ -86,7 +85,6 @@ SDK需运行在Linux操作系统上，并安装好gcc。
    ![](./doc/openssl.png)
 
 <h2 id="3.3">3.3 编译paho库</h2>  
-
 1. 访问github下载地址<https://github.com/eclipse/paho.mqtt.c>, 下载paho.mqtt.c源码。
 
 2. 解压后上传到linux编译机。
@@ -104,7 +102,8 @@ SDK需运行在Linux操作系统上，并安装好gcc。
 	  
 	  CFLAGS += -I/home/test/openssl/include  
 	  
-	  LDFLAGS += -L/home/test/openssl/lib -lrt
+	  LDFLAGS += -L/home/test/openssl/lib -lrt  
+	  
 	  ![](./doc/paho_makefile1.png)
 	  
 	- 把图中195行、197行、199行、201行都改成对应的地址
@@ -126,7 +125,6 @@ SDK需运行在Linux操作系统上，并安装好gcc。
 	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下。
 	
 <h2 id="3.4">3.4 上传profile及注册设备</h2>  
-
 1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。   
 	![](./doc/profile1.png)
 
@@ -141,7 +139,6 @@ SDK需运行在Linux操作系统上，并安装好gcc。
 	![](./doc/profile4.png)
 
 <h1 id="4">4.快速体验</h1>  
-
 1. 将SDK压缩包拷贝到Linux环境中，通过如下命令解压：
 	
 	unzip  huaweicloud-iot-device-sdk-c-master.zip
@@ -151,7 +148,7 @@ SDK需运行在Linux操作系统上，并安装好gcc。
 	cd huaweicloud-iot-device-sdk-c-master
 
 3. 修改配置信息：
-	需要修改src/demo/agent_lite_demo.c文件中的如下参数：
+	需要修改src/device_demo/device_demo.c文件中的如下参数：  
 	servierIp_：平台南向IP，可在控制台的应用管理中查看。
 	username_：设备ID，设备注册时返回的值。
 	password_：设备密钥，设备注册时返回的值。
@@ -196,13 +193,12 @@ SDK需运行在Linux操作系统上，并安装好gcc。
 	      ![](./doc/4_8.png)
 	  
 <h1 id="5">5.使用步骤</h1>  
-
 以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。  
 
 - **设置日志回调函数**
   
 
-SDK以日志回调函数的方式供开发者使用，开发者可以根据自己的需求调用IOTA_SetPrintLogCallback函数设置。具体API接口的参数使用请参考SDK API接口文档。可参考demo（在src/demo文件夹下agent_lite_demo.c）中main()方法对IOTA_SetPrintLogCallback函数的调用。
+SDK以日志回调函数的方式供开发者使用，开发者可以根据自己的需求调用IOTA_SetPrintLogCallback函数设置。具体API接口的参数使用请参考SDK API接口文档。可参考device_demo（在src/device_demo文件夹下的device_demo.c，以下简称为demo）中main()方法对IOTA_SetPrintLogCallback函数的调用。
 
   `void IOTA_SetPrintLogCallback(PFN_LOG_CALLBACK_HANDLER pfnLogCallbackHandler)`
 
@@ -228,8 +224,13 @@ void setAuthConfig(){
   IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
   IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
   IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
-//IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,  EN_IOTA_CFG_AUTH_MODE_CERT); //证书模式
   IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,     EN_IOTA_CFG_AUTH_MODE_SECRET); //密码模式
+/**
+  * Configuration is required in certificate mode:
+  *
+  * IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_CERT);
+  * IOTA_ConfigSetStr(EN_MQTT_CFG_PRIVATE_KEY_PASSWORD, "yourPassword");
+* */  
 
   #ifdef _SYS_LOG
 //IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LOCAL_NUMBER, LOG_LOCAL7);
@@ -247,31 +248,6 @@ void setAuthConfig(){
 
 - **回调函数配置**
   
-
-SDK针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消息成功/失败、设备发布消息成功/失败、设备接收消息/命令等动作，以回调函数的方式供开发者调用，开发者可以针对不同的事件设置回调函数来实现业务处理逻辑。可以参考demo中main()方法中调用的setMyCallbacks()函数。
-
-```c
-void setAuthConfig() {
-  IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
-  IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
-  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);`
-//    IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_CERT); //证书模式`
-  IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET); //密码模式`
-
-#ifdef _SYS_LOG
-//  IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LOCAL_NUMBER, LOG_LOCAL7);
-  IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LEVEL, LOG_INFO);
-#endif
-}
-```
-
-平台的IP（EN_IOTA_CFG_MQTT_ADDR）、端口（EN_IOTA_CFG_MQTT_PORT）可以在SP portal的应用对接信息中获取；   
-
-设备ID（EN_IOTA_CFG_DEVICEID）、设备密钥（EN_IOTA_CFG_DEVICESECRET）是注册设备的时候返回的。  
-
-当定义了_SYS_LOG（日志打印在系统文件中）时，日志的facility类型（EN_IOTA_CFG_LOG_LOCAL_NUMBER）、日志的显示级别（EN_IOTA_CFG_LOG_LEVEL）可以按需自定义。  
-
 SDK针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消息成功/失败、设备发布消息成功/失败、设备接收消息/命令等动作，以回调函数的方式供开发者调用，开发者可以针对不同的事件设置回调函数来实现业务处理逻辑。可以参考demo中main()方法中调用的setMyCallbacks()函数。
 
 ```c
@@ -342,7 +318,7 @@ void setMyCallbacks(){
   //user topic
   int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg");
   if (messageId != 0) {
-  	  PrintfLog(EN_LOG_LEVEL_ERROR, "AgentLiteDemo:   Test_MessageReport() failed, messageId %d\n", messageId);
+  	  PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo:   Test_MessageReport() failed, messageId %d\n", messageId);
 	}
 }
 ```
@@ -360,21 +336,21 @@ void Test_propertiesReport() {
 
   //---------------the data of service1-------------------------------
   char *service1 = "{\"Load\":\"5\",\"ImbA_strVal\":\"6\"}";
-  //   services[0].event_time = GetEventTimesStamp();
+  //   services[0].event_time = GetEventTimesStamp(); //you need to free the services[0].event_time
   services[0].event_time = NULL;
   services[0].service_id = "parameter";
   services[0].properties = service1;
 
   //---------------the data of service2-------------------------------
   char *service2 = "{\"PhV_phsA\":\"4\",\"PhV_phsB\":9}";
-  //	services[1].event_time =  GetEventTimesStamp();
+  //	services[1].event_time =  GetEventTimesStamp(); //you need to free the services[1].event_time
   services[0].event_time = NULL;
   services[1].service_id = "analog";
 services[1].properties = service2;
 
   int messageId = IOTA_PropertiesReport(services, serviceNum);
   if(messageId != 0) {
-  	PrintfLog(EN_LOG_LEVEL_ERROR, "AgentLiteDemo: Test_batchPropertiesReport() failed, messageId %d\n", messageId);
+  	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_batchPropertiesReport() failed, messageId %d\n", messageId);
   }
 }
 ```
@@ -402,7 +378,7 @@ services[1].properties = service2;
 	![](./doc/addSubDevice.png)
 	收到命令后可以通过回调函数进行命令处理。当收到平台下发的新增子设备通知时，可以调用IOTA_BatchPropertiesReport接口给子设备上报数据（请查看子设备数据上报），请参考demo中HandleEventsDown函数（需在回调函数配置中提前设置）。
 	
-- 平台通知网关删除子设备
+  - 平台通知网关删除子设备
   ![](./doc/deleteSubDevice.png)
   
 - **子设备数据上报**
@@ -436,11 +412,30 @@ void Test_BatchPropertiesReport() {
   //	devices[1].services[0].properties = device2_service1;
   int messageId = IOTA_BatchPropertiesReport(devices, deviceNum, serviceList);
   if(messageId != 0) {
-  	printfLog(EN_LOG_LEVEL_ERROR, "AgentLiteDemo: Test_BatchPropertiesReport() failed, messageId %d\n", messageId);
+  	printfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_BatchPropertiesReport() failed, messageId %d\n", messageId);
   }
 }
 ```
+- **证书模式接入**
 
+  华为物联网平台支持设备使用自己的X.509证书进行设备接入认证。接入步骤请参考：
+  
+  1. 证书制作上传请参考：<https://support.huaweicloud.com/usermanual-iothub/iot_01_0055.html>。
+  2. SDK需设置：
+	  - 将证书/密钥名称修改为deviceCert.pem/deviceCert.key ，并将其放在SDK的conf目录下。
+	  - 设置设备为证书接入模式，请参考demo中的SetAuthConfig函数：
+```c
+void SetAuthConfig() {
+	IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
+	IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
+	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
+	//	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
+	//	IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, 	EN_IOTA_CFG_AUTH_MODE_SECRET);
+	
+	 IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_CERT);
+	 IOTA_ConfigSetStr(EN_MQTT_CFG_PRIVATE_KEY_PASSWORD, "yourPassword");
+}   
+```
 - **自定义tpoic**
 
   请参考主目录下的**API文档**。
@@ -476,7 +471,7 @@ void Test_BatchPropertiesReport() {
   
   - 在CFLAGS中添加-shared -fPIC
     ![](./doc/so1.png)
-  - 把OBJS中的AgentLiteDemo.o删除掉
+  - 把OBJS中的device_demo.o删除掉
     ![](./doc/so2.png)
   - 把编译后的TARGET文件由MQTT_Demo.o修改为libHWMQTT.so（名称可以自定义）
     ![](./doc/so3.png)
