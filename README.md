@@ -42,7 +42,8 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 
 <h1 id="3">3.准备工作</h1>
 <h2 id="3.1">3.1 环境信息</h2>
-SDK需运行在Linux操作系统上，并安装好gcc。
+SDK需运行在Linux操作系统上，并安装好gcc。SDK依赖openssl库和paho库，如果开发者有自己的编译链，需要自行编译openssl/paho库文件。Linux通用的gcc编译步骤请参考章节3.2/3.3。   
+
 <h2 id="3.2">3.2 编译openssl库</h2>  
 1. 访问openssl官网<https://www.openssl.org/source/>，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以上传到目录/home/test为例），并使用如下命令解压：  
 
@@ -249,6 +250,7 @@ void setAuthConfig(){
 
 - **回调函数配置**
   
+
 SDK针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消息成功/失败、设备发布消息成功/失败、设备接收消息/命令等动作，以回调函数的方式供开发者调用，开发者可以针对不同的事件设置回调函数来实现业务处理逻辑。可以参考demo中main()方法中调用的setMyCallbacks()函数。
 
 ```c
