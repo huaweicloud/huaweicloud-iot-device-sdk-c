@@ -255,41 +255,50 @@ SDK针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消
 
 ```c
 void setMyCallbacks(){	
-  IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleAuthSuccess);
-  IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleAuthFailure);
-  IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisAuthSuccess);
-  IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisAuthFailure);
-  IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);	
-  IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);	
-  IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);	
-  IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);	
-  IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);     
-  IOTA_SetCallback(EN_IOTA_CALLBACK_MESSAGE_DOWN, HandleMessageDown); 
-  IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_COMMAND_REQUEST, HandleCommandRequest);   
-  IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_SET, HandlePropertiesSet);     
-  IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_GET, HandlePropertiesGet);       
-  IOTA_SetCallback(EN_IOTA_CALLBACK_EVENT_DOWN, HandleEventsDown);  
-  IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_USER_TOPIC, HandleUserTopicMessageDown);       
-  IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_DEVICE_SHADOW, HandleDeviceShadowRsp);
+  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
+
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisConnectSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisConnectFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);
+
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);
+
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
+
+	IOTA_SetMessageCallback(HandleMessageDown);
+	IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
+	IOTA_SetCmdCallback(HandleCommandRequest);
+	IOTA_SetPropSetCallback(HandlePropertiesSet);
+	IOTA_SetPropGetCallback(HandlePropertiesGet);
+	IOTA_SetEventCallback(HandleEventsDown);
+	IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
 }
+
+
+
+
+
 ```
 
-	- 鉴权成功（EN_IOTA_CALLBACK_CONNECT_SUCCESS）后，将调用HandleAuthSuccess函数；  
-	- 鉴权失败（EN_IOTA_CALLBACK_CONNECT_FAILURE）后，将调用HandleAuthFailure函数；  
-	- 设备主动断链成功（EN_IOTA_CALLBACK_DISCONNECT_SUCCESS）后，将调用HandleDisAuthSuccess函数；
-	- 设备主动断链失败（EN_IOTA_CALLBACK_DISCONNECT_FAILURE）后，将调用HandleDisAuthFailure函数；
-	- 链接断开（EN_IOTA_CALLBACK_CONNECTION_LOST）后，将调用HandleConnectionLost函数；
-	- 订阅成功（EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS）后，将调用HandleSubscribesuccess函数；
-	- 订阅失败（EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE）后，将调用HandleSubscribeFailure函数；
-	- 发布数据成功（EN_IOTA_CALLBACK_PUBLISH_SUCCESS）后，将调用HandlePublishSuccess函数；
-	- 发布数据失败（EN_IOTA_CALLBACK_PUBLISH_FAILURE）后，将调用HandlePublishFailure函数；
-	- 设备接收到平台不解析的透传消息（EN_IOTA_CALLBACK_MESSAGE_DOWN）后，将调用HandleMessageDown函数；
-	- 设备接收到命令后（EN_IOTA_CALLBACK_COMMAND_REQUEST）后，将调用HandleCommandRequest函数；
-	- 设备接收到属性设置命令（EN_IOTA_CALLBACK_PROPERTIES_SET）后，将调用HandlePropertiesSet函数；
-	- 设备接收到属性查询命令（EN_IOTA_CALLBACK_PROPERTIES_GET）后，将调用HandlePropertiesGet函数；
-	- 设备接收到事件（子设备、OTA）相关命令（EN_IOTA_CALLBACK_EVENT_DOWN）后，将调用HandleEventsDown函数；
-	- 设备接收到自定义TOPIC消息（EN_IOTA_CALLBACK_EVENT_DOWN）后，将调用HandleEventsDown函数；
-	- 设备接收到设备影子数据（EN_IOTA_CALLBACK_DEVICE_SHADOW）后，将调用HandleDeviceShadowRsp函数；
+	- 鉴权成功后，将调用HandleConnectSuccess函数；  
+	- 鉴权失败后，将调用HandleConnectFailure函数；  
+	- 设备主动断链成功后，将调用HandleDisConnectSuccess函数；
+	- 设备主动断链失败后，将调用HandleDisConnectFailure函数；
+	- 链接断开后，将调用HandleConnectionLost函数；
+	- 订阅成功后，将调用HandleSubscribesuccess函数；
+	- 订阅失败后，将调用HandleSubscribeFailure函数；
+	- 发布数据成功后，将调用HandlePublishSuccess函数；
+	- 发布数据失败后，将调用HandlePublishFailure函数；
+	- 设备接收到平台不解析的透传消息（默认topic）后，将调用HandleMessageDown函数；
+	- 设备接收到平台不解析的透传消息（自定义topic）后，将调用HandleUserTopicMessageDown函数；
+	- 设备接收到命令后，将调用HandleCommandRequest函数；
+	- 设备接收到属性设置命令后，将调用HandlePropertiesSet函数；
+	- 设备接收到属性查询命令后，将调用HandlePropertiesGet函数；
+	- 设备接收到事件（子设备、OTA）相关命令后，将调用HandleEventsDown函数；
+	- 设备接收到设备影子数据后，将调用HandleDeviceShadowRsp函数；
 
 - **设备鉴权**
   
