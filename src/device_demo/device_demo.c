@@ -119,6 +119,7 @@ void Test_MessageReport() {
 	}
 }
 
+//V3 report
 void Test_ReportJson() {
 	int serviceNum = 2;  //reported services' totol count
 	ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
@@ -145,6 +146,7 @@ void Test_ReportJson() {
 	MemFree(&services[0].event_time);
 }
 
+//V3 report
 void Test_ReportBinary() {
 	int messageId = IOTA_BinaryReportV3("1234567890");
 	if (messageId != 0) {
@@ -152,6 +154,7 @@ void Test_ReportBinary() {
 	}
 }
 
+//V3 report
 void Test_CmdRspV3() {
 
 	ST_IOTA_COMMAND_RSP_V3 *rsp  = (ST_IOTA_COMMAND_RSP_V3*)malloc(sizeof(ST_IOTA_COMMAND_RSP_V3));
