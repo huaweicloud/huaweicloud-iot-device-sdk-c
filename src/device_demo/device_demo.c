@@ -66,32 +66,37 @@ char *ota_version = NULL;
 char *subDeviceId = "XXXX";
 void Test_MessageReport(void);
 void Test_PropertiesReport(void);
-void Test_BatchPropertiesReport(void);
+void Test_BatchPropertiesReport(char *deviceId);
 void Test_CommandResponse(char *requestId);
 void Test_PropSetResponse(char *requestId);
 void Test_PropGetResponse(char *requestId);
 void Test_ReportOTAVersion(void);
 void Test_ReportUpgradeStatus(int i, char *version);
-void HandleAuthSuccess(void *context, int messageId, int code, char *message);
-void HandleAuthFailure(void *context, int messageId, int code, char *message);
-void HandleConnectionLost(void *context, int messageId, int code, char *message);
-void HandleDisAuthSuccess(void *context, int messageId, int code, char *message);
-void HandleDisAuthFailure(void *context, int messageId, int code, char *message);
-void HandleSubscribesuccess(void *context, int messageId, int code, char *message);
-void HandleSubscribeFailure(void *context, int messageId, int code, char *message);
-void HandlePublishSuccess(void *context, int messageId, int code, char *message);
-void HandlePublishFailure(void *context, int messageId, int code, char *message);
-void HandleMessageDown(void *context, int messageId, int code, char *message);
-void HandleUserTopicMessageDown(void *context, int messageId, int code, char *message, char *topicParas);
-void HandleCommandRequest(void *context, int messageId, int code, char *message, char *requestId);
-void HandlePropertiesSet(void *context, int messageId, int code, char *message, char *requestId);
+void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+void HandleDisConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+void HandleDisConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+void HandleSubscribesuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+void HandleMessageDown (EN_IOTA_MESSAGE *rsp);
+void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp);
+void HandleCommandRequest(EN_IOTA_COMMAND *command);
+void HandlePropertiesSet (EN_IOTA_PROPERTY_SET *rsp);
 void TimeSleep(int ms);
-void HandlePropertiesGet(void *context, int messageId, int code, char *message, char *requestId);
-void HandleDeviceShadowRsp(void *context, int messageId, int code, char *message, char *requestId);
-void HandleEventsDown(void *context, int messageId, int code, char *message);
+void HandlePropertiesGet(EN_IOTA_PROPERTY_GET *rsp);
+void HandleDeviceShadowRsp(EN_IOTA_DEVICE_SHADOW *rsp);
+void HandleEventsDown(EN_IOTA_EVENT *message);
 void MyPrintLog(int level, char *format, va_list args);
 void SetAuthConfig(void);
 void SetMyCallbacks(void);
+void Test_ReportJson();
+void Test_ReportBinary();
+void Test_CmdRspV3();
+void Test_UpdateSubDeviceStatus(char *deviceId);
+
 
 void TimeSleep(int ms) {
 #if defined(WIN32) || defined(WIN64)
@@ -107,15 +112,66 @@ void Test_MessageReport() {
 	//default topic
 	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", NULL);
 
-    //user topic
+	//user topic
 //	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg");
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
 	}
 }
 
+void Test_ReportJson() {
+	int serviceNum = 2;  //reported services' totol count
+	ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
+
+	//---------------the data of service1-------------------------------
+	char *service1 = "{\"Load\":\"6\",\"ImbA_strVal\":\"7\"}";
+
+	services[0].event_time = GetEventTimesStamp(); //if event_time is set to NULL, the time will be the iot-platform's time.
+	services[0].service_id = "LTE";
+	services[0].properties = service1;
+
+	//---------------the data of service2-------------------------------
+	char *service2 = "{\"PhV_phsA\":\"9\",\"PhV_phsB\":\"8\"}";
+
+	services[1].event_time = NULL ;
+	services[1].service_id = "CPU";
+	services[1].properties = service2;
+
+	int messageId = IOTA_PropertiesReportV3(services, serviceNum);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportJson() failed, messageId %d\n", messageId);
+	}
+
+	MemFree(&services[0].event_time);
+}
+
+void Test_ReportBinary() {
+	int messageId = IOTA_BinaryReportV3("1234567890");
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportBinary() failed, messageId %d\n", messageId);
+	}
+}
+
+void Test_CmdRspV3() {
+
+	ST_IOTA_COMMAND_RSP_V3 *rsp  = (ST_IOTA_COMMAND_RSP_V3*)malloc(sizeof(ST_IOTA_COMMAND_RSP_V3));
+	if (rsp == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_CmdRspV3() error, Memory allocation failure\n");
+		return;
+	}
+	rsp->body = "{\"result\":\"0\"}";
+	rsp->errcode = 0;
+	rsp->mid = 1;
+
+	int messageId = IOTA_CmdRspV3(rsp);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_CmdRspV3() failed, messageId %d\n", messageId);
+	}
+	MemFree(&rsp);
+}
+
 void Test_PropertiesReport() {
-	int serviceNum = 2; //reported services' totol count
+	int serviceNum = 2;  //reported services' totol count
 	ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
 
 	//---------------the data of service1-------------------------------
@@ -140,18 +196,18 @@ void Test_PropertiesReport() {
 	MemFree(&services[0].event_time);
 }
 
-void Test_BatchPropertiesReport() {
+void Test_BatchPropertiesReport(char *deviceId) {
 	int deviceNum = 1;      //the number of sub devices
 	ST_IOTA_DEVICE_DATA_INFO devices[deviceNum]; //Array of structures to be reported by sub devices
 	int serviceList[deviceNum];  //Corresponding to the number of services to be reported for each sub device
 	serviceList[0] = 2;       //device 1 reports two services
 //	serviceList[1] = 1;		  //device 2 reports one service
 
-	char *device1_service1 = "{\"Load\":\"1\",\"ImbA_strVal\":\"3\"}"; //service1要上报的属性数据，必须是json格式
+	char *device1_service1 = "{\"Load\":\"1\",\"ImbA_strVal\":\"3\"}"; //must be json
 
-	char *device1_service2 = "{\"PhV_phsA\":\"2\",\"PhV_phsB\":\"4\"}"; //service2要上报的属性数据，必须是json格式
+	char *device1_service2 = "{\"PhV_phsA\":\"2\",\"PhV_phsB\":\"4\"}"; //must be json
 
-	devices[0].device_id = subDeviceId;
+	devices[0].device_id = deviceId;
 	devices[0].services[0].event_time = GetEventTimesStamp();
 	devices[0].services[0].service_id = "parameter";
 	devices[0].services[0].properties = device1_service1;
@@ -174,6 +230,19 @@ void Test_BatchPropertiesReport() {
 	MemFree(&devices[0].services[0].event_time);
 	MemFree(&devices[0].services[1].event_time);
 
+}
+
+void Test_UpdateSubDeviceStatus(char *deviceId) {
+	int deviceNum = 1;
+	ST_IOTA_DEVICE_STATUSES device_statuses;
+	device_statuses.event_time = GetEventTimesStamp();
+	device_statuses.device_statuses[0].device_id = deviceId;
+	device_statuses.device_statuses[0].status = ONLINE;
+	int messageId = IOTA_UpdateSubDeviceStatus(&device_statuses, deviceNum);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_UpdateSubDeviceStatus() failed, messageId %d\n", messageId);
+	}
+	MemFree(&device_statuses.event_time);
 }
 
 void Test_CommandResponse(char *requestId) {
@@ -262,24 +331,24 @@ void Test_ReportUpgradeStatus(int i, char *version) {
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
-void HandleAuthSuccess(void *context, int messageId, int code, char *message) {
+void HandleConnectSuccess (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: handleConnectSuccess(), login success\n");
 	disconnected_ = 0;
 }
 
-void HandleAuthFailure(void *context, int messageId, int code, char *message) {
-	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: handleConnectFailure() error, messageId %d, code %d, messsage %s\n", messageId, code, message);
+void HandleConnectFailure (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
+	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() error, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 	//judge if the network is available etc. and login again
 	//...
-	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: handleConnectFailure() login again\n");
+	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() login again\n");
 	int ret = IOTA_Connect();
 	if (ret != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleAuthFailure() error, login again failed, result %d\n", ret);
 	}
 }
 
-void HandleConnectionLost(void *context, int messageId, int code, char *message) {
-	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectionLost() error, messageId %d, code %d, messsage %s\n", messageId, code, message);
+void HandleConnectionLost (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
+	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectionLost() error, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 	//judge if the network is available etc. and login again
 	//...
 	int ret = IOTA_Connect();
@@ -288,326 +357,199 @@ void HandleConnectionLost(void *context, int messageId, int code, char *message)
 	}
 }
 
-void HandleDisAuthSuccess(void *context, int messageId, int code, char *message) {
+void HandleDisConnectSuccess (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	disconnected_ = 1;
 
 	printf("device_demo: handleLogoutSuccess, login again\n");
-	printf("device_demo: HandleDisAuthSuccess(), messageId %d, code %d, messsage %s\n", messageId, code, message);
+	printf("device_demo: HandleDisConnectSuccess(), messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
-void HandleDisAuthFailure(void *context, int messageId, int code, char *message) {
-	printf("device_demo: handleLogoutFailure, login again\n");
-	int ret = IOTA_Connect();
-	if (ret != 0) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectionLost() error, login again failed, result %d\n", ret);
-	}
-	printf("device_demo: HandleDisAuthFailure(), messageId %d, code %d, messsage %s\n", messageId, code, message);
+void HandleDisConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
+	PrintfLog(EN_LOG_LEVEL_WARNING, "device_demo: HandleDisConnectFailure() warning, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
-void HandleSubscribesuccess(void *context, int messageId, int code, char *message) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubscribesuccess() messageId %d\n", messageId);
+void HandleSubscribesuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubscribesuccess() messageId %d\n", rsp->mqtt_msg_info->messageId);
 }
 
-void HandleSubscribeFailure(void *context, int messageId, int code, char *message) {
-	PrintfLog(EN_LOG_LEVEL_WARNING, "device_demo: HandleSubscribeFailure() warning, messageId %d, code %d, messsage %s\n", messageId, code, message);
+void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
+	PrintfLog(EN_LOG_LEVEL_WARNING, "device_demo: HandleSubscribeFailure() warning, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
-void HandlePublishSuccess(void *context, int messageId, int code, char *message) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePublishSuccess() messageId %d\n", messageId);
+void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePublishSuccess() messageId %d\n", rsp->mqtt_msg_info->messageId);
 }
 
-void HandlePublishFailure(void *context, int messageId, int code, char *message) {
-	PrintfLog(EN_LOG_LEVEL_WARNING, "device_demo: HandlePublishFailure() warning, messageId %d, code %d, messsage %s\n", messageId, code, message);
+void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
+	PrintfLog(EN_LOG_LEVEL_WARNING, "device_demo: HandlePublishFailure() warning, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
 //-------------------------------------------handle  message   arrived------------------------------------------------------------------------------
 
-void HandleMessageDown(void *context, int messageId, int code, char *message) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), messageId %d, code %d, messsage %s\n", messageId, code, message);
-
-	JSON *root = JSON_Parse(message);  //Convert string to JSON
-
-	char *content = JSON_GetStringFromObject(root, "content", "-1");     //get value of content
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), content %s\n", content);
-
-	char *object_device_id = JSON_GetStringFromObject(root, "object_device_id", "-1");     //get value of object_device_id
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), object_device_id %s\n", object_device_id);
-
-	char *name = JSON_GetStringFromObject(root, "name", "-1");     //get value of name
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), name %s\n", name);
-
-	char *id = JSON_GetStringFromObject(root, "id", "-1");        //get value of id
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), id %s\n", id);
-
-	JSON_Delete(root);
-
+void HandleMessageDown (EN_IOTA_MESSAGE *rsp) {
+	if (rsp == NULL) {
+		return;
+	}
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), content %s\n", rsp->content);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), id %s\n", rsp->id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), name %s\n", rsp->name);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), object_device_id %s\n", rsp->object_device_id);
 }
 
-void HandleUserTopicMessageDown(void *context, int messageId, int code, char *message, char *topicParas) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleUserTopicMessageDown(), messageId %d, code %d, messsage %s, topicParas %s \n", messageId, code, message, topicParas);
+void HandlePropertiesSet (EN_IOTA_PROPERTY_SET *rsp) {
+	if (rsp == NULL) {
+		return;
+	}
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), messageId %d \n", rsp->mqtt_msg_info->messageId);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), request_id %s \n", rsp->request_id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), object_device_id %s \n", rsp->object_device_id);
 
-	JSON *root = JSON_Parse(message);  //Convert string to JSON
-
-	char *content = JSON_GetStringFromObject(root, "content", "-1");     //get value of content
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleUserTopicMessageDown(), content %s\n", content);
-
-	char *object_device_id = JSON_GetStringFromObject(root, "object_device_id", "-1");     //get value of object_device_id
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleUserTopicMessageDown(), object_device_id %s\n", object_device_id);
-
-	char *name = JSON_GetStringFromObject(root, "name", "-1");     //get value of name
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleUserTopicMessageDown(), name %s\n", name);
-
-	char *id = JSON_GetStringFromObject(root, "id", "-1");        //get value of id
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleUserTopicMessageDown(), id %s\n", id);
-
-	JSON_Delete(root);
-
-}
-
-void HandleCommandRequest(void *context, int messageId, int code, char *message, char *requestId) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), messageId %d, code %d, messsage %s, requestId %s\n", messageId, code, message, requestId);
-
-	JSON *root = JSON_Parse(message);  //Convert string to JSON
-
-	char *object_device_id = JSON_GetStringFromObject(root, "object_device_id", "-1");     //get value of object_device_id
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), object_device_id %s\n", object_device_id);
-
-	char *service_id = JSON_GetStringFromObject(root, "service_id", "-1");     //get value of service_id
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), service_id %s\n", service_id);
-
-	char *command_name = JSON_GetStringFromObject(root, "command_name", "-1");     //get value of command_name
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), command_name %s\n", command_name);
-
-	JSON *paras = JSON_GetObjectFromObject(root, "paras");       //get value of data
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), id %s\n", paras);
-
-	if (paras) {
-		char *property = JSON_GetStringFromObject(paras, "Load", NULL);  //get value of Load defined in profile
-
-		PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), Load %s\n", property);
+	int i = 0;
+	while (rsp->services_count > 0) {
+		PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), service_id %s \n", rsp->services[i].service_id);
+		PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), properties %s \n", rsp->services[i].properties);
+		rsp->services_count--;
+		i++;
 	}
 
-	Test_CommandResponse(requestId);     //command reponse
-
-	JSON_Delete(root);
-
+	Test_PropSetResponse(rsp->request_id); //response
 }
 
-void HandlePropertiesSet(void *context, int messageId, int code, char *message, char *requestId) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), messageId %d, code %d, messsage %s, requestId %s\n", messageId, code, message, requestId);
+void HandlePropertiesGet (EN_IOTA_PROPERTY_GET *rsp) {
+	if (rsp == NULL) {
+		return;
+	}
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), messageId %d \n", rsp->mqtt_msg_info->messageId);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), request_id %s \n", rsp->request_id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), object_device_id %s \n", rsp->object_device_id);
 
-	JSON *root = JSON_Parse(message);  //Convert string to JSON
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), service_id %s \n", rsp->service_id);
 
-	char *object_device_id = JSON_GetStringFromObject(root, "object_device_id", "-1");     //get value of object_device_id
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), object_device_id %s\n", object_device_id);
+	Test_PropGetResponse(rsp->request_id); //response
+}
 
-	JSON *services = JSON_GetObjectFromObject(root, "services");                            //get  services array
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), services %s\n", services);
+void HandleDeviceShadowRsp(EN_IOTA_DEVICE_SHADOW *rsp) {
+	if (rsp == NULL) {
+		return;
+	}
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), messageId %d \n", rsp->mqtt_msg_info->messageId);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), request_id %s \n", rsp->request_id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), object_device_id %s \n", rsp->object_device_id);
 
-	int dataSize = JSON_GetArraySize(services);                                            //get length of services array
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), dataSize %d\n", dataSize);
+	int i = 0;
+	while (rsp->shadow_data_count > 0) {
+		PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), service_id %s \n", rsp->shadow[i].service_id);
+		PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), desired properties %s \n", rsp->shadow[i].desired_properties);
+		PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), reported properties %s \n", rsp->shadow[i].reported_properties);
+		PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), version    %d \n", rsp->shadow[i].version);
+		rsp->shadow_data_count--;
+		i++;
+	}
+}
 
-	if (dataSize > 0) {
-		JSON *service = JSON_GetObjectFromArray(services, 0);                //only get the first one to demonstrate
-		PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceMessageDown(), service %s\n", service);
-		if (service) {
-			char *service_id = JSON_GetStringFromObject(service, "service_id", NULL);
+void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp) {
+	if (rsp == NULL) {
+		return;
+	}
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), topic_para %s\n", rsp->topic_para);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), content %s\n", rsp->content);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), id %s\n", rsp->id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), name %s\n", rsp->name);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), object_device_id %s\n", rsp->object_device_id);
+}
 
-			PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), service_id %s\n", service_id);
+void HandleCommandRequest(EN_IOTA_COMMAND *command) {
 
-			JSON *properties = JSON_GetObjectFromObject(service, "properties");
-
-			char *Load = JSON_GetStringFromObject(properties, "Load", NULL);
-			PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), Load %s\n", Load);
-		}
+	if (command == NULL) {
+		return;
 	}
 
-	Test_PropSetResponse(requestId);  //command response
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), messageId %d\n", command->mqtt_msg_info->messageId);
 
-	JSON_Delete(root);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), object_device_id %s\n", command->object_device_id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), service_id %s\n", command->service_id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), command_name %s\n", command->command_name);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), paras %s\n", command->paras);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), request_id %s\n", command->request_id);
+
+	Test_CommandResponse(command->request_id); //response command
 }
 
-void HandlePropertiesGet(void *context, int messageId, int code, char *message, char *requestId) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesGet(), messageId %d, code %d, messsage %s, requestId %s\n", messageId, code, message, requestId);
+void HandleEventsDown(EN_IOTA_EVENT *message){
 
-	JSON *root = JSON_Parse(message);
+	if (message == NULL) {
+		return;
+	}
 
-	char *object_device_id = JSON_GetStringFromObject(root, "object_device_id", "-1");     //get value of object_device_id
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesGet(), object_device_id %s\n", object_device_id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), messageId %d\n", message->mqtt_msg_info->messageId);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), services_count %d\n", message->services_count);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), code %s\n", message->object_device_id);
+	int i = 0;
+	while (message->services_count > 0) {
+		printf("servie_id: %d \n", message->services[i].servie_id);
+		printf("event_time: %s \n", message->services[i].event_time);
+		printf("event_type: %d \n", message->services[i].event_type);
 
-	char *service_id = JSON_GetStringFromObject(root, "service_id", "-1");     //get value of service_id
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesGet(), service_id %s\n", service_id);
+		//sub device manager
+		if (message->services[i].servie_id == EN_IOTA_EVENT_SUB_DEVICE_MANAGER) {
+			printf("version: %lld \n", message->services[i].paras->version);
 
-	Test_PropGetResponse(requestId);  //command response
+			int j = 0;
+			while(message->services[i].paras->devices_count > 0) {
 
-	JSON_Delete(root);
-}
-
-void HandleDeviceShadowRsp(void *context, int messageId, int code, char *message, char *requestId) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), messageId %d, code %d, messsage %s, requestId %s\n", messageId, code, message, requestId);
-	//Start analyzing data, please refer to function HandleEventsDown
-}
-
-void HandleEventsDown(void *context, int messageId, int code, char *message) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), messageId %d, code %d, messsage %s\n", messageId, code, message);
-
-	// the demo of how to get the parameter
-	JSON *root = JSON_Parse(message);
-
-	char *object_device_id = JSON_GetStringFromObject(root, "object_device_id", "-1");           //get value of object_device_id
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), object_device_id %s\n", object_device_id);
-
-	JSON *service = JSON_GetObjectFromObject(root, "services");                                 //get object of services
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), services %s\n", service);
-
-	int dataSize = JSON_GetArraySize(service);                                                 //get size of services
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), dataSize %d\n", dataSize);
-
-	if (dataSize > 0) {
-		JSON *serviceEvent = JSON_GetObjectFromArray(service, 0);                              //get object of ServiceEvent
-		PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), serviceEvent %s\n", serviceEvent);
-		if (serviceEvent) {
-			char *service_id = JSON_GetStringFromObject(serviceEvent, "service_id", NULL);    //get value of service_id
-			PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), service_id %s\n", service_id);
-
-			char *event_type = NULL; //To determine whether to add or delete a sub device
-			event_type = JSON_GetStringFromObject(serviceEvent, "event_type", NULL);    //get value of event_type
-			PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), event_type %s\n", event_type);
-
-			char *event_time = JSON_GetStringFromObject(serviceEvent, "event_time", NULL);    //get value of event_time
-			PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), event_time %s\n", event_time);
-
-			JSON *paras = JSON_GetObjectFromObject(serviceEvent, "paras");                              //get object of paras
-			PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), paras %s\n", paras);
-
-			//sub device manager
-			if (!strcmp(service_id, "$sub_device_manager")) {
-
-				JSON *devices = JSON_GetObjectFromObject(paras, "devices");                                 //get object of devices
-				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), devices %s\n", devices);
-
-				int version = JSON_GetIntFromObject(paras, "version", -1);                             //get value of version
-				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), version %d\n", version);
-
-				int devicesSize = JSON_GetArraySize(devices);                                                 //get size of devicesSize
-				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), devicesSize %d\n", devicesSize);
+				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), parent_device_id: %s \n", message->services[i].paras->devices[j].parent_device_id);
+				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id: %s \n", message->services[i].paras->devices[j].device_id);
+				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), node_id: %s \n", message->services[i].paras->devices[j].node_id);
 
 				//add a sub device
-				if (!strcmp(event_type, "add_sub_device_notify")) {
+				if (message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY) {
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), name: %s \n", message->services[i].paras->devices[j].name);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), manufacturer_id: %s \n", message->services[i].paras->devices[j].manufacturer_id);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), product_id: %s \n", message->services[i].paras->devices[j].product_id);
 
-					if (devicesSize > 0) {
-						JSON *deviceInfo = JSON_GetObjectFromArray(devices, 0);                                 //get object of deviceInfo
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), deviceInfo %s\n", deviceInfo);
-
-						char *parent_device_id = JSON_GetStringFromObject(deviceInfo, "parent_device_id", NULL);    //get value of parent_device_id
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), parent_device_id %s\n", parent_device_id);
-
-						char *node_id = JSON_GetStringFromObject(deviceInfo, "node_id", NULL);    //get value of node_id
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), node_id %s\n", node_id);
-
-						subDeviceId = JSON_GetStringFromObject(deviceInfo, "device_id", NULL);    //get value of device_id
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id %s\n", subDeviceId);
-
-						char *name = JSON_GetStringFromObject(deviceInfo, "name", NULL);    //get value of name
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), name %s\n", name);
-
-						char *description = JSON_GetStringFromObject(deviceInfo, "description", NULL);    //get value of description
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), description %s\n", description);
-
-						char *manufacturer_id = JSON_GetStringFromObject(deviceInfo, "manufacturer_id", NULL);    //get value of manufacturer_id
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), manufacturer_id %s\n", manufacturer_id);
-
-						char *model = JSON_GetStringFromObject(deviceInfo, "model", NULL);    //get value of model
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), model %s\n", model);
-
-						char *product_id = JSON_GetStringFromObject(deviceInfo, "product_id", NULL);    //get value of product_id
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), product_id %s\n", product_id);
-
-						char *fw_version = JSON_GetStringFromObject(deviceInfo, "fw_version", NULL);    //get value of fw_version
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), fw_version %s\n", fw_version);
-
-						char *sw_version = JSON_GetStringFromObject(deviceInfo, "sw_version", NULL);    //get value of sw_version
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), sw_version %s\n", sw_version);
-
-						char *status = JSON_GetStringFromObject(deviceInfo, "status", NULL);    //get value of status
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), status %s\n", status);
-
-						//command response
-						Test_BatchPropertiesReport();
-					}
-
+					Test_UpdateSubDeviceStatus(message->services[i].paras->devices[j].device_id); //report status of the sub device
+					Test_BatchPropertiesReport(message->services[i].paras->devices[j].device_id); //report data of the sub device
+				} else if (message->services[i].event_type == EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY) {   //delete a sub device
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), the sub device is deleted: %s\n", message->services[i].paras->devices[j].device_id);
 				}
 
-				//delete a sub device
-				if (!strcmp(event_type, "delete_sub_device_notify")) {
+				j++;
+				message->services[i].paras->devices_count--;
+			}
 
-					if (devicesSize > 0) {
-						JSON *deviceInfo = JSON_GetObjectFromArray(devices, 0);                                 //get object of deviceInfo
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), deviceInfo %s\n", deviceInfo);
-
-						char *parent_device_id = JSON_GetStringFromObject(deviceInfo, "parent_device_id", NULL);    //get value of parent_device_id
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), parent_device_id %s\n", parent_device_id);
-
-						char *node_id = JSON_GetStringFromObject(deviceInfo, "node_id", NULL);    //get value of node_id
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), node_id %s\n", node_id);
-
-						subDeviceId = JSON_GetStringFromObject(deviceInfo, "device_id", NULL);    //get value of device_id
-						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id %s\n", subDeviceId);
-
-					}
-
-				}
+		} else if (message->services[i].servie_id == EN_IOTA_EVENT_OTA) {
+			if (message->services[i].event_type == EN_IOTA_EVENT_VERSION_QUERY) {
+				//report OTA version
+				Test_ReportOTAVersion();
 
 			}
 
-			//OTA
-			if (!strcmp(service_id, "$ota")) {
+			if (message->services[i].event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE || message->services[i].event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE) {
 
-				if (!strcmp(event_type, "version_query")) {
-					//report OTA version
-					Test_ReportOTAVersion();
-
+				//check md5
+				char pkg_md5 = "yourMd5"; //the md5 value of your ota package
+				if (strcmp(pkg_md5, message->services[i].ota_paras->sign)) {
+					//report failed status
+					Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version);
 				}
 
-				//firmware_upgrade or software_upgrade
-				if ((!strcmp(event_type, "firmware_upgrade")) || (!strcmp(event_type, "software_upgrade"))) {
-					ota_version = JSON_GetStringFromObject(paras, "version", NULL);    //get value of version
-					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), version %s\n", ota_version);
-
-					char *url = JSON_GetStringFromObject(paras, "url", NULL);    //get value of url
-					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), url %s\n", url);
-
-					int file_size = JSON_GetIntFromObject(paras, "file_size", -1);    //get value of file_size
-					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), file_size %d\n", file_size);
-
-					char *access_token = JSON_GetStringFromObject(paras, "access_token", NULL);    //get value of access_token
-					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), access_token %s\n", access_token);
-
-					int expires = JSON_GetIntFromObject(paras, "expires", -1);    //get value of expires
-					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), expires %d\n", expires);
-
-					char *sign = JSON_GetStringFromObject(paras, "sign", NULL);    //get value of sign
-					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), sign %s\n", sign);
-
-					//start to receive packages and firmware_upgrade or software_upgrade
-
-					if (IOTA_GetOTAPackages(url, access_token, 1000) == 0) {
-						usleep(3000 * 1000);
-						//report successful upgrade status
-						Test_ReportUpgradeStatus(0, ota_version);
-					} else {
-						//report failed status
-						Test_ReportUpgradeStatus(-1, ota_version);
-					}
-
+				//start to receive packages and firmware_upgrade or software_upgrade
+				if (IOTA_GetOTAPackages(message->services[i].ota_paras->url, message->services[i].ota_paras->access_token, 1000) == 0) {
+					usleep(3000 * 1000);
+					//report successful upgrade status
+					Test_ReportUpgradeStatus(0, message->services[i].ota_paras->version);
+				} else {
+					//report failed status
+					Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version);
 				}
-
 			}
 
 		}
+
+		i++;
+		message->services_count--;
 	}
 
-	JSON_Delete(root);
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------
@@ -632,27 +574,28 @@ void SetAuthConfig() {
 #endif
 }
 
+
 void SetMyCallbacks() {
-	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleAuthSuccess);
-	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleAuthFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
 
-	IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisAuthSuccess);
-	IOTA_SetCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisAuthFailure);
-	IOTA_SetCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisConnectSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisConnectFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);
 
-	IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);
-	IOTA_SetCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);
 
-	IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);
-	IOTA_SetCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
 
-	IOTA_SetCallback(EN_IOTA_CALLBACK_MESSAGE_DOWN, HandleMessageDown);
-	IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_COMMAND_REQUEST, HandleCommandRequest);
-	IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_SET, HandlePropertiesSet);
-	IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_PROPERTIES_GET, HandlePropertiesGet);
-	IOTA_SetCallback(EN_IOTA_CALLBACK_EVENT_DOWN, HandleEventsDown);
-	IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_USER_TOPIC, HandleUserTopicMessageDown);
-	IOTA_SetCallbackWithTopic(EN_IOTA_CALLBACK_DEVICE_SHADOW, HandleDeviceShadowRsp);
+	IOTA_SetMessageCallback(HandleMessageDown);
+	IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
+	IOTA_SetCmdCallback(HandleCommandRequest);
+	IOTA_SetPropSetCallback(HandlePropertiesSet);
+	IOTA_SetPropGetCallback(HandlePropertiesGet);
+	IOTA_SetEventCallback(HandleEventsDown);
+	IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
 }
 
 void MyPrintLog(int level, char *format, va_list args) {
@@ -696,7 +639,7 @@ int main(int argc, char **argv) {
 		Test_PropertiesReport();
 
 		//batchProperties report
-		Test_BatchPropertiesReport();
+		Test_BatchPropertiesReport(NULL);
 
 		//command response
 		Test_CommandResponse("1005");

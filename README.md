@@ -450,6 +450,10 @@ void SetAuthConfig() {
 - **设备影子查询**
 
   请参考主目录下的**API文档**。
+  
+- **泛协议接入**   
+
+	[泛协议接入demo](./doc/generic_protocol.md)
 
 - **编译并运行程序**
 1. 将huaweicloud-iot-device-sdk-c-master.zip压缩包拷贝到Linux环境中，通过如下命令解压：

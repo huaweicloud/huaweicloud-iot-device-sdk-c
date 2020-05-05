@@ -26,22 +26,47 @@
 #define INCLUDE_SERVICE_CALLBACK_FUNC_H_
 
 #include "stdarg.h"
+#include "iota_init.h"
 
-/**
- * @param context the application-self defined parameter, current is NULL
- * @param token the inner messageId(1-65535) of the uplink message in this MQTT SDK
- * @param code the reason code in the failure callback
- * @param message the message can be from the IoT platform (e.g. command content) or from the MQTT SDK (e.g. failure explanation message)
- */
-typedef void (*CALLBACK_HANDLER)(void *context, int token, int code, char *message);
-typedef void (*CALLBACK_HANDLER_WITH_TOPIC)(void *context, int token, int code, char *message, char *topicParas);
 typedef void (*LOG_CALLBACK_HANDLER)(int level, char *format, va_list args);
 
-void OnLoginSuccess(void *context, int token, int code, char *message);
+#define MAX_EVENT_COUNT 3
+#define MAX_EVENT_DEVICE_COUNT 10
+#define MAX_SERVICE_COUNT 50
+
+void OnLoginSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void OnMessageArrived(void *context, int token, int code, const char *topic, char *message);
 
-int SetCallback(int item, CALLBACK_HANDLER callbackHandler);
 void SetLogCallback(LOG_CALLBACK_HANDLER logCallbackHandler);
-int SetCallbackWithTopic(int item, CALLBACK_HANDLER_WITH_TOPIC callbackHandler);
+
+typedef void (*EVENT_CALLBACK_HANDLER)(EN_IOTA_EVENT *message);
+int SetEventCallback(EVENT_CALLBACK_HANDLER pfnCallbackHandler);
+
+typedef void (*CMD_CALLBACK_HANDLER)(EN_IOTA_COMMAND *message);
+int SetCmdCallback(CMD_CALLBACK_HANDLER pfnCallbackHandler);
+
+typedef void (*CMD_CALLBACK_HANDLER_V3)(EN_IOTA_COMMAND_V3 *message);
+int SetCmdCallbackV3(CMD_CALLBACK_HANDLER_V3 pfnCallbackHandler);
+
+typedef void (*PROTOCOL_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp);
+int SetProtocolCallback(int item, PROTOCOL_CALLBACK_HANDLER pfnCallbackHandler);
+
+typedef void (*MESSAGE_CALLBACK_HANDLER)(EN_IOTA_MESSAGE *protocolRsp);
+int SetMessageCallback(MESSAGE_CALLBACK_HANDLER pfnCallbackHandler);
+
+typedef void (*PROP_SET_CALLBACK_HANDLER)(EN_IOTA_PROPERTY_SET *rsp);
+int SetPropSetCallback(PROP_SET_CALLBACK_HANDLER pfnCallbackHandler);
+
+typedef void (*PROP_GET_CALLBACK_HANDLER)(EN_IOTA_PROPERTY_GET *rsp);
+int SetPropGetCallback(PROP_GET_CALLBACK_HANDLER pfnCallbackHandler);
+
+typedef void (*SHADOW_GET_CALLBACK_HANDLER)(EN_IOTA_DEVICE_SHADOW *rsp);
+int SetShadowGetCallback(SHADOW_GET_CALLBACK_HANDLER pfnCallbackHandler);
+
+typedef void (*USER_TOPIC_MSG_CALLBACK_HANDLER)(EN_IOTA_USER_TOPIC_MESSAGE *rsp);
+int SetUserTopicMsgCallback(USER_TOPIC_MSG_CALLBACK_HANDLER pfnCallbackHandler);
+
+typedef void (*BOOTSTRAP_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+int SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler);
 
 #endif /* INCLUDE_SERVICE_CALLBACK_FUNC_H_ */

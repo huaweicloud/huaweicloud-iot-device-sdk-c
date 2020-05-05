@@ -39,9 +39,9 @@ int ReportDeviceData(char *payload, char *topicParas) {
 	char *topic = NULL;
 
 	if (topicParas == NULL) {
-		topic = CombineStrings(3, TOPIC_PREFIX, username, TOPIC_SUFFIX_MESSAGEUP);
+    	topic = CombineStrings(3, TOPIC_PREFIX, username, TOPIC_SUFFIX_MESSAGEUP);
 	} else {
-		topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_USER, topicParas);
+    	topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_USER, topicParas);
 	}
 
 	return ReportData(topic, payload);
@@ -123,8 +123,6 @@ int EventUp(char *payload) {
 	}
 	char *topic = CombineStrings(3, TOPIC_PREFIX, username, TOPIC_SUFFIX_EVENT_UP);
 
-	PrintfLog(EN_LOG_LEVEL_INFO, "DataTrans: topic is %s\n", topic);
-
 	return ReportData(topic, payload);
 }
 
@@ -155,4 +153,41 @@ int ReportData(char *topic, char *payload) {
 
 	return IOTA_SUCCESS;
 }
+
+//codecMode: 0 is json mode, others are binary mode
+int ReportDevicePropertiesV3(char *payload, int codecMode) {
+	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
+	if (username == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
+		return IOTA_FAILURE;
+	}
+	char *topic = NULL;
+	if (codecMode == 0) {
+		topic = CombineStrings(4, TOPIC_PREFIX_V3, username, TOPIC_SUFFIX_DATA_REQ, JSON_V3);
+	} else {
+		topic = CombineStrings(4, TOPIC_PREFIX_V3, username, TOPIC_SUFFIX_DATA_REQ, BINARY_V3);
+	}
+
+	return ReportData(topic, payload);
+}
+
+int Bootstrap() {
+	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
+	if (username == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
+		return IOTA_FAILURE;
+	}
+	char *topic = NULL;
+	topic = CombineStrings(3, TOPIC_PREFIX, username, BOOTSTRAP);
+	int ret = MqttBase_publish((const char*) topic, NULL);
+	MemFree(&topic);
+
+	if (ret < 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: Bootstrap() error, publish failed, result %d\n", ret);
+		return IOTA_FAILURE;
+	}
+
+	return IOTA_SUCCESS;
+}
+
 

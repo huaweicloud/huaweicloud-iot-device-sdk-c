@@ -34,6 +34,7 @@
 #endif
 
 #include "MQTTAsync.h"
+#include "iota_init.h"
 
 #define ENCRYPT_LENGTH 					32
 #define PASSWORD_ENCRYPT_LENGTH 		64
@@ -73,10 +74,12 @@ typedef enum {
 	EN_MQTT_BASE_CONFIG_RETRY_INTERVAL = 9,
 	EN_MQTT_BASE_CONFIG_RESET_SECRET_IN_PROGRESS = 10,
 	EN_MQTT_BASE_CONFIG_QOS = 11,
-	EN_MQTT_BASE_PRIVATE_KEY_PASSWORD = 12
+	EN_MQTT_BASE_PRIVATE_KEY_PASSWORD = 12,
+	EN_MQTT_BASE_BS_SCOPE_ID = 13,
+	EN_MQTT_BASE_BS_MODE = 14
 } ENUM_MQTT_BASE_CONFIG;
 
-typedef void (*MQTT_BASE_CALLBACK_HANDLER)(void *context, int token, int code, char *message);
+typedef void (*MQTT_BASE_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp);
 typedef void (*MQTT_BASE_CALLBACK_HANDLER_WITH_TOPIC)(void *context, int token, int code, const char *topic, char *message);
 typedef void MqttBase_connectionLost(void *context, char *cause);
 typedef void MqttBase_deliveryComplete(void *context, int token);

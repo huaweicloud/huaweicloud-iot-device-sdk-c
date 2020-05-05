@@ -64,6 +64,8 @@ char *username = NULL; //deviceId
 char *password = NULL;
 int authMode = 0;
 char *urlPrefix = TCP_URL_PREFIX;
+char *bs_scope_id = NULL;
+int bs_reg_mode = 0;
 
 char *workDir = NULL;
 char *logDir = NULL;
@@ -125,24 +127,78 @@ int GetEncryptedPassword(char **timestamp, char **encryptedPwd) {
 }
 
 void HandleCallbackFailure(const char *currentFunctionName, MQTT_BASE_CALLBACK_HANDLER callback, void *context, MQTTAsync_failureData *response) {
+
+	EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp = (EN_IOTA_MQTT_PROTOCOL_RSP*)malloc(sizeof(EN_IOTA_MQTT_PROTOCOL_RSP));
+
+	if (protocolRsp == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
+		return;
+	}
+
+	protocolRsp->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO*)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+	if (protocolRsp->mqtt_msg_info == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
+		MemFree(&protocolRsp);
+		return;
+	}
+
 	if (response) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: %s error, messageId %d, code %d, message %s\n", currentFunctionName, response->token, response->code, response->message);
-		if (callback) {
-			(callback)(context, response->token, response->code, (char*) response->message);
-		}
+
+		protocolRsp->mqtt_msg_info->context = context;
+		protocolRsp->mqtt_msg_info->messageId = response->token;
+		protocolRsp->mqtt_msg_info->code = response->code;
+
+		protocolRsp->message = (char*) response->message;
+
 	} else {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: %s error, response is NULL\n", currentFunctionName);
-		if (callback) {
-			(callback)(context, 0, IOTA_FAILURE, NULL);
-		}
+
+
+		protocolRsp->mqtt_msg_info->context = context;
+		protocolRsp->mqtt_msg_info->messageId = 0;
+		protocolRsp->mqtt_msg_info->code = IOTA_FAILURE;
+
+		protocolRsp->message = NULL;
 	}
+
+	if (callback) {
+		(callback)(protocolRsp);
+	}
+
+	MemFree(&protocolRsp->mqtt_msg_info);
+	MemFree(&protocolRsp);
+
 }
 
 void HandleCallbackSuccess(const char *currentFunctionName, MQTT_BASE_CALLBACK_HANDLER callback, void *context, MQTTAsync_successData *response) {
 	PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: %s messageId %d\n", currentFunctionName, response ? response->token : -1);
-	if (callback) {
-		(callback)(context, response ? response->token : 0, IOTA_SUCCESS, NULL);
+
+	EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp = (EN_IOTA_MQTT_PROTOCOL_RSP*)malloc(sizeof(EN_IOTA_MQTT_PROTOCOL_RSP));
+
+	if (protocolRsp == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
+		return;
 	}
+
+	protocolRsp->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO*)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+	if (protocolRsp->mqtt_msg_info == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
+		MemFree(&protocolRsp);
+		return;
+	}
+	protocolRsp->mqtt_msg_info->context = context;
+	protocolRsp->mqtt_msg_info->messageId = response ? response->token : 0;
+	protocolRsp->mqtt_msg_info->code = IOTA_SUCCESS;
+
+	protocolRsp->message = NULL;
+
+	if (callback) {
+		(callback)(protocolRsp);
+	}
+
+	MemFree(&protocolRsp->mqtt_msg_info);
+	MemFree(&protocolRsp);
 }
 
 MQTT_BASE_CALLBACK_HANDLER onConnectS; //in order not to be duplicated with the callback function name set by the application
@@ -174,9 +230,34 @@ void MqttBase_OnDisconnectFailure(void *context, MQTTAsync_failureData *response
 
 void MqttBase_OnConnectionLost(void *context, char *cause) {
 	PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_OnConnectionLost() error, cause: %s\n", cause);
-	if (onConnectionL) {
-		(onConnectionL)(context, 0, IOTA_FAILURE, cause);
+
+	EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp = (EN_IOTA_MQTT_PROTOCOL_RSP*)malloc(sizeof(EN_IOTA_MQTT_PROTOCOL_RSP));
+
+	if (protocolRsp == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
+		return;
 	}
+
+	protocolRsp->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO*)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+	if (protocolRsp->mqtt_msg_info == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
+		MemFree(&protocolRsp);
+		return;
+	}
+
+	protocolRsp->mqtt_msg_info->context = context;
+	protocolRsp->mqtt_msg_info->messageId = 0;
+	protocolRsp->mqtt_msg_info->code = IOTA_FAILURE;
+
+	protocolRsp->message = cause;
+
+	if (onConnectionL) {
+		(onConnectionL)(protocolRsp);
+	}
+
+	MemFree(&protocolRsp->mqtt_msg_info);
+	MemFree(&protocolRsp);
+
 }
 
 void MqttBase_OnSubscribeSuccess(void *context, MQTTAsync_successData *response) {
@@ -269,6 +350,7 @@ int MqttBase_SetCallback(int item, MQTT_BASE_CALLBACK_HANDLER handler) {
 	return IOTA_SUCCESS;
 }
 
+
 int MqttBase_SetCallbackWithTopic(int item, MQTT_BASE_CALLBACK_HANDLER_WITH_TOPIC handler) {
 	switch (item) {
 		case EN_MQTT_BASE_CALLBACK_MESSAGE_ARRIVED:
@@ -286,7 +368,9 @@ int MqttBase_init(char *workPath) {
 	username = NULL; //deviceId
 	password = NULL;
 	client = NULL;
+	bs_scope_id = NULL;
 	authMode = 0;
+	bs_reg_mode = 0;
 	privateKeyPassword = NULL;
 	if (initFlag) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_init() error, DO NOT init again\n");
@@ -420,9 +504,16 @@ int MqttBase_SetConfig(int item, char *value) {
 		}
 		case EN_MQTT_BASE_PRIVATE_KEY_PASSWORD: {
 			MemFree(&privateKeyPassword);
-			CopyStrValue(&privateKeyPassword, (const char*) value, len);
+			CopyStrValue(&privateKeyPassword, (const char*) value, len); //private key password in cert mode device
 			break;
 		}
+		case EN_MQTT_BASE_BS_SCOPE_ID:
+			MemFree(&bs_scope_id);
+			CopyStrValue(&bs_scope_id, (const char*) value, len);
+			break;
+		case EN_MQTT_BASE_BS_MODE:
+			bs_reg_mode = atoi(value);
+			break;
 		default:
 			PrintfLog(EN_LOG_LEVEL_WARNING, "MqttBase: MqttBase_SetConfig() warning, the item to be set is not available\n");
 			pthread_mutex_unlock(&login_locker);
@@ -581,7 +672,12 @@ int MqttBase_CreateConnection() {
 		}
 
 		char *server_address = CombineStrings(4, urlPrefix, serverIp, ":", port);
-		char *clientId = CombineStrings(3, username, temp_authMode, loginTimestamp);
+		char *clientId = NULL;
+		if (bs_reg_mode) {
+			clientId = CombineStrings(3, username, "_0_", bs_scope_id);
+		} else {
+			clientId = CombineStrings(3, username, temp_authMode, loginTimestamp);
+		}
 		MemFree(&loginTimestamp);
 
 		PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_CreateConnection() create in\n");
@@ -681,13 +777,14 @@ int MqttBase_destory() {
 	MemFree(&workDir);
 	MemFree(&encrypted_password);
 	MemFree(&ca_path);
+	MemFree(&bs_scope_id);
 
 	if (authMode) {
 		MemFree(&cert_path);
 		MemFree(&key_path);
 	}
-
 	MemFree(&privateKeyPassword);
+
 	mqttClientCreateFlag = 0;
 
 	MQTTAsync_destroy(&client);

@@ -27,14 +27,13 @@
 #include "iota_error_type.h"
 
 int init(char *workPath) {
-	return MqttBase_init(workPath);
+    return MqttBase_init(workPath);
 }
 
 int destory() {
-	return MqttBase_destory();
+    return MqttBase_destory();
 }
 
 int SetConfig(int item, char *value) {
-	return MqttBase_SetConfig(item, value);
+    return MqttBase_SetConfig(item, value);
 }
-

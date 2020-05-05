@@ -38,6 +38,7 @@ typedef unsigned int size_t;
 #define SUB_STERING_MAX_LENGTH 	20
 #define EVENT_TIME_LENGTH 		16
 #define CLIENT_TIME_LENGTH 		10
+#define LONG_LONG_MAX_LENGTH	20
 
 int StringLength(char *str);
 char* StrInStr(const char *_Str, const char *_SubStr);
@@ -51,5 +52,7 @@ char* GetClientTimesStamp(void);
 size_t ConstStringLength(const char *_Str);
 char* GetEventTimesStamp(void);
 int GetSubStrIndex(const char *str, const char *substr);
+unsigned  long long getTime();
+long long  getLLongValueFromStr (const* str, const *subStr);
 
 #endif /* INCLUDE_UTIL_STRING_UTIL_H_ */

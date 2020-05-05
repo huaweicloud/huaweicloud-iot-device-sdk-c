@@ -34,5 +34,8 @@ int SubscribePropResp(void);
 int SubscribeSubDeviceEvent(void);
 int SubscribeUserTopic(char *topicParas);
 int SubsribeTopic(char *topic);
+int SubscribeJsonCmdV3();
+int SubscribeBinaryCmdV3();
+int SubscribeBootstrap();
 
 #endif /* INCLUDE_SUBSCRIBE_H_ */

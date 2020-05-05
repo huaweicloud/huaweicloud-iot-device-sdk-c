@@ -30,11 +30,12 @@
 #include "hw_type.h"
 
 #define MaxServiceReportNum 10  //set the max count of reported services
+#define MaxSubDeviceCount 100
 
 typedef struct {
-	HW_CHAR *service_id;
-	HW_CHAR *event_time;
-	HW_CHAR *properties;
+	HW_CHAR *service_id; //the device service id obtained from the profile
+	HW_CHAR *event_time; //UTC time, e.g. 20190531T011540Z
+	HW_CHAR *properties; //the service data obtained from the profile can be parsed into JSON
 } ST_IOTA_SERVICE_DATA_INFO;
 
 typedef struct {
@@ -43,20 +44,58 @@ typedef struct {
 } ST_IOTA_DEVICE_DATA_INFO;
 
 typedef struct {
-	HW_CHAR *event_time;
-	HW_CHAR *sw_version;
-	HW_CHAR *fw_version;
-	HW_CHAR *object_device_id;
+	HW_CHAR *event_time; //UTC time, e.g. 20190531T011540Z
+	HW_CHAR *sw_version; //software version
+	HW_CHAR *fw_version; //firmware version
+	HW_CHAR *object_device_id; //the target device id, NULL means the target device id is the gateway device id
 } ST_IOTA_OTA_VERSION_INFO;
 
 typedef struct {
-	HW_CHAR *event_time;
+	HW_CHAR *device_id;
+	HW_CHAR *status;
+} ST_IOTA_DEVICE_STATUS;
+
+typedef struct {
+	HW_CHAR *event_time; //UTC time, e.g. 20190531T011540Z
+	ST_IOTA_DEVICE_STATUS device_statuses[MaxSubDeviceCount];
+} ST_IOTA_DEVICE_STATUSES;
+
+
+/**
+ * ST_IOTA_UPGRADE_STATUS_INFO:
+ * event_time: UTC time, e.g. 20190531T011540Z
+ * result_code: The upgrade status of the device. The result code is defined as follows:
+				0 processed successfully,
+				1. Equipment in use,
+				2. Poor signal quality,
+				3. It is the latest version,
+				4. Insufficient power,
+				5. Insufficient space,
+				6. Download timeout,
+				7. Upgrade package verification failed,
+				8. The upgrade package type is not supported,
+				9. Out of memory,
+				10. Failed to install upgrade package,
+				255 internal exception
+ * progress: Upgrade progress of the device, range: 0 to 100
+ * description: description
+ * object_device_id: the target device id, NULL means the target device id is the gateway device id
+ * version: Current version of the device
+ */
+typedef struct {
+	HW_CHAR *event_time; //UTC time, e.g. 20190531T011540Z
 	HW_INT result_code;
 	HW_INT progress;
 	HW_CHAR *description;
 	HW_CHAR *object_device_id;
 	HW_CHAR *version;
 } ST_IOTA_UPGRADE_STATUS_INFO;
+
+typedef struct {
+	HW_INT mid; //command id
+	HW_INT errcode; //0 for success, 1 for failure
+	HW_CHAR *body; //the response body obtained from the profile can be parsed into JSON
+} ST_IOTA_COMMAND_RSP_V3;
 
 HW_API_FUNC HW_INT IOTA_ServiceReportData(HW_CHAR *pcDeviceId, HW_CHAR *pcServiceId, HW_CHAR *pcServiceProperties);
 HW_API_FUNC HW_INT IOTA_ServiceCommandRespense(HW_UINT uiMid, HW_UINT uiResultCode, HW_CHAR *pcCommandRespense);
@@ -76,6 +115,14 @@ HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInf
 HW_API_FUNC SSL_CTX* IOTA_ssl_init(void);
 HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT timeout);
 HW_API_FUNC HW_INT IOTA_SubscribeUserTopic(HW_CHAR *topicParas);
+HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum);
+HW_API_FUNC HW_INT IOTA_BinaryReportV3(HW_CHAR *payload);
+HW_API_FUNC HW_INT IOTA_CmdRspV3(ST_IOTA_COMMAND_RSP_V3 *cmdRspV3);
+HW_API_FUNC HW_INT IOTA_GetNTPTime();
+HW_API_FUNC HW_INT IOTA_Bootstrap();
+HW_API_FUNC HW_INT IOTA_SubscribeJsonCmdV3();
+HW_API_FUNC HW_INT IOTA_SubsrcibeBinaryCmdV3();
+HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_statuses, HW_INT deviceNum);
 
 #define OTA_PORT 					 8943
 #define BUFSIZE 					 4096
@@ -133,6 +180,59 @@ HW_API_FUNC HW_INT IOTA_SubscribeUserTopic(HW_CHAR *topicParas);
 #define OTA                          "$ota"
 #define VERSION                      "version"
 #define SERVICE_ID					 "service_id"
+#define SUB_DEVICE_MANAGER			 "$sub_device_manager"
+#define ADD_SUB_DEVICE_NOTIFY		 "add_sub_device_notify"
+#define PARENT_DEVICE_ID 			 "parent_device_id"
+#define NODE_ID 					 "node_id"
+#define MANUFACTURER_ID				 "manufacturer_id"
+#define MODEL					     "model"
+#define PRODUCT_ID					 "product_id"
+#define FW_VERSION					 "fw_version"
+#define SW_VERSION					 "sw_version"
+#define STATUS					     "status"
+#define DELETE_SUB_DEVICE_NOTIFY	 "delete_sub_device_notify"
+#define FIRMWARE_UPGRADE			 "firmware_upgrade"
+#define SOFTWARE_UPGRADE			 "software_upgrade"
+#define URL							 "url"
+#define FILE_SIZE					 "file_size"
+#define ACCESS_TOKEN				 "access_token"
+#define EXPIRES						 "expires"
+#define SIGN						 "sign"
+#define DATA_V3						 "data"
+#define SERVICE_ID_V3				 "serviceId"
+#define EVENT_TIME_V3      			 "eventTime"
+#define SERVICE_DATA_V3      		 "serviceData"
+#define MSGTYPE						 "msgType"
+#define DEVIVE_REQ					 "deviceReq"
+#define CMD							 "cmd"
+#define MID							 "mid"
+#define ERR_CODE					 "errcode"
+#define BODY						 "body"
+#define DEVIVE_RSP					 "deviceRsp"
+#define VERSION_QUERY				 "version_query"
+#define COMMAND_NAME 				 "command_name"
+#define SHADOW						 "shadow"
+#define DESIRED						 "desired"
+#define REPORTED					 "reported"
+#define SDK_INFO					 "$sdk_info"
+#define SDK_INFO_REPORT				 "sdk_info_report"
+#define TYPE						 "type"
+#define SDK_LANGUAGE				 "C"
+#define SDK_VERSION					 "0.8.0"
+#define SDK_TIME					 "$time_sync"
+#define SDK_NTP_REQUEST				 "time_sync_request"
+#define DEVICE_SEND_TIME			 "device_send_time"
+#define TIME_SYNC_RSP				 "time_sync_response"
+#define SERVER_RECV_TIME			 "server_recv_time"
+#define SERVER_SEND_TIME			 "server_send_time"
+#define VERSION_JSON				 "\"version\""
+#define DEVICE_SEND_TIME_JSON		 "\"device_send_time\""
+#define SERVER_RECV_TIME_JSON		 "\"server_recv_time\""
+#define SERVER_SEND_TIME_JSON		 "\"server_send_time\""
+#define DEVICE_STATUS				 "device_statuses"
+#define SUB_DEVICE_UPDATE_STATUS	 "sub_device_update_status"
+#define ONLINE						 "ONLINE"
+#define OFFLINE						 "OFFLINE"
 
 /**
  * ----------------------------deprecated below------------------------------------->

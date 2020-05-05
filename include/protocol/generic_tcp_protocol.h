@@ -22,38 +22,38 @@
  *
  * */
 
-#ifndef _HW_TYPE_H_
-#define _HW_TYPE_H_
+#ifndef INCLUDE_PROTOCOL_GENERIC_TCP_PROTOCOL_H_
+#define INCLUDE_PROTOCOL_GENERIC_TCP_PROTOCOL_H_
 
-#if defined(WIN32) || defined(WIN64) && defined(EXPORT_AGENTLITE)
-#define HW_API_FUNC __declspec(dllexport)
-#else
-#define HW_API_FUNC
-#endif
+#define TCP_SERVER_IP       "127.0.0.1" 
+#define TCP_SERVER_PORT     15623
+#define MAX_MESSAGE_BUF_LEN 30
+#define BACK_LOG            20   //Maximum length of sub device connection request
+#define WORK_PATH           "."
+#define CONNECTED           0
+#define DISCONNECTED        1
 
-#define HW_TRUE      1 /**< Indicates true */
-#define HW_FALSE     0 /**< Indicates false */
+int CreateServerSocket(char* serverIp, int serverPort, int backlog);
+void TimeSleep(int ms);
 
-#define HW_SUCCESS   0 /**< Indicates success */
-#define HW_FAILED    1 /**< Indicates failed */
-#define HW_NULL     ((void *)0) /**< Indicates null ptr */  
+void ProcessMessageFromClient(int  clientSocket);
+void SendReportToIoTPlatform(char *recvBuf);
 
-typedef int 			HW_INT; /**< Indicates type of int. */
-typedef unsigned int 	HW_UINT; /**< Indicates type of unsigned int. */
-typedef char 			HW_CHAR; /**< Indicates type of char. */
-typedef unsigned char 	HW_UCHAR;/**< Indicates type of unsigned char. */
-typedef int 			HW_BOOL; /**< Indicates type of bool. */
-typedef void 			HW_VOID; /**< Indicates type of void. */
-typedef long 			HW_LONG; /**< Indicates type of bool. */
-typedef double 			HW_DOUBLE; /**< Indicates type of bool. */
-typedef long long 		HW_LLONG; /**< Indicates type of bool. */
+void SendCommandRspToIoTPlatform(char *requestId);
+void SendMessageToSubDevice(int clientSocket, char *payload);
 
-#define _HSTR(_conststr)        ((HW_CHAR *)_conststr)
+void HandleSubDeviceManagerEvents(EN_IOTA_SERVICE_EVENT *subDeviceServices);
+void AddSubDevice(EN_IOTA_DEVICE_PARAS *paras);
+void AddSubDevice(EN_IOTA_DEVICE_PARAS *paras);
+void DeleteSubDevice(EN_IOTA_DEVICE_PARAS *paras);
 
-/**< Indicates type of byte array. */
-typedef struct {
-	HW_UINT uiLen; /**< Indicates length of byte array */
-	HW_CHAR *pcByte; /**< Indicates byte value of byte array */
-} HW_BYTES;
+void HandleOTAEvents(EN_IOTA_SERVICE_EVENT *otaServices);
+void QueryVersion();
+void UpgradeFirmware(EN_IOTA_OTA_PARAS *paras);
+void UpgradeSoftware(EN_IOTA_OTA_PARAS *paras);
 
-#endif
+char* EncodeCommandParas(EN_IOTA_COMMAND *command);
+ST_IOTA_SERVICE_DATA_INFO* DecodeServiceProperty(char *recvBuf);
+
+#endif /* INCLUDE_PROTOCOL_GENERIC_TCP_PROTOCOL_H_ */
+

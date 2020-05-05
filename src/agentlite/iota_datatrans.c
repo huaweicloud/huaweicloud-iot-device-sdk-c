@@ -48,7 +48,16 @@
 #include "iota_error_type.h"
 #include "subscribe.h"
 
-//message up
+/**
+ *@Description: report message to IoT platform
+ *@param object_device_id: the target device id, NULL means the target device id is the gateway device id
+ *@param name: the message name
+ *@param id: the message id
+ *@param content: the message content
+ *@param topicParas: customize the topic parameters, such as "devmsg" (do not add '/' or special characters in front of it)
+ *					 If it is set to NULL, the platform default topic will be used for reporting.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas) {
 	if (content == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the content cannot be null.\n");
@@ -71,13 +80,18 @@ HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, 
 		return IOTA_FAILURE;
 	} else {
 		messageId = ReportDeviceData(payload, topicParas);
-		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_ReportData() with payload %s By topic %s==>\n", payload, topicParas);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_MessageReport() with payload %s By topic %s==>\n", payload, topicParas);
 		free(payload);
 		return messageId;
 	}
 }
 
-//device reports properties
+/**
+ *@Description: report device properties to IoT platform
+ *@param pServiceData[]: the array of ST_IOTA_SERVICE_DATA_INFO structure
+ *@param serviceNum: number of reported services
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum) {
 	if (serviceNum == 0 || pServiceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
@@ -88,14 +102,16 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
 	serviceDatas = cJSON_CreateArray();
 	int i;
 	for (i = 0; i < serviceNum; i++) {
-		cJSON *tmp;
-		tmp = cJSON_CreateObject();
-
 		cJSON *properties = cJSON_Parse(pServiceData[i].properties);
 		if (properties == NULL) {
 			PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
+			cJSON_Delete(serviceDatas);
+			cJSON_Delete(root);
 			return IOTA_PARSE_JSON_FAILED;
 		}
+
+		cJSON *tmp;
+		tmp = cJSON_CreateObject();
 
 		cJSON_AddStringToObject(tmp, SERVICE_ID, pServiceData[i].service_id);
 		cJSON_AddStringToObject(tmp, EVENT_TIME, pServiceData[i].event_time);
@@ -120,7 +136,13 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
 	}
 }
 
-//devices report properties
+/**
+ *@Description: batch report data of the sub devices to IoT platform
+ *@param pDeviceData[]: the array of ST_IOTA_DEVICE_DATA_INFO structure.
+ *@param deviceNum: number of reported sub device
+ *@param serviceLenList[]: the array of number of services reported by sub equipment
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[]) {
 	if (deviceNum == 0 || serviceLenList == NULL || pDeviceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
@@ -149,14 +171,18 @@ HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceDa
 		cJSON_AddStringToObject(deviceData, DEVICE_ID, pDeviceData[ii].device_id);
 
 		for (jj = 0; jj < serviceLenList[ii]; jj++) {
-			cJSON *tmp;
-			tmp = cJSON_CreateObject();
-
 			cJSON *properties = cJSON_Parse(pDeviceData[ii].services[jj].properties);
 			if (properties == NULL) {
 				PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
+				cJSON_Delete(services);
+				cJSON_Delete(deviceData);
+				cJSON_Delete(deviceDatas);
+				cJSON_Delete(root);
 				return IOTA_PARSE_JSON_FAILED;
 			}
+
+			cJSON *tmp;
+			tmp = cJSON_CreateObject();
 
 			cJSON_AddStringToObject(tmp, SERVICE_ID, pDeviceData[ii].services[jj].service_id);
 			cJSON_AddStringToObject(tmp, EVENT_TIME, pDeviceData[ii].services[jj].event_time);
@@ -185,6 +211,14 @@ HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceDa
 	}
 }
 
+/**
+ *@Description: response command
+ *@param requestId: unique identification of the request
+ *@param result_code: command execution result, 0 for success, others for failure
+ *@param response_name: name of the command response
+ *@param pcCommandResponse: command response results obtained from the profile can be parsed into JSON
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse) {
 	if (pcCommandResponse == NULL || requestId == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_CommandResponse:the requestId or commandResponse cannot be null.\n");
@@ -198,6 +232,7 @@ HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, 
 	cJSON *commandResponse = cJSON_Parse(pcCommandResponse);
 	if (commandResponse == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
+		cJSON_Delete(root);
 		return IOTA_PARSE_JSON_FAILED;
 	}
 
@@ -218,6 +253,13 @@ HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, 
 	}
 }
 
+/**
+ *@Description: response properties setting
+ *@param requestId: unique identification of the request
+ *@param result_code: command execution result, 0 for success, others for failure
+ *@param result_desc: result description
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_PropertiesSetResponse(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *result_desc) {
 	if (requestId == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_PropertiesSetResponse:the requestId cannot be null.\n");
@@ -249,6 +291,13 @@ HW_API_FUNC HW_INT IOTA_PropertiesSetResponse(HW_CHAR *requestId, HW_INT result_
 
 }
 
+/**
+ *@Description: response properties getting
+ *@param requestId: unique identification of the request
+ *@param serviceProp[]: the array of ST_IOTA_SERVICE_DATA_INFO structure
+ *@param serviceNum: number of reported services
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVICE_DATA_INFO serviceProp[], HW_INT serviceNum) {
 	if (serviceNum <= 0 || requestId == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_PropertiesGetResponse:the requestId or serviceNum is wrong.\n");
@@ -269,6 +318,8 @@ HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVIC
 					cJSON *properties = cJSON_Parse(serviceProp[i].properties);
 					if (properties == NULL) {
 						PrintfLog(EN_LOG_LEVEL_ERROR, "parse JSON failed.\n");
+						cJSON_Delete(services);
+						cJSON_Delete(root);
 						return IOTA_PARSE_JSON_FAILED;
 					}
 
@@ -282,6 +333,8 @@ HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVIC
 					cJSON_AddItemToArray(services, tmp);
 				} else {
 					PrintfLog(EN_LOG_LEVEL_ERROR, "the payload is wrong.\n");
+					cJSON_Delete(services);
+					cJSON_Delete(root);
 					return IOTA_PARAMETER_ERROR;
 				}
 			}
@@ -305,6 +358,88 @@ HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVIC
 	}
 }
 
+/**
+ *@Description: report sub device satuses
+ *@param device_statuses[]: the array of ST_IOTA_DEVICE_DATA_INFO structure.
+ *@param deviceNum: number of sub device needed to report status
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_statuses, HW_INT deviceNum) {
+	if((device_statuses == NULL) || (deviceNum < 0) || (deviceNum > MaxSubDeviceCount)) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_UpdateSubDeviceStatus() error, the input is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}
+	if(device_statuses->device_statuses == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_UpdateSubDeviceStatus() error, the input of device_statuses->device_statuses is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}
+
+	if(device_statuses->device_statuses[0].device_id == NULL || device_statuses->device_statuses[0].status == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_UpdateSubDeviceStatus() error, the input of device_statuses->device_statuses[0] is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}
+
+	cJSON *root, *services, *device_statuses_json;
+	root = cJSON_CreateObject();
+	services = cJSON_CreateArray();
+	device_statuses_json = cJSON_CreateArray();
+	cJSON *service = cJSON_CreateObject();
+	cJSON_AddStringToObject(service, SERVICE_ID, SUB_DEVICE_MANAGER);
+	cJSON_AddStringToObject(service, EVENT_TYPE, SUB_DEVICE_UPDATE_STATUS);
+	cJSON_AddStringToObject(service, EVENT_TIME, device_statuses->event_time);
+
+	int i;
+	for (i = 0; i < deviceNum; i++) {
+		if (device_statuses->device_statuses[i].device_id != NULL && device_statuses->device_statuses[i].status != NULL) {
+
+			cJSON *tmp;
+			tmp = cJSON_CreateObject();
+
+			cJSON_AddStringToObject(tmp, DEVICE_ID, device_statuses->device_statuses[i].device_id);
+			cJSON_AddStringToObject(tmp, STATUS, device_statuses->device_statuses[i].status);
+
+			cJSON_AddItemToArray(device_statuses_json, tmp);
+		} else {
+			PrintfLog(EN_LOG_LEVEL_ERROR, "the payload is wrong.\n");
+			cJSON_Delete(device_statuses_json);
+			cJSON_Delete(service);
+			cJSON_Delete(services);
+			cJSON_Delete(root);
+			return IOTA_PARAMETER_ERROR;
+		}
+	}
+
+	cJSON *paras = cJSON_CreateObject();
+	cJSON_AddItemToObject(paras, DEVICE_STATUS, device_statuses_json);
+
+	cJSON_AddItemToObject(service, PARAS, paras);
+
+
+	cJSON_AddItemToArray(services, service);
+	cJSON_AddItemToObject(root, SERVICES, services);
+
+	char *payload;
+	payload = cJSON_Print(root);
+
+	cJSON_Delete(root);
+
+	int messageId = 0;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = EventUp(payload);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_UpdateSubDeviceStatus() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+
+}
+
+/**
+ *@Description: report OTA version
+ *@param otaVersionInfo: ST_IOTA_OTA_VERSION_INFO structure
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo) {
 	if (!(otaVersionInfo.fw_version != NULL || otaVersionInfo.sw_version != NULL)) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_OTAVersionReport:the input is invalid.\n");
@@ -344,6 +479,11 @@ HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo
 	}
 }
 
+/**
+ *@Description: report OTA status
+ *@param otaVersionInfo: ST_IOTA_UPGRADE_STATUS_INFO structure
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInfo) {
 	if (otaStatusInfo.progress > 100 || otaStatusInfo.progress < 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_OTAVersionReport:the progress is invalid.\n");
@@ -391,10 +531,22 @@ HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInf
 	}
 }
 
+/**
+ *@Description: subscribe user topic
+ *@param topicParas: customize the topic parameters, such as "devmsg" (do not add '/' or special characters in front of it)
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_SubscribeUserTopic(HW_CHAR *topicParas) {
 	return SubscribeUserTopic(topicParas);
 }
 
+/**
+ *@Description: get OTA packages
+ *@param url: package download address
+ *@param token: Temporary token of the download address of the package URL
+ *@param timeout: The timeout for requesting to download the package, which needs to be greater than 300 seconds. Less than 24 hours is recommended
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT timeout) {
 	if (url == NULL || token == NULL || timeout <= OTA_TIMEOUT_MIN_LENGTH) //the timeout value must be greater than 300s
 	{
@@ -674,7 +826,13 @@ HW_API_FUNC SSL_CTX* IOTA_ssl_init()
 	return server_ctx;
 }
 
-//get device shadow data
+/**
+ *@Description: get device shadow data
+ *@param requestId: unique identification of the request
+ *@param object_device_id: the target device id, NULL means the target device id is the gateway device id
+ *@param service_id: the device service id obtained from the profile
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
 HW_API_FUNC HW_INT IOTA_GetDeviceShadow(HW_CHAR *requestId, HW_CHAR *object_device_id, HW_CHAR *service_id) {
 	if (requestId == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the requestId cannot be null\n");
@@ -705,8 +863,184 @@ HW_API_FUNC HW_INT IOTA_GetDeviceShadow(HW_CHAR *requestId, HW_CHAR *object_devi
 }
 
 /**
+ *@Description: get the access address
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_Bootstrap() {
+
+	int messageId = 0;
+	messageId = Bootstrap();
+
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_Bootstrap()==>\n");
+
+	return messageId;
+
+}
+
+/**
+ *@Description: report device properties to IoT platform by V3 topic
+ *@param pServiceData[]: the array of ST_IOTA_SERVICE_DATA_INFO structure
+ *@param serviceNum: number of reported services
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum) {
+	if (serviceNum == 0 || pServiceData == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
+		return IOTA_PARAMETER_EMPTY;
+	}
+	cJSON *root, *data;
+	root = cJSON_CreateObject();
+	data = cJSON_CreateArray();
+	int i;
+	for (i = 0; i < serviceNum; i++) {
+		cJSON *properties = cJSON_Parse(pServiceData[i].properties);
+		if (properties == NULL) {
+			PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
+			cJSON_Delete(data);
+			cJSON_Delete(root);
+			return IOTA_PARSE_JSON_FAILED;
+		}
+
+		cJSON *serviceData;
+		serviceData = cJSON_CreateObject();
+
+		cJSON_AddStringToObject(serviceData, SERVICE_ID_V3, pServiceData[i].service_id);
+		cJSON_AddStringToObject(serviceData, EVENT_TIME_V3, pServiceData[i].event_time);
+		cJSON_AddItemToObject(serviceData, SERVICE_DATA_V3, properties);
+		cJSON_AddItemToArray(data, serviceData);
+	}
+
+	cJSON_AddItemToObject(root, DATA_V3, data);
+	cJSON_AddStringToObject(root, MSGTYPE, DEVIVE_REQ);
+
+	char *payload;
+	payload = cJSON_Print(root);
+	cJSON_Delete(root);
+
+	int messageId = 0;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = ReportDevicePropertiesV3(payload, 0);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReportV3() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+}
+
+/**
+ *@Description: report binary to IoT platform by V3 topic
+ *@param payload: hexadecimal data
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_BinaryReportV3(HW_CHAR *payload) {
+	if (payload == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
+		return IOTA_PARAMETER_EMPTY;
+	}
+
+	int messageId = ReportDevicePropertiesV3(payload, 1);
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BinaryReportV3() with payload %s ==>\n", payload);
+	return messageId;
+}
+
+/**
+ *@Description: response command by V3 topic
+ *@param cmdRspV3: ST_IOTA_COMMAND_RSP_V3 structure
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_CmdRspV3(ST_IOTA_COMMAND_RSP_V3 *cmdRspV3) {
+	if (cmdRspV3 == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
+		return IOTA_PARAMETER_EMPTY;
+	}
+
+	cJSON *root;
+	root = cJSON_CreateObject();
+
+	cJSON_AddNumberToObject(root, MID, cmdRspV3->mid);
+	cJSON_AddNumberToObject(root, ERR_CODE, cmdRspV3->errcode);
+	cJSON_AddStringToObject(root, MSGTYPE, DEVIVE_RSP);
+
+	cJSON *body = cJSON_Parse(cmdRspV3->body);
+	cJSON_AddItemToObject(root, BODY, body);
+
+	char *payload;
+	payload = cJSON_Print(root);
+	cJSON_Delete(root);
+
+	int messageId;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = ReportDevicePropertiesV3(payload, 0);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CmdRspV3() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+
+}
+
+/**
+ *@Description: subscribe the V3 topic of json command . Not recommended
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_SubscribeJsonCmdV3() {
+	return SubscribeJsonCmdV3();
+}
+
+/**
+ *@Description: subscribe the V3 topic of binary command . Not recommended
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_SubsrcibeBinaryCmdV3() {
+	return SubscribeBinaryCmdV3();
+}
+
+/**
  * ----------------------------deprecated below£¬do not use it-------------------------------------->
  */
+
+/**
+ *@Description: get NTP time.Value is returned in the event callback function
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_GetNTPTime() {
+	cJSON *root, *services;
+	root = cJSON_CreateObject();
+	services = cJSON_CreateArray();
+	cJSON *serviceEvent;
+	serviceEvent = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(serviceEvent, SERVICE_ID, SDK_TIME);
+	cJSON_AddStringToObject(serviceEvent, EVENT_TYPE, SDK_NTP_REQUEST);
+	char *event_time = GetEventTimesStamp();
+	cJSON_AddStringToObject(serviceEvent, EVENT_TIME, event_time);
+
+	cJSON *paras;
+	paras = cJSON_CreateObject();
+	cJSON_AddNumberToObject(paras, DEVICE_SEND_TIME, getTime());
+
+	cJSON_AddItemToObject(serviceEvent, PARAS, paras);
+	cJSON_AddItemToArray(services, serviceEvent);
+	cJSON_AddItemToObject(root, SERVICES, services);
+
+	char *payload;
+	payload = cJSON_Print(root);
+	MemFree(&event_time);
+	cJSON_Delete(root);
+
+	int messageId = 0;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = EventUp(payload);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_GetNTPTime() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+
+}
 
 //Reserved interface for transparent transmission
 HW_API_FUNC HW_INT IOTA_ReportSubDeviceInfo(HW_CHAR *pcPayload) {

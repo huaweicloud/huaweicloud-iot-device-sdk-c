@@ -35,5 +35,8 @@ int ReportPropGetReponse(char *requestId, char *pcCommandRespense);
 int GetPropertiesRequest(char *requestId, char *pcCommandRespense);
 int ReportSubDeviceInfo(char *payload);
 int EventUp(char *payload);
+int ReportDevicePropertiesV3(char *payload, int codecMode);
+int BinaryReportV3(char *payload);
+int Bootstrap();
 
 #endif /* INCLUDE_DATATRANS_H_ */

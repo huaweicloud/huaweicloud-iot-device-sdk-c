@@ -73,6 +73,9 @@ void MemFree(char **str) {
 }
 
 void StringMalloc(char **str, int length) {
+	if (length <= 0) {
+		return;
+	}
 	*str = malloc(length);
 	if (*str == NULL) {
 		return;
@@ -118,6 +121,9 @@ char* CombineStrings(int strAmount, char *str1, ...) {
  * If this function is recalled with the same "**dst", you should free the pointer "*dst" before invoking this function in case of memory leak.
  */
 int CopyStrValue(char **dst, const char *src, int length) {
+	if (length <= 0) {
+		return 0;
+	}
 	*dst = malloc(length + 1);
 	if (*dst == NULL) {
 		return -1;
@@ -148,6 +154,13 @@ char* GetEventTimesStamp() {
 	}
 
 }
+
+unsigned  long long getTime() {
+	struct timeval tv;
+	gettimeofday(&tv,NULL);
+	return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+
 
 //NOTE: the invocation need to free the return char pointer.
 //return parameter e.g. 2019053101
@@ -197,3 +210,29 @@ int GetSubStrIndex(const char *str, const char *substr) {
 
 }
 
+/*
+ * get the value of long long type from string
+ **/
+long long  getLLongValueFromStr (const* str, const *subStr) {
+
+	char *version_tmp = strstr(str, subStr);
+	char buf[LONG_LONG_MAX_LENGTH+1] = {0};
+	int i = 0;
+	int j = 0;
+	for (i; i < strlen(version_tmp);i++) {
+		if (version_tmp[i] >= '0' && version_tmp[i] <= '9') {
+			buf[j] = version_tmp[i];
+			j++;
+		} else {
+			if (j > 0) {
+				break;
+			}
+		}
+	}
+
+	buf[i] = '\0';
+
+	char *end = NULL;
+	long long version = strtoll(buf, &end, 10);
+	return version;
+}

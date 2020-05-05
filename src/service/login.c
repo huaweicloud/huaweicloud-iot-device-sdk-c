@@ -28,10 +28,10 @@
 #include "iota_error_type.h"
 
 int CreateConnection() {
-	return MqttBase_CreateConnection();
+    return MqttBase_CreateConnection();
 }
 
 int ReleaseConnection() {
-	return MqttBase_ReleaseConnection();
+    return MqttBase_ReleaseConnection();
 }
 

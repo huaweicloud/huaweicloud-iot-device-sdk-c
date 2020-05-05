@@ -43,6 +43,14 @@
 #define TOPIC_SUFFIX_EVENT_DOWN 	    "/sys/events/down"
 #define TOPIC_SUFFIX_SUB_DEVICE_INFO_UP "/sys/sub_device_manage/messages/up"
 #define WILDCARD 					    "#"
+#define TOPIC_PREFIX_V3					"/huawei/v1/devices/"
+#define TOPIC_SUFFIX_DATA_REQ			"/data/"
+#define JSON_V3							"json"
+#define BINARY_V3						"binary"
+#define COMMAND_V3						"/command/"
+#define CLOUD_REQ						"cloudReq"
+#define BOOTSTRAP						"/sys/bootstrap/up"
+#define BOOTSTRAP_DOWN					"/sys/bootstrap/down"
 
 //see also EN_MQTT_BASE_CALLBACK_SETTING in MqttBase.h
 typedef enum enum_BASE_CONFIG {
