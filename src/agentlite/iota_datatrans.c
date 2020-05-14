@@ -24,16 +24,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h>
 #include <sys/types.h>
 #include <time.h>
 #include <errno.h>
 #include <signal.h>
 #include <unistd.h>
-#include <sys/wait.h>
 #include <sys/time.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
@@ -47,6 +43,16 @@
 #include "cJSON.h"
 #include "iota_error_type.h"
 #include "subscribe.h"
+
+#if defined(WIN32) || defined(WIN64)
+#include <winsock2.h>
+#include <winsock.h>
+#else
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
 
 //message up
 HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas) {
@@ -391,6 +397,51 @@ HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInf
 	}
 }
 
+HW_API_FUNC HW_INT IOTA_DeviceStatusUpdate(int num, ST_IOTA_ONLINE_STATUS_INFO onlineStatus[]) {
+    if(num < 0 || num > 100){
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_DeviceStatusUpdate() with onlineStatus num %d ==>\n", num);
+        return IOTA_PARAMETER_ERROR;
+    }
+	cJSON *root, *paras, *services, *tmp, *device_statuses,*online;
+    root = cJSON_CreateObject();
+    tmp = cJSON_CreateObject();
+    paras = cJSON_CreateObject();
+    device_statuses = cJSON_CreateArray();
+    services = cJSON_CreateArray();
+    char *payload;
+
+    char* event_time = GetEventTimesStamp();
+    cJSON_AddStringToObject(tmp, SERVICE_ID, "$sub_device_manager");
+    cJSON_AddStringToObject(tmp, EVENT_TIME, event_time);
+    cJSON_AddStringToObject(tmp, EVENT_TYPE, "sub_device_update_status");
+
+    for(int i=0; i<num; i++){
+        online = cJSON_CreateObject();
+        cJSON_AddStringToObject(online, DEVICE_ID, onlineStatus[i].device_id);
+        cJSON_AddStringToObject(online, "status", onlineStatus[i].status);
+        cJSON_AddItemToArray(device_statuses, online);
+    }
+    cJSON_AddItemToObject(paras, "device_statuses", device_statuses);
+    cJSON_AddItemToObject(tmp, PARAS, paras);
+    cJSON_AddItemToArray(services, tmp);
+    cJSON_AddItemToObject(root, SERVICES, services);
+    payload = cJSON_Print(root);
+
+    int messageId = 0;
+   	if (payload == NULL) {
+   		return IOTA_FAILURE;
+   	} else {
+   		messageId = EventUp(payload);
+   		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_DeviceStatusUpdate() with payload %s ==>\n", payload);
+   		free(payload);
+   		return messageId;
+   	}
+    cJSON_Delete(root);
+    if(event_time != NULL){
+        MemFree(&event_time);
+    }
+}
+
 HW_API_FUNC HW_INT IOTA_SubscribeUserTopic(HW_CHAR *topicParas) {
 	return SubscribeUserTopic(topicParas);
 }
@@ -535,7 +586,7 @@ HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT time
 			strncpy(rspStatusCode, buf + strlen(OTA_HTTP_RESPONSE_VERSION), HTTP_STATUS_LENGTH);
 			rspStatusCode[HTTP_STATUS_LENGTH] = '\0';
 			if (strcmp(rspStatusCode, HTTP_OK)) {
-				PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() error£¬the statusCode is %s.\n", rspStatusCode);
+				PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() errorï¼Œthe statusCode is %s.\n", rspStatusCode);
 				result = IOTA_FAILURE;
 			}
 
@@ -705,7 +756,7 @@ HW_API_FUNC HW_INT IOTA_GetDeviceShadow(HW_CHAR *requestId, HW_CHAR *object_devi
 }
 
 /**
- * ----------------------------deprecated below£¬do not use it-------------------------------------->
+ * ----------------------------deprecated belowï¼Œdo not use it-------------------------------------->
  */
 
 //Reserved interface for transparent transmission
