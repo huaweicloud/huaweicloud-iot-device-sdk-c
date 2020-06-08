@@ -998,6 +998,15 @@ HW_API_FUNC HW_INT IOTA_SubsrcibeBinaryCmdV3() {
 }
 
 /**
+ *@Description: subscribe boostrap topic
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_SubscribeBoostrap() {
+	return SubscribeBootstrap();
+}
+
+
+/**
  * ----------------------------deprecated below£¬do not use it-------------------------------------->
  */
 

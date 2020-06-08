@@ -548,6 +548,9 @@ int MqttBase_subscribe(const char *topic) {
 #endif
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 
+	if (client == NULL) {
+		return IOTA_FAILURE;
+	}
 	int ret;
 
 	opts.onSuccess = MqttBase_OnSubscribeSuccess;
@@ -570,6 +573,10 @@ int MqttBase_publish(const char *topic, char *payload) {
 #if defined(WIN32) || defined(WIN64)
 	pMQTTAsync_sendMessage MQTTAsync_sendMessage = (pMQTTAsync_sendMessage) GetProcAddress(mqttdll, "MQTTAsync_sendMessage");
 #endif
+
+	if (client == NULL) {
+		return IOTA_FAILURE;
+	}
 
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;

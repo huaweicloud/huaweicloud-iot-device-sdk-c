@@ -70,10 +70,13 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 		bootstrap_msg->mqtt_msg_info->messageId = token;
 		bootstrap_msg->mqtt_msg_info->code = code;
 
+		JSON *root = JSON_Parse(message);
+		bootstrap_msg->message = JSON_GetStringFromObject(root, ADDRESS, "-1");
 		if (onBootstrap) {
 			(onBootstrap)(bootstrap_msg);
 		}
 
+		JSON_Delete(root);
 		MemFree(&bootstrap_msg->mqtt_msg_info);
 		MemFree(&bootstrap_msg);
 

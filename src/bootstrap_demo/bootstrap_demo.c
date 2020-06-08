@@ -54,17 +54,19 @@
 char *workPath = ".";
 char *gatewayId = NULL;
 
-char* serverIp_ = "iot-mqtts.cn-north-4.myhuaweicloud.com";
+char *bootstrap_address = "iot-bs.cn-north-4.myhuaweicloud.com";
 
+char* serverIp_ = NULL;
+//char* serverIp_ = "iot-mqtts.cn-north-4.myhuaweicloud.com";
 int port_ = 8883;
 
 char *password_ = "XXXX";
 
-char* username_ = "XXXX";//deviceId cert mode
+char* username_ = "XXXX";//deviceId
 
 int disconnected_ = 0;
 
-char *bootstrap_address = NULL;
+//char *scopeId = NULL;  //boostrap device group 
 
 void Test_PropertiesReport(void);
 
@@ -79,7 +81,7 @@ void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void TimeSleep(int ms);
 void MyPrintLog(int level, char *format, va_list args);
-void SetAuthConfig(void);
+void SetAuthConfig(int bootstrapFlag);
 void SetMyCallbacks(void);
 
 void TimeSleep(int ms) {
@@ -112,7 +114,7 @@ void Test_PropertiesReport() {
 
 	int messageId = IOTA_PropertiesReport(services, serviceNum);
 	if (messageId != 0) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
+		PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
 	}
 
 	MemFree(&services[0].event_time);
@@ -121,79 +123,82 @@ void Test_PropertiesReport() {
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
 void HandleConnectSuccess (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: handleConnectSuccess(), login success\n");
+	PrintfLog(EN_LOG_LEVEL_INFO, "bootstrap_demo: handleConnectSuccess(), login success\n");
 	disconnected_ = 0;
 }
 
 void HandleConnectFailure (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() error, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
+	PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: HandleConnectFailure() error, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 	//judge if the network is available etc. and login again
 	//...
-	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() login again\n");
+	PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: HandleConnectFailure() login again\n");
 	int ret = IOTA_Connect();
 	if (ret != 0) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleAuthFailure() error, login again failed, result %d\n", ret);
+		PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: HandleAuthFailure() error, login again failed, result %d\n", ret);
 	}
 }
 
 void HandleConnectionLost (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectionLost() error, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
+	PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: HandleConnectionLost() error, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 	//judge if the network is available etc. and login again
 	//...
 	int ret = IOTA_Connect();
 	if (ret != 0) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectionLost() error, login again failed, result %d\n", ret);
+		PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: HandleConnectionLost() error, login again failed, result %d\n", ret);
 	}
 }
 
 void HandleDisConnectSuccess (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	disconnected_ = 1;
 
-	printf("device_demo: handleLogoutSuccess, login again\n");
-	printf("device_demo: HandleDisConnectSuccess(), messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
+	printf("bootstrap_demo: handleLogoutSuccess, login again\n");
+	printf("bootstrap_demo: HandleDisConnectSuccess(), messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
 void HandleDisConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-	PrintfLog(EN_LOG_LEVEL_WARNING, "device_demo: HandleDisConnectFailure() warning, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
+	PrintfLog(EN_LOG_LEVEL_WARNING, "bootstrap_demo: HandleDisConnectFailure() warning, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
 void HandleSubscribesuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubscribesuccess() messageId %d\n", rsp->mqtt_msg_info->messageId);
+	PrintfLog(EN_LOG_LEVEL_INFO, "bootstrap_demo: HandleSubscribesuccess() messageId %d\n", rsp->mqtt_msg_info->messageId);
 }
 
 void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-	PrintfLog(EN_LOG_LEVEL_WARNING, "device_demo: HandleSubscribeFailure() warning, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
+	PrintfLog(EN_LOG_LEVEL_WARNING, "bootstrap_demo: HandleSubscribeFailure() warning, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
 void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePublishSuccess() messageId %d\n", rsp->mqtt_msg_info->messageId);
+	PrintfLog(EN_LOG_LEVEL_INFO, "bootstrap_demo: HandlePublishSuccess() messageId %d\n", rsp->mqtt_msg_info->messageId);
 }
 
 void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-	PrintfLog(EN_LOG_LEVEL_WARNING, "device_demo: HandlePublishFailure() warning, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
+	PrintfLog(EN_LOG_LEVEL_WARNING, "bootstrap_demo: HandlePublishFailure() warning, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
 //-------------------------------------------handle  message   arrived------------------------------------------------------------------------------
 
 void HandleBootstrap(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleBootstrap(), address is %s\n", rsp->message);
-	if (bootstrap_address != NULL) {
-		MemFree(&bootstrap_address);
+	PrintfLog(EN_LOG_LEVEL_INFO, "bootstrap_demo: HandleBootstrap(), address is %s\n", rsp->message);
+	if (serverIp_ != NULL) {
+		MemFree(&serverIp_);
 	}
 
 	int address_length = GetSubStrIndex(rsp->message, ":") + 1;
 
-	if (CopyStrValue(&bootstrap_address, (const char*) rsp->message, address_length) < 0) {
+	if (CopyStrValue(&serverIp_, (const char*) rsp->message, address_length - 1) < 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "HandleBootstrap(): there is not enough memory here.\n");
 	}
 
-	serverIp_ = bootstrap_address;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------
 
-void SetAuthConfig() {
-	IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
+void SetAuthConfig(int bootstrapFlag) {
+	if (bootstrapFlag == 0) {
+		IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
+	} else {
+		IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, bootstrap_address);
+	}
 	IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
 	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
 	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
@@ -210,10 +215,9 @@ void SetAuthConfig() {
 	 * Configuration is required in bootstrap self register mode:
 	 *
 	 *IOTA_ConfigSetUint(EN_IOTA_CFG_BS_MODE, EN_IOTA_CFG_BS_SELF_REG);
-	 *IOTA_ConfigSetStr(EN_IOTA_CFG_BS_USER_ID, "yourScopeId");
+	 *IOTA_ConfigSetStr(EN_IOTA_CFG_BS_SCOPE_ID, scopeId);
 	 *
 	 */
-	IOTA_ConfigSetStr(EN_IOTA_CFG_BS_SCOPE_ID, "yourScopeId");
 
 #ifdef _SYS_LOG
     IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LOCAL_NUMBER, LOG_LOCAL7);
@@ -252,55 +256,56 @@ int main(int argc, char **argv) {
 #endif
 
 	IOTA_SetPrintLogCallback(MyPrintLog);
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: start test ===================>\n");
+	PrintfLog(EN_LOG_LEVEL_INFO, "bootstrap_demo: start test ===================>\n");
 
 	if (IOTA_Init(workPath) < 0) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Init() error, init failed\n");
+		PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: IOTA_Init() error, init failed\n");
 		return 1;
 	}
 
-	SetAuthConfig();
+	SetAuthConfig(1);
 	SetMyCallbacks();
 
 	//see handleLoginSuccess and handleLoginFailure for login result
 	int ret = IOTA_Connect();
 	if (ret != 0) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Auth() error, Auth failed, result %d\n", ret);
-	}
+		PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: IOTA_Auth() error, Auth failed, result %d\n", ret);
+	}	
 
 	TimeSleep(1500);
 
+	//subscribe boostrap topic
+	IOTA_SubscribeBoostrap();
+
+
+	//ensure the boostrap topic is subscribed, then start to IOTA_Bootstrap.
+	TimeSleep(3000);
+
 	if (IOTA_Bootstrap() < 0) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Bootstrap() error \n");
+		PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: IOTA_Bootstrap() error \n");
 	};
 
-	int count = 0;
-	while (count < 100000000) {
+	printf("----------------------------------------------------------------\n");
 
-		//properties report
-        Test_PropertiesReport();
-		TimeSleep(1000);
-		count++;
-	}
-
-
-	TimeSleep(10500);
+	//ensure receiving the bootstrap response successfully
+	TimeSleep(5500);
 
     IOTA_Destroy();
 
     if (IOTA_Init(workPath) < 0) {
-	    PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Init() error, init failed\n");
+	    PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: IOTA_Init() error, init failed\n");
         return 1;
     }
 
-       SetAuthConfig();
+       SetAuthConfig(0);
+	   IOTA_ConfigSetUint(EN_IOTA_CFG_BS_MODE, EN_IOTA_CFG_BS_REG);
        SetMyCallbacks();
 
        //see handleLoginSuccess and handleLoginFailure for login result
        int ret2 = IOTA_Connect();
        if (ret2 != 0)
        {
-           PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Auth() error, Auth failed, result %d\n", ret2);
+           PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: IOTA_Auth() error, Auth failed, result %d\n", ret2);
        }
 
        TimeSleep(2500);
@@ -308,5 +313,4 @@ int main(int argc, char **argv) {
        Test_PropertiesReport();
 
 	return 0;
-}
-
+} 

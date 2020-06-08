@@ -167,7 +167,4 @@ void SubscribeAll() {
 	if (SubscribePropResp() < IOTA_SUCCESS) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropResp failed.\n");
 	}
-	if (SubscribeBootstrap() < IOTA_SUCCESS) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBootstrap failed.\n");
-	}
 }

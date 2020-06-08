@@ -179,7 +179,7 @@ int Bootstrap() {
 	}
 	char *topic = NULL;
 	topic = CombineStrings(3, TOPIC_PREFIX, username, BOOTSTRAP);
-	int ret = MqttBase_publish((const char*) topic, NULL);
+	int ret = MqttBase_publish((const char*) topic, "");
 	MemFree(&topic);
 
 	if (ret < 0) {

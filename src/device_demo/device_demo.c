@@ -637,13 +637,19 @@ int main(int argc, char **argv) {
 
 		//message up
 		Test_MessageReport();
+		
+		TimeSleep(1500);
 
 		//properties report
 		Test_PropertiesReport();
+		
+		TimeSleep(1500);
 
 		//batchProperties report
 		Test_BatchPropertiesReport(NULL);
 
+		TimeSleep(1500);
+		
 		//command response
 		Test_CommandResponse("1005");
 
@@ -660,6 +666,8 @@ int main(int argc, char **argv) {
 		TimeSleep(5500);
 
 		IOTA_SubscribeUserTopic("devMsg");
+		
+		TimeSleep(1500);
 
 		//get device shadow
 		IOTA_GetDeviceShadow("1232", NULL, NULL);

@@ -123,6 +123,7 @@ HW_API_FUNC HW_INT IOTA_Bootstrap();
 HW_API_FUNC HW_INT IOTA_SubscribeJsonCmdV3();
 HW_API_FUNC HW_INT IOTA_SubsrcibeBinaryCmdV3();
 HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_statuses, HW_INT deviceNum);
+HW_API_FUNC HW_INT IOTA_SubscribeBoostrap();
 
 #define OTA_PORT 					 8943
 #define BUFSIZE 					 4096
@@ -233,6 +234,7 @@ HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_st
 #define SUB_DEVICE_UPDATE_STATUS	 "sub_device_update_status"
 #define ONLINE						 "ONLINE"
 #define OFFLINE						 "OFFLINE"
+#define ADDRESS						 "address"
 
 /**
  * ----------------------------deprecated below------------------------------------->
