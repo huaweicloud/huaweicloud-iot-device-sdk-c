@@ -30,6 +30,7 @@
 #include "hw_type.h"
 
 #define MaxServiceReportNum 10  //set the max count of reported services
+#define MaxSubDeviceCount 100
 
 typedef struct {
 	HW_CHAR *service_id;
@@ -58,6 +59,16 @@ typedef struct {
 	HW_CHAR *version;
 } ST_IOTA_UPGRADE_STATUS_INFO;
 
+typedef struct {
+	HW_CHAR *device_id;
+	HW_CHAR *status;
+} ST_IOTA_DEVICE_STATUS;
+
+typedef struct {
+	HW_CHAR *event_time; //UTC time, e.g. 20190531T011540Z
+	ST_IOTA_DEVICE_STATUS device_statuses[MaxSubDeviceCount];
+} ST_IOTA_DEVICE_STATUSES;
+
 HW_API_FUNC HW_INT IOTA_ServiceReportData(HW_CHAR *pcDeviceId, HW_CHAR *pcServiceId, HW_CHAR *pcServiceProperties);
 HW_API_FUNC HW_INT IOTA_ServiceCommandRespense(HW_UINT uiMid, HW_UINT uiResultCode, HW_CHAR *pcCommandRespense);
 HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas);
@@ -76,6 +87,7 @@ HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInf
 HW_API_FUNC SSL_CTX* IOTA_ssl_init(void);
 HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT timeout);
 HW_API_FUNC HW_INT IOTA_SubscribeUserTopic(HW_CHAR *topicParas);
+HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_statuses, HW_INT deviceNum);
 
 #define OTA_PORT 					 8943
 #define BUFSIZE 					 4096
@@ -133,6 +145,12 @@ HW_API_FUNC HW_INT IOTA_SubscribeUserTopic(HW_CHAR *topicParas);
 #define OTA                          "$ota"
 #define VERSION                      "version"
 #define SERVICE_ID					 "service_id"
+#define SUB_DEVICE_MANAGER			 "$sub_device_manager"
+#define SUB_DEVICE_UPDATE_STATUS	 "sub_device_update_status"
+#define STATUS					     "status"
+#define DEVICE_STATUS				 "device_statuses"
+#define ONLINE						 "ONLINE"
+#define OFFLINE						 "OFFLINE"
 
 /**
  * ----------------------------deprecated below------------------------------------->

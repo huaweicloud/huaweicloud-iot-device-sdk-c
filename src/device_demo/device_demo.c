@@ -260,6 +260,20 @@ void Test_ReportUpgradeStatus(int i, char *version) {
 	}
 }
 
+void Test_UpdateSubDeviceStatus(char *deviceId) {
+	int deviceNum = 1;
+	ST_IOTA_DEVICE_STATUSES device_statuses;
+	device_statuses.event_time = GetEventTimesStamp();
+	device_statuses.device_statuses[0].device_id = deviceId;
+	device_statuses.device_statuses[0].status = ONLINE;
+	int messageId = IOTA_UpdateSubDeviceStatus(&device_statuses, deviceNum);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_UpdateSubDeviceStatus() failed, messageId %d\n", messageId);
+	}
+	MemFree(&device_statuses.event_time);
+}
+
+
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
 void HandleAuthSuccess(void *context, int messageId, int code, char *message) {

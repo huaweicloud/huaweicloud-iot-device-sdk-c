@@ -305,6 +305,79 @@ HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVIC
 	}
 }
 
+HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_statuses, HW_INT deviceNum) {
+	if((device_statuses == NULL) || (deviceNum < 0) || (deviceNum > MaxSubDeviceCount)) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_UpdateSubDeviceStatus() error, the input is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}
+	if(device_statuses->device_statuses == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_UpdateSubDeviceStatus() error, the input of device_statuses->device_statuses is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}
+
+	if(device_statuses->device_statuses[0].device_id == NULL || device_statuses->device_statuses[0].status == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_UpdateSubDeviceStatus() error, the input of device_statuses->device_statuses[0] is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}
+
+	cJSON *root, *services, *device_statuses_json;
+	root = cJSON_CreateObject();
+	services = cJSON_CreateArray();
+	device_statuses_json = cJSON_CreateArray();
+	cJSON *service = cJSON_CreateObject();
+	cJSON_AddStringToObject(service, SERVICE_ID, SUB_DEVICE_MANAGER);
+	cJSON_AddStringToObject(service, EVENT_TYPE, SUB_DEVICE_UPDATE_STATUS);
+	cJSON_AddStringToObject(service, EVENT_TIME, device_statuses->event_time);
+
+	int i;
+	for (i = 0; i < deviceNum; i++) {
+		if (device_statuses->device_statuses[i].device_id != NULL && device_statuses->device_statuses[i].status != NULL) {
+
+			cJSON *tmp;
+			tmp = cJSON_CreateObject();
+
+			cJSON_AddStringToObject(tmp, DEVICE_ID, device_statuses->device_statuses[i].device_id);
+			cJSON_AddStringToObject(tmp, STATUS, device_statuses->device_statuses[i].status);
+
+			cJSON_AddItemToArray(device_statuses_json, tmp);
+		} else {
+			PrintfLog(EN_LOG_LEVEL_ERROR, "the payload is wrong.\n");
+			cJSON_Delete(device_statuses_json);
+			cJSON_Delete(service);
+			cJSON_Delete(services);
+			cJSON_Delete(root);
+			return IOTA_PARAMETER_ERROR;
+		}
+	}
+
+	cJSON *paras = cJSON_CreateObject();
+	cJSON_AddItemToObject(paras, DEVICE_STATUS, device_statuses_json);
+
+	cJSON_AddItemToObject(service, PARAS, paras);
+
+
+	cJSON_AddItemToArray(services, service);
+	cJSON_AddItemToObject(root, SERVICES, services);
+
+	char *payload;
+	payload = cJSON_Print(root);
+
+	cJSON_Delete(root);
+
+	int messageId = 0;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = EventUp(payload);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_UpdateSubDeviceStatus() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+
+}
+
+
+
 HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo) {
 	if (!(otaVersionInfo.fw_version != NULL || otaVersionInfo.sw_version != NULL)) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_OTAVersionReport:the input is invalid.\n");
