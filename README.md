@@ -3,6 +3,7 @@
 ## 目 录
 <!-- TOC -->
 
+- [0 版本更新说明](#0)
 - [1 前言](#1)
 - [2 SDK简介](#2)
 - [3 准备工作](#3)
@@ -13,6 +14,9 @@
 - [4 快速体验](#4)
 - [5 使用步骤](#5)
 <!-- /TOC -->
+
+<h1 id="0">0.版本更新说明</h1>
+增加网关更新子设备状态接口
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -81,7 +85,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
    在配置的openssl安装目录下home/test/openssl找到lib目录，有生成的库文件：
 
-   libcrypto.so.1.1、libssl.so.1.1和软链接libcrypto.so、libssl.so，请将这些文件拷贝到SDK的lib文件夹下。
+   libcrypto.so.1.1、libssl.so.1.1和软链接libcrypto.so、libssl.so，请将这些文件拷贝到SDK的lib文件夹下（同时将home/test/openssl/include底下的openssl文件夹拷贝到SDK的include目录下）。
 
    ![](./doc/openssl.png)
 
@@ -123,8 +127,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	![](./doc/paho.png)
 
 6. 拷贝paho库文件
-	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下。
-	
+	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下（同时将paho源码目录下src文件夹里的头文件（MQTTAsync.h/MQTTClient.h/MQTTClientPersistence.h/MQTTProperties.h/MQTTReasonCodes.h/MQTTSubscribeOpts.h）拷贝到SDK的include/base目录下）。
 <h2 id="3.4">3.4 上传profile及注册设备</h2>  
 1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。
    
