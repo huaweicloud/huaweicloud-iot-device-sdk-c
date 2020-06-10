@@ -3,6 +3,7 @@
 ## 目 录
 <!-- TOC -->
 
+- [0 版本更新说明](#0)
 - [1 前言](#1)
 - [2 SDK简介](#2)
 - [3 准备工作](#3)
@@ -13,6 +14,17 @@
 - [4 快速体验](#4)
 - [5 使用步骤](#5)
 <!-- /TOC -->
+
+<h1 id="0">0.版本更新说明</h1>
+1、增加泛协议接入场景
+
+2、增加boostrap场景
+
+3、SDK下行payload结构体封装
+
+
+
+如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -38,14 +50,14 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 
 **SDK目录结构**
 
-![](./doc/sdk_file_content.PNG)
+![](./doc/sdk_file_content2.PNG)
 
 <h1 id="3">3.准备工作</h1>
 <h2 id="3.1">3.1 环境信息</h2>
 SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本）。SDK依赖openssl库和paho库，如果开发者有自己的编译链，需要自行编译openssl/paho库文件。Linux通用的gcc编译步骤请参考章节3.2/3.3。   
 
 <h2 id="3.2">3.2 编译openssl库</h2>  
-1. 访问openssl官网<https://www.openssl.org/source/>，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以上传到目录/home/test为例），并使用如下命令解压：  
+1. 访问openssl官网https://www.openssl.org/source/，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以上传到目录/home/test为例），并使用如下命令解压：  
 
    tar -zxvf openssl-1.1.1d.tar.gz  
    ![](./doc/untarPkg.png)
@@ -81,12 +93,12 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
    在配置的openssl安装目录下home/test/openssl找到lib目录，有生成的库文件：
 
-   libcrypto.so.1.1、libssl.so.1.1和软链接libcrypto.so、libssl.so，请将这些文件拷贝到SDK的lib文件夹下。
+   libcrypto.so.1.1、libssl.so.1.1和软链接libcrypto.so、libssl.so，请将这些文件拷贝到SDK的lib文件夹下（同时将home/test/openssl/include底下的openssl文件夹拷贝到SDK的include目录下）。
 
    ![](./doc/openssl.png)
 
 <h2 id="3.3">3.3 编译paho库</h2>  
-1. 访问github下载地址<https://github.com/eclipse/paho.mqtt.c>, 下载paho.mqtt.c源码。
+1. 访问github下载地址https://github.com/eclipse/paho.mqtt.c, 下载paho.mqtt.c源码。
 
 2. 解压后上传到linux编译机。
 
@@ -123,9 +135,8 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	![](./doc/paho.png)
 
 6. 拷贝paho库文件
-	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下。
-	
-<h2 id="3.4">3.4 上传profile及注册设备</h2>  
+	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下（同时将paho源码目录下src文件夹里的头文件（MQTTAsync.h/MQTTClient.h/MQTTClientPersistence.h/MQTTProperties.h/MQTTReasonCodes.h/MQTTSubscribeOpts.h）拷贝到SDK的include/base目录下）。
+<h2 id="3.4">3.4 上传profile及注册设备</h2>     
 1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。
    
 	![](./doc/profile1.png)
@@ -314,7 +325,7 @@ void setMyCallbacks(){
   
 - **设备消息/属性上报**
   
-  设备鉴权通过后，网关设备可以调用SDK的“设备消息上报”和“设备属性上报”接口上报数据，同时网关可以上报命令响应结果，主要包括“平台命令下发响应”、“平台设置设备属性响应”、“平台查询设备属性响应”。
+  设备鉴权通过后，网关设备可以调用SDK的“设备消息上报”和“设备属性上报”接口上报数据，同时网关可以上报命令响应结果，建议上报数据的间隔不要小于几百毫秒，主要包括“平台命令下发响应”、“平台设置设备属性响应”、“平台查询设备属性响应”。
   
   - 设备消息上报接口：
     
@@ -460,9 +471,14 @@ void SetAuthConfig() {
 
   请参考主目录下的**API文档**。
   
-- **泛协议接入**   
+- **泛协议接入场景**  
 
 	[泛协议接入demo](./doc/generic_protocol.md)
+
+- **bootstrap接入场景**  
+	通过设备发放功能，可以将设备发放到不同的region，参考文档：https://support.huaweicloud.com/qs-iotps/iot_03_0006.html  注意：流程可参考“快速入门”中的各种接入示例，SDK已自动实现示例中的“引导设备”。详细的步骤可参考链接中的“用户指南”。
+	SDK中需要将主目录下的Makefile里的OBJS中的device_demo.o，同时将bootstrap_demo.o放开。    
+	![](./doc/bootstrap.png)
 
 - **编译并运行程序**
 1. 将huaweicloud-iot-device-sdk-c-master.zip压缩包拷贝到Linux环境中，通过如下命令解压：

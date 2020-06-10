@@ -13,7 +13,7 @@
   
   2. 将保存的设备ID和密钥更新到gateway_server_demo.c中（跟device_demo同样的步骤）。   
   
-  3. 将OBJS中的device_demo.o注释掉，同时将generic_tcp_protocol.o gateway_server_demo.o放开。    
+  3. 将主目录下Makefile文件里OBJS中的device_demo.o注释掉，同时将generic_tcp_protocol.o gateway_server_demo.o放开。    
 	![](./generic.PNG)
   4. 编译   
   
