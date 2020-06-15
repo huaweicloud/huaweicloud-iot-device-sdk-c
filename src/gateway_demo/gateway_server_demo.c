@@ -48,6 +48,8 @@ char *gPassWord         = "XXXX";
 int  gIoTPlatformStatus = DISCONNECTED;
 char *gatewayId         = NULL;
 
+int connect_failed_times = 0;
+
 void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
@@ -75,6 +77,16 @@ void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	PrintfLog(EN_LOG_LEVEL_ERROR, "gateway_demo: HandleConnectFailure(), messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
     
 	//Check the cause of connect failure, and do what you want, Such as retrying
+
+	connect_failed_times++;
+	if(connect_failed_times < 10) {
+		TimeSleep(50);
+	} else if (connect_failed_times > 10 && connect_failed_times < 50) {
+		TimeSleep(2500);
+	} else {
+		TimeSleep(10000);
+	}
+
 	int ret = IOTA_Connect();
 	if (ret != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "gateway_demo: HandleConnectFailure(), connect again failed, result %d\n", ret);
@@ -86,6 +98,15 @@ void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
     gIoTPlatformStatus = DISCONNECTED;
     
 	//Check the cause of lost, and do what you want, Such as reconnect 
+
+	if(connect_failed_times < 10) {
+		TimeSleep(50);
+	} else if (connect_failed_times > 10 && connect_failed_times < 50) {
+		TimeSleep(2500);
+	} else {
+		TimeSleep(10000);
+	}
+
 	int ret = IOTA_Connect();
 	if (ret != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "gateway_demo: HandleConnectionLost(), connect again failed, result %d\n", ret);
