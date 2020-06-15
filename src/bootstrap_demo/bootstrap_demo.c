@@ -68,6 +68,8 @@ int disconnected_ = 0;
 
 //char *scopeId = NULL;  //boostrap device group 
 
+int connect_failed_times = 0;
+
 void Test_PropertiesReport(void);
 
 void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
@@ -125,6 +127,7 @@ void Test_PropertiesReport() {
 void HandleConnectSuccess (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	PrintfLog(EN_LOG_LEVEL_INFO, "bootstrap_demo: handleConnectSuccess(), login success\n");
 	disconnected_ = 0;
+	connect_failed_times = 0;
 }
 
 void HandleConnectFailure (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
@@ -132,6 +135,15 @@ void HandleConnectFailure (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	//judge if the network is available etc. and login again
 	//...
 	PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: HandleConnectFailure() login again\n");
+	connect_failed_times++;
+	if(connect_failed_times < 10) {
+		TimeSleep(50);
+	} else if (connect_failed_times > 10 && connect_failed_times < 50) {
+		TimeSleep(2500);
+	} else {
+		TimeSleep(10000);
+	}
+
 	int ret = IOTA_Connect();
 	if (ret != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: HandleAuthFailure() error, login again failed, result %d\n", ret);
@@ -142,6 +154,15 @@ void HandleConnectionLost (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: HandleConnectionLost() error, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 	//judge if the network is available etc. and login again
 	//...
+	
+	if(connect_failed_times < 10) {
+		TimeSleep(50);
+	} else if (connect_failed_times > 10 && connect_failed_times < 50) {
+		TimeSleep(2500);
+	} else {
+		TimeSleep(10000);
+	}
+
 	int ret = IOTA_Connect();
 	if (ret != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: HandleConnectionLost() error, login again failed, result %d\n", ret);

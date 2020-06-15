@@ -62,6 +62,8 @@ char *password_ = "XXXXX";
 
 int disconnected_ = 0;
 
+int connect_failed_times = 0;
+
 char *ota_version = NULL;
 char *subDeviceId = "XXXX";
 void Test_MessageReport(void);
@@ -344,6 +346,16 @@ void HandleConnectFailure (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	//judge if the network is available etc. and login again
 	//...
 	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() login again\n");
+
+	connect_failed_times++;
+	if(connect_failed_times < 10) {
+		TimeSleep(50);
+	} else if (connect_failed_times > 10 && connect_failed_times < 50) {
+		TimeSleep(2500);
+	} else {
+		TimeSleep(10000);
+	}
+
 	int ret = IOTA_Connect();
 	if (ret != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleAuthFailure() error, login again failed, result %d\n", ret);
@@ -354,6 +366,15 @@ void HandleConnectionLost (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectionLost() error, messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 	//judge if the network is available etc. and login again
 	//...
+
+	if(connect_failed_times < 10) {
+		TimeSleep(50);
+	} else if (connect_failed_times > 10 && connect_failed_times < 50) {
+		TimeSleep(2500);
+	} else {
+		TimeSleep(10000);
+	}
+
 	int ret = IOTA_Connect();
 	if (ret != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectionLost() error, login again failed, result %d\n", ret);
