@@ -33,7 +33,7 @@ int SubscribePropget(void);
 int SubscribePropResp(void);
 int SubscribeSubDeviceEvent(void);
 int SubscribeUserTopic(char *topicParas);
-int SubsribeTopic(char *topic);
+int SubsribeTopic(char *topic, const int qos);
 int SubscribeJsonCmdV3();
 int SubscribeBinaryCmdV3();
 int SubscribeBootstrap();

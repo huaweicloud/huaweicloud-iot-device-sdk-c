@@ -106,7 +106,7 @@ int MqttBase_SetCallback(int item, MQTT_BASE_CALLBACK_HANDLER handler);
 int MqttBase_SetCallbackWithTopic(int item, MQTT_BASE_CALLBACK_HANDLER_WITH_TOPIC handler);
 int MqttBase_CreateConnection(void);
 int MqttBase_ReleaseConnection(void);
-int MqttBase_subscribe(const char *topic);
+int MqttBase_subscribe(const char *topic, const int qos);
 int MqttBase_publish(const char *topic, char *payload);
 int MqttBase_StringLength(char *str);
 int MqttBase_destory(void);

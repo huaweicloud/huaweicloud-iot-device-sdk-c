@@ -115,6 +115,7 @@ HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInf
 HW_API_FUNC SSL_CTX* IOTA_ssl_init(void);
 HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT timeout);
 HW_API_FUNC HW_INT IOTA_SubscribeUserTopic(HW_CHAR *topicParas);
+HW_API_FUNC HW_INT IOTA_SubscribeTopic(HW_CHAR *topic, HW_INT qos);
 HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum);
 HW_API_FUNC HW_INT IOTA_BinaryReportV3(HW_CHAR *payload);
 HW_API_FUNC HW_INT IOTA_CmdRspV3(ST_IOTA_COMMAND_RSP_V3 *cmdRspV3);
