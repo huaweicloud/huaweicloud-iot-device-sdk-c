@@ -542,7 +542,7 @@ char* MqttBase_GetConfig(int item) {
 	}
 }
 
-int MqttBase_subscribe(const char *topic) {
+int MqttBase_subscribe(const char *topic, const int qos) {
 #if defined(WIN32) || defined(WIN64)
 	pMQTTAsync_subscribe MQTTAsync_subscribe = (pMQTTAsync_subscribe) GetProcAddress(mqttdll, "MQTTAsync_subscribe");
 #endif
@@ -556,7 +556,6 @@ int MqttBase_subscribe(const char *topic) {
 	opts.onSuccess = MqttBase_OnSubscribeSuccess;
 	opts.onFailure = MqttBase_OnSubscribeFailure;
 
-	int qos = 1;
 	ret = MQTTAsync_subscribe(client, topic, qos, &opts); //this qos must be 1, otherwise if subscribe failed, the downlink message cannot arrive.
 
 	if (MQTTASYNC_SUCCESS != ret) {

@@ -36,7 +36,7 @@ int SubscribeMessageDown() {
 		return IOTA_FAILURE;
 	}
 	char *topic = CombineStrings(3, TOPIC_PREFIX, userName, TOPIC_SUFFIX_MESSAGEDOWN);
-	return SubsribeTopic(topic);
+	return SubsribeTopic(topic, 0);
 }
 
 int SubscribeCommand() {
@@ -46,7 +46,7 @@ int SubscribeCommand() {
 		return IOTA_FAILURE;
 	}
 	char *topic = CombineStrings(4, TOPIC_PREFIX, userName, TOPIC_SUFFIX_COMMAND, WILDCARD);
-	return SubsribeTopic(topic);
+	return SubsribeTopic(topic, 0);
 }
 
 int SubscribePropSet() {
@@ -56,7 +56,7 @@ int SubscribePropSet() {
 		return IOTA_FAILURE;
 	}
 	char *topic = CombineStrings(4, TOPIC_PREFIX, userName, TOPIC_SUFFIX_PROP_SET, WILDCARD);
-	return SubsribeTopic(topic);
+	return SubsribeTopic(topic, 0);
 }
 
 int SubscribePropget() {
@@ -66,7 +66,7 @@ int SubscribePropget() {
 		return IOTA_FAILURE;
 	}
 	char *topic = CombineStrings(4, TOPIC_PREFIX, userName, TOPIC_SUFFIX_PROP_GET, WILDCARD);
-	return SubsribeTopic(topic);
+	return SubsribeTopic(topic, 0);
 }
 
 int SubscribePropResp() {
@@ -76,7 +76,7 @@ int SubscribePropResp() {
 		return IOTA_FAILURE;
 	}
 	char *topic = CombineStrings(4, TOPIC_PREFIX, userName, TOPIC_SUFFIX_PROP_RSP, WILDCARD);
-	return SubsribeTopic(topic);
+	return SubsribeTopic(topic, 0);
 }
 
 int SubscribeSubDeviceEvent() {
@@ -86,7 +86,7 @@ int SubscribeSubDeviceEvent() {
 		return IOTA_FAILURE;
 	}
 	char *topic = CombineStrings(3, TOPIC_PREFIX, userName, TOPIC_SUFFIX_EVENT_DOWN);
-	return SubsribeTopic(topic);
+	return SubsribeTopic(topic, 0);
 }
 
 int SubscribeUserTopic(char *topicParas) {
@@ -100,16 +100,16 @@ int SubscribeUserTopic(char *topicParas) {
 		return IOTA_FAILURE;
 	}
 	char *topic = CombineStrings(4, TOPIC_PREFIX, userName, TOPIC_SUFFIX_USER, topicParas);
-	return SubsribeTopic(topic);
+	return SubsribeTopic(topic, 0);
 }
 
 
-int SubsribeTopic(char *topic) {
+int SubsribeTopic(char *topic, const int qos) {
 	if (topic == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubsribeTopic() error, the topic is invalid.\n");
 		return IOTA_FAILURE;
 	}
-	int ret = MqttBase_subscribe((const char*) topic);
+	int ret = MqttBase_subscribe((const char*) topic, qos);
 	MemFree(&topic);
 
 	if (ret < 0) {
@@ -125,7 +125,7 @@ int SubscribeJsonCmdV3() {
 		return IOTA_FAILURE;
 	}
 	char *topic = CombineStrings(4, TOPIC_PREFIX_V3, userName, COMMAND_V3, JSON_V3);
-	return SubsribeTopic(topic);
+	return SubsribeTopic(topic, 0);
 }
 
 int SubscribeBinaryCmdV3() {
@@ -135,7 +135,7 @@ int SubscribeBinaryCmdV3() {
 		return IOTA_FAILURE;
 	}
 	char *topic = CombineStrings(4, TOPIC_PREFIX_V3, userName, COMMAND_V3, BINARY_V3);
-	return SubsribeTopic(topic);
+	return SubsribeTopic(topic, 0);
 }
 
 int SubscribeBootstrap() {
@@ -145,7 +145,7 @@ int SubscribeBootstrap() {
 		return IOTA_FAILURE;
 	}
 	char *topic = CombineStrings(3, TOPIC_PREFIX, userName, BOOTSTRAP_DOWN);
-	return SubsribeTopic(topic);
+	return SubsribeTopic(topic, 0);
 }
 
 void SubscribeAll() {

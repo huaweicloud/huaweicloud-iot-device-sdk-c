@@ -541,6 +541,16 @@ HW_API_FUNC HW_INT IOTA_SubscribeUserTopic(HW_CHAR *topicParas) {
 }
 
 /**
+ *@Description: subscribe full topic
+ *@param topic: the full topic
+ *@param qos: qos
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_SubscribeTopic(HW_CHAR *topic, HW_INT qos) {
+	return SubsribeTopic(topic, qos);
+}
+
+/**
  *@Description: get OTA packages
  *@param url: package download address
  *@param token: Temporary token of the download address of the package URL
