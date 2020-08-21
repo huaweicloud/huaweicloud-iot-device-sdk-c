@@ -22,7 +22,7 @@
 
 3、SDK下行payload结构体封装
 
-
+4、增加压缩消息、属性上报
 
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
@@ -136,7 +136,30 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 6. 拷贝paho库文件
 	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下（同时将paho源码目录下src文件夹里的头文件（MQTTAsync.h/MQTTClient.h/MQTTClientPersistence.h/MQTTProperties.h/MQTTReasonCodes.h/MQTTSubscribeOpts.h）拷贝到SDK的include/base目录下）。
-<h2 id="3.4">3.4 上传profile及注册设备</h2>     
+
+
+<h2 id="3.4">3.4 编译zlib库</h2>  
+1. 下载zlib源码https://github.com/madler/zlib/archive/v1.2.11.zip 
+	通过如下命令解压缩：
+   
+   	unzip zlib-1.2.11.zip
+   
+2. 进入源码目录下：
+
+	cd  zlib-1.2.11
+	
+3. 配置生成makefile文件
+
+	./configure
+	
+4. 执行makefile文件
+
+	make
+	
+5. 拷贝so库文件
+	将源码目录下生成的libz.so、libz.so.1、libz.so.1.2.11拷贝到sdk的lib文件夹下。
+
+<h2 id="3.5">3.5 上传profile及注册设备</h2>     
 1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。
    
 	![](./doc/profile1.png)

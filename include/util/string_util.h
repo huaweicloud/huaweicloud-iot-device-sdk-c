@@ -54,5 +54,6 @@ char* GetEventTimesStamp(void);
 int GetSubStrIndex(const char *str, const char *substr);
 unsigned  long long getTime();
 long long  getLLongValueFromStr (const* str, const *subStr);
+int gZIPCompress(const char *src, int srcLength, unsigned char *dest, int destLength);
 
 #endif /* INCLUDE_UTIL_STRING_UTIL_H_ */

@@ -107,7 +107,7 @@ void SendReportToIoTPlatform(char *recvBuf) {
         return;
     }
 
-    int messageId = IOTA_PropertiesReport(payload, 1);
+    int messageId = IOTA_PropertiesReport(payload, 1, 0);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "geteway_demo: SendReportToIoTPlatform(), report properties failed, messageId %d\n", messageId);
 	}

@@ -28,6 +28,7 @@
 #define TOPIC_PREFIX 				    "$oc/devices/"
 #define TOPIC_SUFFIX_USER 			    "/user/"
 #define TOPIC_SUFFIX_MESSAGEUP 			"/sys/messages/up"
+#define TOPIC_SUFFIX_COMPRESS			"?encoding=gzip"
 #define TOPIC_SUFFIX_MESSAGEDOWN 	    "/sys/messages/down"
 #define TOPIC_SUFFIX_PROPS_REP 			"/sys/gateway/sub_devices/properties/report"
 #define TOPIC_SUFFIX_COMMAND 		    "/sys/commands/"

@@ -28,6 +28,7 @@
 #include <string.h>
 #include <time.h>
 #include "string_util.h"
+#include "zlib.h"
 
 int StringLength(char *str) {
 	if (str == NULL) {
@@ -236,3 +237,44 @@ long long  getLLongValueFromStr (const* str, const *subStr) {
 	long long version = strtoll(buf, &end, 10);
 	return version;
 }
+
+
+int gZIPCompress(const char *src, int srcLength, unsigned char *dest, int destLength) {
+	z_stream c_stream;
+	int encoding = 16;
+	int ret = 0;
+
+	if(src != NULL && srcLength > 0) {
+		c_stream.zalloc = NULL;
+		c_stream.zfree = NULL;
+		c_stream.opaque = NULL;
+		if(deflateInit2(&c_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
+                    MAX_WBITS | encoding, 8, Z_DEFAULT_STRATEGY) != Z_OK) return -1;
+		c_stream.next_in  = (Bytef *)src;
+		c_stream.avail_in  = srcLength;
+		c_stream.next_out = (Bytef *)dest;
+		c_stream.avail_out  = destLength;
+		while (c_stream.avail_in != 0 && c_stream.total_out < destLength) {
+			if(deflate(&c_stream, Z_NO_FLUSH) != Z_OK) {
+				return -1;
+			}
+		}
+		if(c_stream.avail_in != 0) {
+			return c_stream.avail_in;
+		}
+		for (;;) {
+			if((ret = deflate(&c_stream, Z_FINISH)) == Z_STREAM_END) {
+				break;
+			}
+			if(ret != Z_OK) {
+				return -1;
+			}
+		}
+		if(deflateEnd(&c_stream) != Z_OK) {
+			return -1;
+		}
+		return c_stream.total_out;
+	}
+	return -1;
+}
+

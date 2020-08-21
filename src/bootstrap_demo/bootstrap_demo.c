@@ -114,7 +114,7 @@ void Test_PropertiesReport() {
 	services[1].service_id = "analog";
 	services[1].properties = service2;
 
-	int messageId = IOTA_PropertiesReport(services, serviceNum);
+	int messageId = IOTA_PropertiesReport(services, serviceNum, 0);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
 	}
