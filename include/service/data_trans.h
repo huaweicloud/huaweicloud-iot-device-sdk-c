@@ -25,9 +25,9 @@
 #ifndef INCLUDE_DATATRANS_H_
 #define INCLUDE_DATATRANS_H_
 
-int ReportDeviceData(char *payload, char *topicParas);
-int ReportDeviceProperties(char *payload);
-int ReportBatchDeviceProperties(char *payload);
+int ReportDeviceData(char *payload, char *topicParas, int compressFlag);
+int ReportDeviceProperties(char *payload, int compressFlag);
+int ReportBatchDeviceProperties(char *payload, int compressFlag);
 int ReportData(char *topic, char *payload);
 int ReportCommandReponse(char *requestId, char *pcCommandRespense);
 int ReportPropSetReponse(char *requestId, char *pcCommandRespense);

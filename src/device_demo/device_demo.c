@@ -112,10 +112,10 @@ void TimeSleep(int ms) {
 
 void Test_MessageReport() {
 	//default topic
-	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", NULL);
+	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello123123123123", NULL, 0);
 
 	//user topic
-//	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg");
+//	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg", 0);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
 	}
@@ -193,7 +193,7 @@ void Test_PropertiesReport() {
 	services[1].service_id = "analog";
 	services[1].properties = service2;
 
-	int messageId = IOTA_PropertiesReport(services, serviceNum);
+	int messageId = IOTA_PropertiesReport(services, serviceNum, 0);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
 	}
@@ -227,7 +227,7 @@ void Test_BatchPropertiesReport(char *deviceId) {
 //	devices[1].services[0].service_id = "device2_service11111111";
 //	devices[1].services[0].properties = device2_service1;
 
-	int messageId = IOTA_BatchPropertiesReport(devices, deviceNum, serviceList);
+	int messageId = IOTA_BatchPropertiesReport(devices, deviceNum, serviceList, 0);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_BatchPropertiesReport() failed, messageId %d\n", messageId);
 	}

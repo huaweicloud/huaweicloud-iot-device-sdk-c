@@ -46,7 +46,7 @@ USER_TOPIC_MSG_CALLBACK_HANDLER onUserTopicMessage;
 BOOTSTRAP_CALLBACK_HANDLER onBootstrap;
 
 void OnLoginSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-	SubscribeAll();
+//	SubscribeAll();
 	if (onConnSuccess) {
 		(onConnSuccess)(rsp);
 	}

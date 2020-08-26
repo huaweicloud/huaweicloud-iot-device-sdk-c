@@ -14,7 +14,7 @@ HEADER_PATH = -I./include
 LIB_PATH = -L./lib
 SRC_PATH = ./src
 
-LIBS = $(LIB_PATH) -lpaho-mqtt3as -lssl -lcrypto
+LIBS = $(LIB_PATH) -lpaho-mqtt3as -lssl -lcrypto -lz
 #$(LIB_PATH) -lHWMQTT
 #$(LIB_PATH) -lpaho-mqtt3cs $(LIB_PATH)
 
@@ -40,7 +40,7 @@ log_util.o: $(SRC_PATH)/util/log_util.c
 	$(CC) $(CFLAGS) -c $(SRC_PATH)/util/log_util.c -o log_util.o $(HEADER_PATH)/util/ $(HEADER_PATH)/agentlite/
 	
 string_util.o: $(SRC_PATH)/util/string_util.c
-	$(CC) $(CFLAGS) -c $(SRC_PATH)/util/string_util.c -o string_util.o $(HEADER_PATH)/util/ $(HEADER_PATH)/agentlite/
+	$(CC) $(CFLAGS) -c $(SRC_PATH)/util/string_util.c -o string_util.o $(HEADER_PATH)/util/ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/third_party/zlib/
 	
 cJSON.o: $(SRC_PATH)/third_party/cjson/cJSON.c
 	$(CC) $(CFLAGS) -c $(SRC_PATH)/third_party/cjson/cJSON.c -o cJSON.o $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/agentlite/

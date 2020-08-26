@@ -56,9 +56,10 @@
  *@param content: the message content
  *@param topicParas: customize the topic parameters, such as "devmsg" (do not add '/' or special characters in front of it)
  *					 If it is set to NULL, the platform default topic will be used for reporting.
+ *@param compressFlag : 0 for no compression, 1 for compression
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas) {
+HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas, HW_INT compressFlag) {
 	if (content == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the content cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -79,7 +80,7 @@ HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, 
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportDeviceData(payload, topicParas);
+		messageId = ReportDeviceData(payload, topicParas, compressFlag);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_MessageReport() with payload %s By topic %s==>\n", payload, topicParas);
 		free(payload);
 		return messageId;
@@ -90,9 +91,10 @@ HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, 
  *@Description: report device properties to IoT platform
  *@param pServiceData[]: the array of ST_IOTA_SERVICE_DATA_INFO structure
  *@param serviceNum: number of reported services
+ *@param compressFlag : 0 for no compression, 1 for compression
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum) {
+HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT compressFlag) {
 	if (serviceNum == 0 || pServiceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -129,7 +131,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportDeviceProperties(payload);
+		messageId = ReportDeviceProperties(payload, compressFlag);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReport() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -141,9 +143,10 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
  *@param pDeviceData[]: the array of ST_IOTA_DEVICE_DATA_INFO structure.
  *@param deviceNum: number of reported sub device
  *@param serviceLenList[]: the array of number of services reported by sub equipment
+ *@param compressFlag : 0 for no compression, 1 for compression
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[]) {
+HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[], HW_INT compressFlag) {
 	if (deviceNum == 0 || serviceLenList == NULL || pDeviceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -204,7 +207,7 @@ HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceDa
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportBatchDeviceProperties(payload);
+		messageId = ReportBatchDeviceProperties(payload, compressFlag);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BatchPropertiesReport() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
