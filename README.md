@@ -24,6 +24,8 @@
 
 4、增加压缩消息、属性上报
 
+5、隐式订阅
+
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
 <h1 id="1">1.前言</h1>
