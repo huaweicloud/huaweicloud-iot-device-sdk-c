@@ -57,9 +57,11 @@
  *@param topicParas: customize the topic parameters, such as "devmsg" (do not add '/' or special characters in front of it)
  *					 If it is set to NULL, the platform default topic will be used for reporting.
  *@param compressFlag : 0 for no compression, 1 for compression
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas, HW_INT compressFlag) {
+HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas, HW_INT compressFlag, void *context) {
 	if (content == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the content cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -80,7 +82,7 @@ HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, 
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportDeviceData(payload, topicParas, compressFlag);
+		messageId = ReportDeviceData(payload, topicParas, compressFlag, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_MessageReport() with payload %s By topic %s==>\n", payload, topicParas);
 		free(payload);
 		return messageId;
@@ -92,9 +94,11 @@ HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, 
  *@param pServiceData[]: the array of ST_IOTA_SERVICE_DATA_INFO structure
  *@param serviceNum: number of reported services
  *@param compressFlag : 0 for no compression, 1 for compression
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT compressFlag) {
+HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT compressFlag, void *context) {
 	if (serviceNum == 0 || pServiceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -131,7 +135,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportDeviceProperties(payload, compressFlag);
+		messageId = ReportDeviceProperties(payload, compressFlag, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReport() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -144,9 +148,11 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
  *@param deviceNum: number of reported sub device
  *@param serviceLenList[]: the array of number of services reported by sub equipment
  *@param compressFlag : 0 for no compression, 1 for compression
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[], HW_INT compressFlag) {
+HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[], HW_INT compressFlag, void *context) {
 	if (deviceNum == 0 || serviceLenList == NULL || pDeviceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -207,7 +213,7 @@ HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceDa
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportBatchDeviceProperties(payload, compressFlag);
+		messageId = ReportBatchDeviceProperties(payload, compressFlag, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BatchPropertiesReport() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -220,9 +226,11 @@ HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceDa
  *@param result_code: command execution result, 0 for success, others for failure
  *@param response_name: name of the command response
  *@param pcCommandResponse: command response results obtained from the profile can be parsed into JSON
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse) {
+HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse, void *context) {
 	if (pcCommandResponse == NULL || requestId == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_CommandResponse:the requestId or commandResponse cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -249,7 +257,7 @@ HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, 
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportCommandReponse(requestId, payload);
+		messageId = ReportCommandReponse(requestId, payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CommandResponse() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -261,9 +269,11 @@ HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, 
  *@param requestId: unique identification of the request
  *@param result_code: command execution result, 0 for success, others for failure
  *@param result_desc: result description
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_PropertiesSetResponse(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *result_desc) {
+HW_API_FUNC HW_INT IOTA_PropertiesSetResponse(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *result_desc, void *context) {
 	if (requestId == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_PropertiesSetResponse:the requestId cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -286,7 +296,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesSetResponse(HW_CHAR *requestId, HW_INT result_
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportPropSetReponse(requestId, payload);
+		messageId = ReportPropSetReponse(requestId, payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesSetResponse() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -299,9 +309,11 @@ HW_API_FUNC HW_INT IOTA_PropertiesSetResponse(HW_CHAR *requestId, HW_INT result_
  *@param requestId: unique identification of the request
  *@param serviceProp[]: the array of ST_IOTA_SERVICE_DATA_INFO structure
  *@param serviceNum: number of reported services
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVICE_DATA_INFO serviceProp[], HW_INT serviceNum) {
+HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVICE_DATA_INFO serviceProp[], HW_INT serviceNum, void *context) {
 	if (serviceNum <= 0 || requestId == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_PropertiesGetResponse:the requestId or serviceNum is wrong.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -354,7 +366,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVIC
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportPropGetReponse(requestId, payload);
+		messageId = ReportPropGetReponse(requestId, payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesGetResponse() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -365,9 +377,11 @@ HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVIC
  *@Description: report sub device satuses
  *@param device_statuses[]: the array of ST_IOTA_DEVICE_DATA_INFO structure.
  *@param deviceNum: number of sub device needed to report status
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_statuses, HW_INT deviceNum) {
+HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_statuses, HW_INT deviceNum, void *context) {
 	if((device_statuses == NULL) || (deviceNum < 0) || (deviceNum > MaxSubDeviceCount)) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_UpdateSubDeviceStatus() error, the input is invalid.\n");
 		return IOTA_PARAMETER_ERROR;
@@ -430,7 +444,7 @@ HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_st
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = EventUp(payload);
+		messageId = EventUp(payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_UpdateSubDeviceStatus() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -441,9 +455,11 @@ HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_st
 /**
  *@Description: report OTA version
  *@param otaVersionInfo: ST_IOTA_OTA_VERSION_INFO structure
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo) {
+HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo, void *context) {
 	if (!(otaVersionInfo.fw_version != NULL || otaVersionInfo.sw_version != NULL)) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_OTAVersionReport:the input is invalid.\n");
 		return IOTA_PARAMETER_ERROR;
@@ -475,7 +491,7 @@ HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = EventUp(payload);
+		messageId = EventUp(payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_OTAVersionReport() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -485,9 +501,11 @@ HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo
 /**
  *@Description: report OTA status
  *@param otaVersionInfo: ST_IOTA_UPGRADE_STATUS_INFO structure
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInfo) {
+HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInfo, void *context) {
 	if (otaStatusInfo.progress > 100 || otaStatusInfo.progress < 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_OTAVersionReport:the progress is invalid.\n");
 		return IOTA_PARAMETER_ERROR;
@@ -527,7 +545,7 @@ HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInf
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = EventUp(payload);
+		messageId = EventUp(payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_OTAStatusReport() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -844,9 +862,11 @@ HW_API_FUNC SSL_CTX* IOTA_ssl_init()
  *@param requestId: unique identification of the request
  *@param object_device_id: the target device id, NULL means the target device id is the gateway device id
  *@param service_id: the device service id obtained from the profile
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_GetDeviceShadow(HW_CHAR *requestId, HW_CHAR *object_device_id, HW_CHAR *service_id) {
+HW_API_FUNC HW_INT IOTA_GetDeviceShadow(HW_CHAR *requestId, HW_CHAR *object_device_id, HW_CHAR *service_id, void *context) {
 	if (requestId == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the requestId cannot be null\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -868,7 +888,7 @@ HW_API_FUNC HW_INT IOTA_GetDeviceShadow(HW_CHAR *requestId, HW_CHAR *object_devi
 		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetDeviceShadow() error,the payload is null.\n");
 		return IOTA_FAILURE;
 	} else {
-		messageId = GetPropertiesRequest(requestId, payload);
+		messageId = GetPropertiesRequest(requestId, payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_GetDeviceShadow() with requestId is %s, payload %s ==>\n", requestId, payload);
 		free(payload);
 		return messageId;
@@ -894,9 +914,11 @@ HW_API_FUNC HW_INT IOTA_Bootstrap() {
  *@Description: report device properties to IoT platform by V3 topic
  *@param pServiceData[]: the array of ST_IOTA_SERVICE_DATA_INFO structure
  *@param serviceNum: number of reported services
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum) {
+HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, void *context) {
 	if (serviceNum == 0 || pServiceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -934,7 +956,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceDat
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportDevicePropertiesV3(payload, 0);
+		messageId = ReportDevicePropertiesV3(payload, 0, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReportV3() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -944,15 +966,17 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceDat
 /**
  *@Description: report binary to IoT platform by V3 topic
  *@param payload: hexadecimal data
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_BinaryReportV3(HW_CHAR *payload) {
+HW_API_FUNC HW_INT IOTA_BinaryReportV3(HW_CHAR *payload, void *context) {
 	if (payload == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
 	}
 
-	int messageId = ReportDevicePropertiesV3(payload, 1);
+	int messageId = ReportDevicePropertiesV3(payload, 1, context);
 	PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BinaryReportV3() with payload %s ==>\n", payload);
 	return messageId;
 }
@@ -960,9 +984,11 @@ HW_API_FUNC HW_INT IOTA_BinaryReportV3(HW_CHAR *payload) {
 /**
  *@Description: response command by V3 topic
  *@param cmdRspV3: ST_IOTA_COMMAND_RSP_V3 structure
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_CmdRspV3(ST_IOTA_COMMAND_RSP_V3 *cmdRspV3) {
+HW_API_FUNC HW_INT IOTA_CmdRspV3(ST_IOTA_COMMAND_RSP_V3 *cmdRspV3, void *context) {
 	if (cmdRspV3 == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
@@ -986,7 +1012,7 @@ HW_API_FUNC HW_INT IOTA_CmdRspV3(ST_IOTA_COMMAND_RSP_V3 *cmdRspV3) {
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportDevicePropertiesV3(payload, 0);
+		messageId = ReportDevicePropertiesV3(payload, 0, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CmdRspV3() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -1025,9 +1051,11 @@ HW_API_FUNC HW_INT IOTA_SubscribeBoostrap() {
 
 /**
  *@Description: get NTP time.Value is returned in the event callback function
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_GetNTPTime() {
+HW_API_FUNC HW_INT IOTA_GetNTPTime(void *context) {
 	cJSON *root, *services;
 	root = cJSON_CreateObject();
 	services = cJSON_CreateArray();
@@ -1056,7 +1084,7 @@ HW_API_FUNC HW_INT IOTA_GetNTPTime() {
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = EventUp(payload);
+		messageId = EventUp(payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_GetNTPTime() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -1065,18 +1093,18 @@ HW_API_FUNC HW_INT IOTA_GetNTPTime() {
 }
 
 //Reserved interface for transparent transmission
-HW_API_FUNC HW_INT IOTA_ReportSubDeviceInfo(HW_CHAR *pcPayload) {
+HW_API_FUNC HW_INT IOTA_ReportSubDeviceInfo(HW_CHAR *pcPayload, void *context) {
 	if (pcPayload == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the pcPayload cannot be null\n");
 		return -1;
 	}
 
-	HW_INT messageId = ReportSubDeviceInfo(pcPayload);
+	HW_INT messageId = ReportSubDeviceInfo(pcPayload, context);
 	PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_ReportSubDeviceInfo() with payload %s ==>\n", pcPayload);
 	return messageId;
 }
 
-HW_API_FUNC HW_INT IOTA_SubDeviceVersionReport(HW_CHAR *version) {
+HW_API_FUNC HW_INT IOTA_SubDeviceVersionReport(HW_CHAR *version, void *context) {
 	if (version == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the version cannot be null\n");
 		return -1;
@@ -1095,14 +1123,14 @@ HW_API_FUNC HW_INT IOTA_SubDeviceVersionReport(HW_CHAR *version) {
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportSubDeviceInfo(payload);
+		messageId = ReportSubDeviceInfo(payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_SubDeviceVersionReport() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
 	}
 }
 
-HW_API_FUNC HW_INT IOTA_SubDeviceProductGetReport(cJSON *product_id_list) {
+HW_API_FUNC HW_INT IOTA_SubDeviceProductGetReport(cJSON *product_id_list, void *context) {
 	if (product_id_list == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the product_id_list cannot be null\n");
 		return -1;
@@ -1121,7 +1149,7 @@ HW_API_FUNC HW_INT IOTA_SubDeviceProductGetReport(cJSON *product_id_list) {
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportSubDeviceInfo(payload);
+		messageId = ReportSubDeviceInfo(payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_SubDeviceProductGetReport() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
@@ -1129,7 +1157,7 @@ HW_API_FUNC HW_INT IOTA_SubDeviceProductGetReport(cJSON *product_id_list) {
 }
 
 //to do: participation is struct  ST_IOTA_DEVICE_INFO under iota_device_info.h
-HW_API_FUNC HW_INT IOTA_SubDeviceScanReport(cJSON *device_list) {
+HW_API_FUNC HW_INT IOTA_SubDeviceScanReport(cJSON *device_list, void *context) {
 	if (device_list == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the device_list cannot be null\n");
 		return -1;
@@ -1148,7 +1176,7 @@ HW_API_FUNC HW_INT IOTA_SubDeviceScanReport(cJSON *device_list) {
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportSubDeviceInfo(payload);
+		messageId = ReportSubDeviceInfo(payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_SubDeviceScanReport() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;

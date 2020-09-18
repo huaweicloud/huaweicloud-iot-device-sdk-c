@@ -25,17 +25,17 @@
 #ifndef INCLUDE_DATATRANS_H_
 #define INCLUDE_DATATRANS_H_
 
-int ReportDeviceData(char *payload, char *topicParas, int compressFlag);
-int ReportDeviceProperties(char *payload, int compressFlag);
-int ReportBatchDeviceProperties(char *payload, int compressFlag);
-int ReportData(char *topic, char *payload);
-int ReportCommandReponse(char *requestId, char *pcCommandRespense);
-int ReportPropSetReponse(char *requestId, char *pcCommandRespense);
-int ReportPropGetReponse(char *requestId, char *pcCommandRespense);
-int GetPropertiesRequest(char *requestId, char *pcCommandRespense);
-int ReportSubDeviceInfo(char *payload);
-int EventUp(char *payload);
-int ReportDevicePropertiesV3(char *payload, int codecMode);
+int ReportDeviceData(char *payload, char *topicParas, int compressFlag, void *context);
+int ReportDeviceProperties(char *payload, int compressFlag, void *context);
+int ReportBatchDeviceProperties(char *payload, int compressFlag, void *context);
+int ReportData(char *topic, char *payload, void *context);
+int ReportCommandReponse(char *requestId, char *pcCommandRespense, void *context);
+int ReportPropSetReponse(char *requestId, char *pcCommandRespense, void *context);
+int ReportPropGetReponse(char *requestId, char *pcCommandRespense, void *context);
+int GetPropertiesRequest(char *requestId, char *pcCommandRespense, void *context);
+int ReportSubDeviceInfo(char *payload, void *context);
+int EventUp(char *payload, void* context);
+int ReportDevicePropertiesV3(char *payload, int codecMode, void *context);
 int BinaryReportV3(char *payload);
 int Bootstrap();
 
