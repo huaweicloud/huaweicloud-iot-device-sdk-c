@@ -57,7 +57,7 @@ char *gatewayId = NULL;
 char *serverIp_ = "iot-mqtts.cn-north-4.myhuaweicloud.com";
 int port_ = 8883;
 
-char *username_ = "XXXXX"; //deviceId
+char *username_ = "XXXXX"; //deviceId，The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username
 char *password_ = "XXXXX";
 
 int disconnected_ = 0;

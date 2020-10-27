@@ -62,7 +62,7 @@ int port_ = 8883;
 
 char *password_ = "XXXX";
 
-char* username_ = "XXXX";//deviceId
+char* username_ = "XXXX";//deviceId，The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username
 
 int disconnected_ = 0;
 
