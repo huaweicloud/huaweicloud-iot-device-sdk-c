@@ -57,7 +57,7 @@ char *gatewayId = NULL;
 char *serverIp_ = "iot-mqtts.cn-north-4.myhuaweicloud.com";
 int port_ = 8883;
 
-char *username_ = "XXXXX"; //deviceId
+char *username_ = "XXXXX"; //deviceId，The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username
 char *password_ = "XXXXX";
 
 int disconnected_ = 0;
@@ -112,7 +112,7 @@ void TimeSleep(int ms) {
 
 void Test_MessageReport() {
 	//default topic
-	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello123123123123", NULL, 0);
+	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello123123123123", NULL, 0, NULL);
 
 	//user topic
 //	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg", 0);
@@ -140,7 +140,7 @@ void Test_ReportJson() {
 	services[1].service_id = "CPU";
 	services[1].properties = service2;
 
-	int messageId = IOTA_PropertiesReportV3(services, serviceNum);
+	int messageId = IOTA_PropertiesReportV3(services, serviceNum, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportJson() failed, messageId %d\n", messageId);
 	}
@@ -150,7 +150,7 @@ void Test_ReportJson() {
 
 //V3 report
 void Test_ReportBinary() {
-	int messageId = IOTA_BinaryReportV3("1234567890");
+	int messageId = IOTA_BinaryReportV3("1234567890", NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportBinary() failed, messageId %d\n", messageId);
 	}
@@ -168,7 +168,7 @@ void Test_CmdRspV3() {
 	rsp->errcode = 0;
 	rsp->mid = 1;
 
-	int messageId = IOTA_CmdRspV3(rsp);
+	int messageId = IOTA_CmdRspV3(rsp, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_CmdRspV3() failed, messageId %d\n", messageId);
 	}
@@ -193,7 +193,7 @@ void Test_PropertiesReport() {
 	services[1].service_id = "analog";
 	services[1].properties = service2;
 
-	int messageId = IOTA_PropertiesReport(services, serviceNum, 0);
+	int messageId = IOTA_PropertiesReport(services, serviceNum, 0, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
 	}
@@ -227,7 +227,7 @@ void Test_BatchPropertiesReport(char *deviceId) {
 //	devices[1].services[0].service_id = "device2_service11111111";
 //	devices[1].services[0].properties = device2_service1;
 
-	int messageId = IOTA_BatchPropertiesReport(devices, deviceNum, serviceList, 0);
+	int messageId = IOTA_BatchPropertiesReport(devices, deviceNum, serviceList, 0, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_BatchPropertiesReport() failed, messageId %d\n", messageId);
 	}
@@ -243,7 +243,7 @@ void Test_UpdateSubDeviceStatus(char *deviceId) {
 	device_statuses.event_time = GetEventTimesStamp();
 	device_statuses.device_statuses[0].device_id = deviceId;
 	device_statuses.device_statuses[0].status = ONLINE;
-	int messageId = IOTA_UpdateSubDeviceStatus(&device_statuses, deviceNum);
+	int messageId = IOTA_UpdateSubDeviceStatus(&device_statuses, deviceNum, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_UpdateSubDeviceStatus() failed, messageId %d\n", messageId);
 	}
@@ -256,7 +256,7 @@ void Test_CommandResponse(char *requestId) {
 	int result_code = 0;
 	char *response_name = "cmdResponses";
 
-	int messageId = IOTA_CommandResponse(requestId, result_code, response_name, pcCommandRespense);
+	int messageId = IOTA_CommandResponse(requestId, result_code, response_name, pcCommandRespense, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_CommandResponse() failed, messageId %d\n", messageId);
 	}
@@ -264,7 +264,7 @@ void Test_CommandResponse(char *requestId) {
 }
 
 void Test_PropSetResponse(char *requestId) {
-	int messageId = IOTA_PropertiesSetResponse(requestId, 0, "success");
+	int messageId = IOTA_PropertiesSetResponse(requestId, 0, "success", NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropSetResponse() failed, messageId %d\n", messageId);
 	}
@@ -287,7 +287,7 @@ void Test_PropGetResponse(char *requestId) {
 	serviceProp[1].service_id = "analog";
 	serviceProp[1].properties = property2;
 
-	int messageId = IOTA_PropertiesGetResponse(requestId, serviceProp, serviceNum);
+	int messageId = IOTA_PropertiesGetResponse(requestId, serviceProp, serviceNum, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropGetResponse() failed, messageId %d\n", messageId);
 	}
@@ -305,7 +305,7 @@ void Test_ReportOTAVersion() {
 	otaVersion.fw_version = "v1.0";
 	otaVersion.object_device_id = NULL;
 
-	int messageId = IOTA_OTAVersionReport(otaVersion);
+	int messageId = IOTA_OTAVersionReport(otaVersion, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportOTAVersion() failed, messageId %d\n", messageId);
 	}
@@ -328,7 +328,7 @@ void Test_ReportUpgradeStatus(int i, char *version) {
 	statusInfo.event_time = NULL;
 	statusInfo.object_device_id = NULL;
 
-	int messageId = IOTA_OTAStatusReport(statusInfo);
+	int messageId = IOTA_OTAStatusReport(statusInfo, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportUpgradeStatus() failed, messageId %d\n", messageId);
 	}
@@ -691,7 +691,7 @@ int main(int argc, char **argv) {
 		TimeSleep(1500);
 
 		//get device shadow
-		IOTA_GetDeviceShadow("1232", NULL, NULL);
+		IOTA_GetDeviceShadow("1232", NULL, NULL, NULL);
 
 		count++;
 	}

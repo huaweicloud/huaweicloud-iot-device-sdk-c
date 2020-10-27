@@ -12,7 +12,7 @@
 	-  [3.3 编译paho库](#3.3)
 	-  [3.4 上传profile及注册设备](#3.4)
 - [4 快速体验](#4)
-- [5 使用步骤](#5)
+- **[5 使用步骤](#5)
 <!-- /TOC -->
 
 <h1 id="0">0.版本更新说明</h1>
@@ -26,7 +26,11 @@
 
 5、隐式订阅
 
+6、增加context回调参数
+
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
+
+*2020/10/27*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -188,7 +192,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 3. 修改配置信息：
 	需要修改src/device_demo/device_demo.c文件中的如下参数：  
 	servierIp_：平台南向IP，可在控制台的应用管理中查看。
-	username_：设备ID，设备注册时返回的值。
+	username_：MQTT协议需要填写username，iot平台默认设备ID为username，设备ID是设备注册时返回的值。
 	password_：设备密钥，设备注册时返回的值。
 	![](./doc/4_1.png)
 

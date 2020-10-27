@@ -568,7 +568,7 @@ int MqttBase_subscribe(const char *topic, const int qos) {
 	return opts.token;
 }
 
-int MqttBase_publish(const char *topic, void *payload, int len) {
+int MqttBase_publish(const char *topic, void *payload, int len, void* context) {
 #if defined(WIN32) || defined(WIN64)
 	pMQTTAsync_sendMessage MQTTAsync_sendMessage = (pMQTTAsync_sendMessage) GetProcAddress(mqttdll, "MQTTAsync_sendMessage");
 #endif
@@ -582,6 +582,7 @@ int MqttBase_publish(const char *topic, void *payload, int len) {
 
 	opts.onSuccess = MqttBase_OnPublishSuccess;
 	opts.onFailure = MqttBase_OnPublishFailure;
+	opts.context = context;
 
 	pubmsg.payload = payload;
 	pubmsg.payloadlen = len;

@@ -43,7 +43,7 @@
 char *gIoTPlatformIp    = "iot-mqtts.cn-north-4.myhuaweicloud.com";
 int  gIoTPlatformPort   = 8883;
 int  gClientSocket      = -1;
-char *gUserName         = "XXXX";  //deviceId
+char *gUserName         = "XXXX";  //deviceId，The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username
 char *gPassWord         = "XXXX";
 int  gIoTPlatformStatus = DISCONNECTED;
 char *gatewayId         = NULL;

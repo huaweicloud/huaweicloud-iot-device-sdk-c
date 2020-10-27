@@ -30,7 +30,7 @@
 #include "cJSON.h"
 #include "iota_error_type.h"
 
-int ReportDeviceData(char *payload, char *topicParas, int compressFlag) {
+int ReportDeviceData(char *payload, char *topicParas, int compressFlag, void *context) {
 
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (username == NULL) {
@@ -45,7 +45,7 @@ int ReportDeviceData(char *payload, char *topicParas, int compressFlag) {
 		} else if (compressFlag == 1){
 			topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_MESSAGEUP, TOPIC_SUFFIX_COMPRESS);
 
-			return ReportCompressedData(topic, payload);
+			return ReportCompressedData(topic, payload, context);
 		} else {
 			PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: compressFlag is invalid.\n");
 			return IOTA_FAILURE;
@@ -55,11 +55,11 @@ int ReportDeviceData(char *payload, char *topicParas, int compressFlag) {
 			topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_USER, topicParas);
 	}
 
-	return ReportData(topic, payload);
+	return ReportData(topic, payload, context);
 }
 
 
-int ReportCompressedData(const char *topic, char *payload) {
+int ReportCompressedData(const char *topic, char *payload, void* context) {
 	int len = strlen(payload);
 
 	unsigned char *compressed = NULL;
@@ -71,7 +71,7 @@ int ReportCompressedData(const char *topic, char *payload) {
 
 	int gz_size = gZIPCompress(payload, len, compressed, len * 2);
 
-	int ret = MqttBase_publish((const char*) topic, compressed, gz_size);
+	int ret = MqttBase_publish((const char*) topic, compressed, gz_size, context);
 	MemFree(&topic);
 	MemFree(&compressed);
 
@@ -84,7 +84,7 @@ int ReportCompressedData(const char *topic, char *payload) {
 }
 
 
-int ReportDeviceProperties(char *payload, int compressFlag) {
+int ReportDeviceProperties(char *payload, int compressFlag, void *context) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
@@ -97,15 +97,15 @@ int ReportDeviceProperties(char *payload, int compressFlag) {
 	} else if (compressFlag == 1) {
 		topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_PROP_REP, TOPIC_SUFFIX_COMPRESS);
 
-		return ReportCompressedData(topic, payload);
+		return ReportCompressedData(topic, payload, context);
 	} else {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: compressFlag is invalid.\n");
 		return IOTA_FAILURE;
 	}
-	return ReportData(topic, payload);
+	return ReportData(topic, payload, context);
 }
 
-int ReportBatchDeviceProperties(char *payload, int compressFlag) {
+int ReportBatchDeviceProperties(char *payload, int compressFlag, void *context) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
@@ -118,16 +118,16 @@ int ReportBatchDeviceProperties(char *payload, int compressFlag) {
 	} else if (compressFlag == 1) {
 		topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_PROPS_REP, TOPIC_SUFFIX_COMPRESS);
 
-		return ReportCompressedData(topic, payload);
+		return ReportCompressedData(topic, payload, context);
 	} else {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: compressFlag is invalid.\n");
 		return IOTA_FAILURE;
 	}
 
-	return ReportData(topic, payload);
+	return ReportData(topic, payload, context);
 }
 
-int ReportCommandReponse(char *requestId, char *pcCommandRespense) {
+int ReportCommandReponse(char *requestId, char *pcCommandRespense, void *context) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
@@ -135,10 +135,10 @@ int ReportCommandReponse(char *requestId, char *pcCommandRespense) {
 	}
 	char *topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_COMMAND_RSP_REQ, requestId);
 
-	return ReportData(topic, pcCommandRespense);
+	return ReportData(topic, pcCommandRespense, context);
 }
 
-int ReportPropSetReponse(char *requestId, char *pcCommandRespense) {
+int ReportPropSetReponse(char *requestId, char *pcCommandRespense, void *context) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
@@ -146,10 +146,10 @@ int ReportPropSetReponse(char *requestId, char *pcCommandRespense) {
 	}
 	char *topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_PROP_SET_RSP_REQ, requestId);
 
-	return ReportData(topic, pcCommandRespense);
+	return ReportData(topic, pcCommandRespense, context);
 }
 
-int ReportPropGetReponse(char *requestId, char *pcCommandRespense) {
+int ReportPropGetReponse(char *requestId, char *pcCommandRespense, void *context) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
@@ -157,10 +157,10 @@ int ReportPropGetReponse(char *requestId, char *pcCommandRespense) {
 	}
 	char *topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_PROP_GET_RSP_REQ, requestId);
 
-	return ReportData(topic, pcCommandRespense);
+	return ReportData(topic, pcCommandRespense, context);
 }
 
-int GetPropertiesRequest(char *requestId, char *pcCommandRespense) {
+int GetPropertiesRequest(char *requestId, char *pcCommandRespense, void *context) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
@@ -170,10 +170,10 @@ int GetPropertiesRequest(char *requestId, char *pcCommandRespense) {
 
 	PrintfLog(EN_LOG_LEVEL_INFO, "DataTrans: topic is %s\n", topic);
 
-	return ReportData(topic, pcCommandRespense);
+	return ReportData(topic, pcCommandRespense, context);
 }
 
-int EventUp(char *payload) {
+int EventUp(char *payload, void *context) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
@@ -181,11 +181,11 @@ int EventUp(char *payload) {
 	}
 	char *topic = CombineStrings(3, TOPIC_PREFIX, username, TOPIC_SUFFIX_EVENT_UP);
 
-	return ReportData(topic, payload);
+	return ReportData(topic, payload, context);
 }
 
 //report sub device version or product information or subDevice scan result, deprecated
-int ReportSubDeviceInfo(char *payload) {
+int ReportSubDeviceInfo(char *payload, void *context) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
@@ -193,15 +193,15 @@ int ReportSubDeviceInfo(char *payload) {
 	}
 	char *topic = CombineStrings(3, TOPIC_PREFIX, username, TOPIC_SUFFIX_SUB_DEVICE_INFO_UP);
 
-	return ReportData(topic, payload);
+	return ReportData(topic, payload, context);
 }
 
-int ReportData(char *topic, char *payload) {
+int ReportData(char *topic, char *payload, void *context) {
 	if (topic == NULL || payload == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: ReportDeviceData() error, the input is invalid.\n");
 		return IOTA_FAILURE;
 	}
-	int ret = MqttBase_publish((const char*) topic, payload, (int)strlen(payload));
+	int ret = MqttBase_publish((const char*) topic, payload, (int)strlen(payload), context);
 	MemFree(&topic);
 
 	if (ret < 0) {
@@ -213,7 +213,7 @@ int ReportData(char *topic, char *payload) {
 }
 
 //codecMode: 0 is json mode, others are binary mode
-int ReportDevicePropertiesV3(char *payload, int codecMode) {
+int ReportDevicePropertiesV3(char *payload, int codecMode, void *context) {
 	char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
 	if (username == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: getUserName failed %d\n");
@@ -226,7 +226,7 @@ int ReportDevicePropertiesV3(char *payload, int codecMode) {
 		topic = CombineStrings(4, TOPIC_PREFIX_V3, username, TOPIC_SUFFIX_DATA_REQ, BINARY_V3);
 	}
 
-	return ReportData(topic, payload);
+	return ReportData(topic, payload, context);
 }
 
 int Bootstrap() {
@@ -237,7 +237,7 @@ int Bootstrap() {
 	}
 	char *topic = NULL;
 	topic = CombineStrings(3, TOPIC_PREFIX, username, BOOTSTRAP);
-	int ret = MqttBase_publish((const char*) topic, "", 0);
+	int ret = MqttBase_publish((const char*) topic, "", 0, NULL);
 	MemFree(&topic);
 
 	if (ret < 0) {

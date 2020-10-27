@@ -107,7 +107,7 @@ void SendReportToIoTPlatform(char *recvBuf) {
         return;
     }
 
-    int messageId = IOTA_PropertiesReport(payload, 1, 0);
+    int messageId = IOTA_PropertiesReport(payload, 1, 0, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "geteway_demo: SendReportToIoTPlatform(), report properties failed, messageId %d\n", messageId);
 	}
@@ -134,7 +134,7 @@ void SendCommandRspToIoTPlatform(char *requestId) {
 	int result_code = 0;
 	char *response_name = "cmdResponses";
 
-	int messageId = IOTA_CommandResponse(requestId, result_code, response_name, pcCommandRespense);
+	int messageId = IOTA_CommandResponse(requestId, result_code, response_name, pcCommandRespense, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "geteway_demo: SendCommandRspToIoTPlatform() failed, messageId %d\n", messageId);
 	}
