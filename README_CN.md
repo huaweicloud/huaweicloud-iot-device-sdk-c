@@ -1,3 +1,5 @@
+[English](./README.md) | 简体中文
+
 #  huaweicloud-iot-device-sdk-c 开发指南
 
 ## 目 录

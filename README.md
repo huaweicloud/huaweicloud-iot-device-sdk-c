@@ -1,4 +1,4 @@
-   
+   English | [简体中文](./README_CN.md) 
 
 # huaweicloud-iot-device-sdk-c Development Guide
 
@@ -210,23 +210,23 @@ Directly connected devices are allowed to access the platform using a device ID/
      ![](./doc/doc_en/4_2.png)
      
     9. Check the running state of the device.
-     
+  
   + Gateway (online): Access the console and choose **All Devices** > **Device List** to check whether the gateway is online.
-     
+    
   + Gateway (reporting data): Access the console and choose **All Devices** > **Device List**, and click **View** to view the reported data.
-     
+    
   + Child device
-     
+    
     + A gateway receives the platform's notification of adding a child device.
-     
+    
       ![](./doc/doc_en/4_5.png)
-     
+    
     + A child device reports data.
-     
+    
       ![](./doc/doc_en/4_6.png)
-     
+    
     + Check the state of the child device.
-     
+    
          + Online: Access the console and choose **All Devices** > **Device List** to check whether the child device is online.
          + Reporting data: Access the console and choose **All Devices** > **Device List**, and click **View** to view the reported data.
   
@@ -249,12 +249,16 @@ Directly connected devices are allowed to access the platform using a device ID/
         IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_CERT);
       IOTA_ConfigSetStr(EN_MQTT_CFG_PRIVATE_KEY_PASSWORD, "yourPassword");
       }   
+     ```
     ```
-   ```
+  
+    ```
   
   4. For details about subsequent access steps, see steps 3 to 9 in **Access Using a Device ID (Username)/Secret**.
   
        Note: You do not need to enter the secret.
+   ```
+  
    ```
 <h2 id="4">5.2 Generic Protocol</h2>
 Currently, the platform supports only standard protocols such as MQTT, HTTP, and LwM2M. For devices complying with other (third-party) protocols to access the platform, use a gateway to convert these protocols to an MQTT protocol. Click <a href=" https://support.huaweicloud.com/en-us/bestpractice-iothub/iot_bp_0009.html " target="_blank">here</a> to see the working principle.
