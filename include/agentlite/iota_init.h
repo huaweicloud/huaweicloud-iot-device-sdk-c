@@ -54,6 +54,7 @@ typedef struct {
 	HW_CHAR *fw_version;
 	HW_CHAR *sw_version;
 	HW_CHAR *status;
+	HW_CHAR *extension_info;
 } EN_IOTA_DEVICE_INFO;
 
 typedef struct {
@@ -76,12 +77,43 @@ typedef struct {
 } EN_IOTA_NTP_PARAS;
 
 typedef struct {
+	HW_CHAR *node_id;
+	HW_CHAR *product_id;
+	HW_CHAR *error_code;
+	HW_CHAR *error_msg;
+} EN_IOTA_ADD_DEVICE_FAILED_REASON;
+
+typedef struct {
+	EN_IOTA_DEVICE_INFO *successful_devices;
+	HW_INT successful_devices_count;
+	EN_IOTA_ADD_DEVICE_FAILED_REASON *failed_devices;
+	HW_INT failed_devices_count;
+} EN_IOTA_GTW_ADD_DEVICE_PARAS;
+
+typedef struct {
+	HW_CHAR *device_id;
+	HW_CHAR *error_code;
+	HW_CHAR *error_msg;
+} EN_IOTA_DEL_DEVICE_FAILED_REASON;
+
+typedef struct {
+	HW_CHAR **successful_devices;
+	HW_INT successful_devices_count;
+	EN_IOTA_DEL_DEVICE_FAILED_REASON *failed_devices;
+	HW_INT failed_devices_count;
+} EN_IOTA_GTW_DEL_DEVICE_PARAS;
+
+
+typedef struct {
 	HW_INT servie_id;  //see the enum EN_IOTA_EVENT_SERVICE_ID
 	HW_INT event_type;  //see the enum EN_IOTA_EVENT_TYPE
 	HW_CHAR *event_time;
+	HW_CHAR *event_id;
 	EN_IOTA_DEVICE_PARAS *paras;
 	EN_IOTA_OTA_PARAS *ota_paras;
 	EN_IOTA_NTP_PARAS *ntp_paras;
+	EN_IOTA_GTW_ADD_DEVICE_PARAS *gtw_add_device_paras;
+	EN_IOTA_GTW_DEL_DEVICE_PARAS *gtw_del_device_paras;
 } EN_IOTA_SERVICE_EVENT;
 
 typedef struct {
@@ -237,8 +269,10 @@ typedef enum {
 	EN_IOTA_EVENT_FIRMWARE_UPGRADE = 3,
 	EN_IOTA_EVENT_SOFTWARE_UPGRADE = 4,
 	EN_IOTA_EVENT_GET_TIME_SYNC_RESPONSE = 5,
-//	EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE = 6,
-//	EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE = 7,
+	EN_IOTA_EVENT_ADD_SUB_DEVICE_RESPONSE = 6,
+	EN_IOTA_EVENT_DEL_SUB_DEVICE_RESPONSE = 7,
+//	EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE = 8,
+//	EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE = 9,
 	EN_IOTA_EVENT_TYPE_ERROR = -1
 } EN_IOTA_EVENT_TYPE;
 

@@ -452,6 +452,144 @@ HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_st
 
 }
 
+
+/**
+ *@Description: gateway adds sub device
+ *@param subDevicesInfo: the pointer of ST_IOTA_SUB_DEVICE_INFO structure.
+ *@param deviceNum: number of sub device needed to add
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW_INT deviceNum, void *context) {
+	if((subDevicesInfo == NULL) || (deviceNum < 0) || (deviceNum > MaxAddedSubDevCount)) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_AddSubDevice() error, the input is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}
+	if(subDevicesInfo->deviceInfo == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_AddSubDevice() error, the input of subDevicesInfo->deviceInfo is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}
+
+	if(subDevicesInfo->deviceInfo[0].node_id == NULL || subDevicesInfo->deviceInfo[0].product_id == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_AddSubDevice() error, the input of subDevicesInfo->deviceInfo[0] is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}
+
+	cJSON *root, *services, *subDeviceInfo;
+	root = cJSON_CreateObject();
+	services = cJSON_CreateArray();
+	subDeviceInfo = cJSON_CreateArray();
+
+	cJSON *service = cJSON_CreateObject();
+	cJSON_AddStringToObject(service, SERVICE_ID, SUB_DEVICE_MANAGER);
+	cJSON_AddStringToObject(service, EVENT_TYPE, ADD_SUB_DEVICE_REQUEST);
+	cJSON_AddStringToObject(service, EVENT_TIME, subDevicesInfo->event_time);
+	cJSON_AddStringToObject(service, EVENT_ID, subDevicesInfo->event_id);
+
+	int i;
+	for (i = 0; i < deviceNum; i++) {
+		if (subDevicesInfo->deviceInfo[i].node_id != NULL && subDevicesInfo->deviceInfo[i].product_id != NULL) {
+
+			cJSON *tmp = cJSON_CreateObject();
+
+			cJSON_AddStringToObject(tmp, PARENT_DEVICE_ID, subDevicesInfo->deviceInfo[i].parent_device_id);
+			cJSON_AddStringToObject(tmp, NODE_ID, subDevicesInfo->deviceInfo[i].node_id);
+			cJSON_AddStringToObject(tmp, DEVICE_ID, subDevicesInfo->deviceInfo[i].device_id);
+			cJSON_AddStringToObject(tmp, NAME, subDevicesInfo->deviceInfo[i].name);
+			cJSON_AddStringToObject(tmp, DESCRIPTION, subDevicesInfo->deviceInfo[i].description);
+			cJSON_AddStringToObject(tmp, PRODUCT_ID, subDevicesInfo->deviceInfo[i].product_id);
+			cJSON_AddStringToObject(tmp, EXTENSION_INFO, subDevicesInfo->deviceInfo[i].extension_info);
+
+			cJSON_AddItemToArray(subDeviceInfo, tmp);
+		} else {
+			PrintfLog(EN_LOG_LEVEL_ERROR, "the payload is wrong.\n");
+			cJSON_Delete(subDeviceInfo);
+			cJSON_Delete(service);
+			cJSON_Delete(services);
+			cJSON_Delete(root);
+			return IOTA_PARAMETER_ERROR;
+		}
+	}
+
+	cJSON *paras = cJSON_CreateObject();
+	cJSON_AddItemToObject(paras, DEVICES, subDeviceInfo);
+
+	cJSON_AddItemToObject(service, PARAS, paras);
+
+	cJSON_AddItemToArray(services, service);
+	cJSON_AddItemToObject(root, SERVICES, services);
+
+	char *payload;
+	payload = cJSON_Print(root);
+
+	cJSON_Delete(root);
+
+	int messageId = 0;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = EventUp(payload, context);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_AddSubDevice() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+}
+
+/**
+ *@Description: gateway deletes sub device
+ *@param delSubDevices: the pointer of ST_IOTA_DEL_SUB_DEVICE structure.
+ *@param deviceNum: number of sub device needed to delete
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_INT deviceNum, void *context){
+	if((delSubDevices == NULL) || (deviceNum < 0) || (deviceNum > MaxDelSubDevCount)) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_DelSubDevice() error, the input is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}if(delSubDevices->delSubDevice == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_DelSubDevice() error, the input of delSubDevices->delSubDevice is invalid.\n");
+		return IOTA_PARAMETER_ERROR;
+	}
+
+	cJSON *root, *services, *delSubDevice;
+	root = cJSON_CreateObject();
+	services = cJSON_CreateArray();
+
+	cJSON *service = cJSON_CreateObject();
+	cJSON_AddStringToObject(service, SERVICE_ID, SUB_DEVICE_MANAGER);
+	cJSON_AddStringToObject(service, EVENT_TYPE, DEL_SUB_DEVICE_REQUEST);
+	cJSON_AddStringToObject(service, EVENT_TIME, delSubDevices->event_time);
+	cJSON_AddStringToObject(service, EVENT_ID, delSubDevices->event_id);
+
+	delSubDevice = cJSON_CreateStringArray(delSubDevices->delSubDevice, deviceNum);
+
+	cJSON *paras = cJSON_CreateObject();
+	cJSON_AddItemToObject(paras, DEVICES, delSubDevice);
+
+	cJSON_AddItemToObject(service, PARAS, paras);
+
+	cJSON_AddItemToArray(services, service);
+	cJSON_AddItemToObject(root, SERVICES, services);
+
+	char *payload;
+	payload = cJSON_Print(root);
+
+	cJSON_Delete(root);
+
+	int messageId = 0;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = EventUp(payload, context);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_DelSubDevice() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+}
+
+
 /**
  *@Description: report OTA version
  *@param otaVersionInfo: ST_IOTA_OTA_VERSION_INFO structure

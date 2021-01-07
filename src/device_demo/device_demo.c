@@ -98,6 +98,9 @@ void Test_ReportJson();
 void Test_ReportBinary();
 void Test_CmdRspV3();
 void Test_UpdateSubDeviceStatus(char *deviceId);
+void Test_GtwAddSubDevice();
+void Test_GtwDelSubDevice();
+
 
 
 void TimeSleep(int ms) {
@@ -334,6 +337,54 @@ void Test_ReportUpgradeStatus(int i, char *version) {
 	}
 }
 
+void Test_GtwAddSubDevice() {
+
+	ST_IOTA_SUB_DEVICE_INFO subDeviceInfos;
+	int deviceNum = 2;
+
+    subDeviceInfos.deviceInfo[0].description = "description";
+	subDeviceInfos.deviceInfo[0].device_id = "device_id123";
+	subDeviceInfos.deviceInfo[0].extension_info = NULL;
+	subDeviceInfos.deviceInfo[0].name = "sub_device111";
+	subDeviceInfos.deviceInfo[0].node_id = "node_id123";
+	subDeviceInfos.deviceInfo[0].parent_device_id = NULL;
+  	subDeviceInfos.deviceInfo[0].product_id = "your_product_id";
+
+    subDeviceInfos.deviceInfo[1].description = "description";
+	subDeviceInfos.deviceInfo[1].device_id = "device_id1234";
+	subDeviceInfos.deviceInfo[1].extension_info = NULL;
+	subDeviceInfos.deviceInfo[1].name = "sub_device222";
+	subDeviceInfos.deviceInfo[1].node_id = "node_id123";
+	subDeviceInfos.deviceInfo[1].parent_device_id = NULL;
+  	subDeviceInfos.deviceInfo[0].product_id = "your_product_id";
+	subDeviceInfos.deviceInfo[1].product_id = "5f58768785edc002bc69cbf2";
+
+	subDeviceInfos.event_id = "123123";
+	subDeviceInfos.event_time = NULL;
+
+	int messageId = IOTA_AddSubDevice(&subDeviceInfos, deviceNum, NULL);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_GtwAddSubDevice() failed, messageId %d\n", messageId);
+	}
+}
+
+
+void Test_GtwDelSubDevice () {
+	ST_IOTA_DEL_SUB_DEVICE delSubDevices;
+	int deviceNum = 3;
+
+	delSubDevices.event_id = NULL;
+	delSubDevices.event_time = NULL;
+	delSubDevices.delSubDevice[0] = "device_id123";
+	delSubDevices.delSubDevice[1] = "device_id1234";
+	delSubDevices.delSubDevice[2] = "device_id12345";
+
+	int messageId = IOTA_DelSubDevice(&delSubDevices, deviceNum, NULL);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_GtwDelSubDevice() failed, messageId %d\n", messageId);
+	}
+}
+
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
 void HandleConnectSuccess (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
@@ -516,29 +567,67 @@ void HandleEventsDown(EN_IOTA_EVENT *message){
 
 		//sub device manager
 		if (message->services[i].servie_id == EN_IOTA_EVENT_SUB_DEVICE_MANAGER) {
-			printf("version: %lld \n", message->services[i].paras->version);
 
-			int j = 0;
-			while(message->services[i].paras->devices_count > 0) {
+			//if it is the platform inform the gateway to add or delete the sub device
+			if(message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY || message->services[i].event_type == EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY) {
+				printf("version: %lld \n", message->services[i].paras->version);
 
-				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), parent_device_id: %s \n", message->services[i].paras->devices[j].parent_device_id);
-				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id: %s \n", message->services[i].paras->devices[j].device_id);
-				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), node_id: %s \n", message->services[i].paras->devices[j].node_id);
+				int j = 0;
+				while(message->services[i].paras->devices_count > 0) {
 
-				//add a sub device
-				if (message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY) {
-					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), name: %s \n", message->services[i].paras->devices[j].name);
-					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), manufacturer_id: %s \n", message->services[i].paras->devices[j].manufacturer_id);
-					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), product_id: %s \n", message->services[i].paras->devices[j].product_id);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), parent_device_id: %s \n", message->services[i].paras->devices[j].parent_device_id);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id: %s \n", message->services[i].paras->devices[j].device_id);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), node_id: %s \n", message->services[i].paras->devices[j].node_id);
 
-					Test_UpdateSubDeviceStatus(message->services[i].paras->devices[j].device_id); //report status of the sub device
-					Test_BatchPropertiesReport(message->services[i].paras->devices[j].device_id); //report data of the sub device
-				} else if (message->services[i].event_type == EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY) {   //delete a sub device
-					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), the sub device is deleted: %s\n", message->services[i].paras->devices[j].device_id);
+					//add a sub device
+					if (message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY) {
+						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), name: %s \n", message->services[i].paras->devices[j].name);
+						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), manufacturer_id: %s \n", message->services[i].paras->devices[j].manufacturer_id);
+						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), product_id: %s \n", message->services[i].paras->devices[j].product_id);
+
+						Test_UpdateSubDeviceStatus(message->services[i].paras->devices[j].device_id); //report status of the sub device
+						Test_BatchPropertiesReport(message->services[i].paras->devices[j].device_id); //report data of the sub device
+					} else if (message->services[i].event_type == EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY) {   //delete a sub device
+						PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), the sub device is deleted: %s\n", message->services[i].paras->devices[j].device_id);
+					}
+
+					j++;
+					message->services[i].paras->devices_count--;
 				}
+			} else if (message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_RESPONSE) {
+				int j = 0;
+				while(message->services[i].gtw_add_device_paras->successful_devices_count > 0) {
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id: %s \n", message->services[i].gtw_add_device_paras->successful_devices[j].device_id);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), name: %s \n", message->services[i].gtw_add_device_paras->successful_devices[j].name);
+					j++;
+					message->services[i].gtw_add_device_paras->successful_devices_count--;
+				}
+				j = 0;
+				while(message->services[i].gtw_add_device_paras->failed_devices_count > 0) {
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), error_code: %s \n", message->services[i].gtw_add_device_paras->failed_devices[j].error_code);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), error_msg: %s \n", message->services[i].gtw_add_device_paras->failed_devices[j].error_msg);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), node_id: %s \n", message->services[i].gtw_add_device_paras->failed_devices[j].node_id);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), product_id: %s \n", message->services[i].gtw_add_device_paras->failed_devices[j].product_id);
 
-				j++;
-				message->services[i].paras->devices_count--;
+					j++;
+					message->services[i].gtw_add_device_paras->failed_devices_count--;
+				}
+			} else if (message->services[i].event_type == EN_IOTA_EVENT_DEL_SUB_DEVICE_RESPONSE) {
+				int j = 0;
+				while(message->services[i].gtw_del_device_paras->successful_devices_count > 0) {
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id: %s \n", message->services[i].gtw_del_device_paras->successful_devices[j]);
+					j++;
+					message->services[i].gtw_del_device_paras->successful_devices_count--;
+				}
+				j = 0;
+				while(message->services[i].gtw_del_device_paras->failed_devices_count > 0) {
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), error_code: %s \n", message->services[i].gtw_del_device_paras->failed_devices[j].error_code);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), error_msg: %s \n", message->services[i].gtw_del_device_paras->failed_devices[j].error_msg);
+					PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id: %s \n", message->services[i].gtw_del_device_paras->failed_devices[j].device_id);
+
+					j++;
+					message->services[i].gtw_del_device_paras->failed_devices_count--;
+				}
 			}
 
 		} else if (message->services[i].servie_id == EN_IOTA_EVENT_OTA) {
@@ -569,11 +658,9 @@ void HandleEventsDown(EN_IOTA_EVENT *message){
 			}
 
 		}
-
 		i++;
 		message->services_count--;
 	}
-
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------

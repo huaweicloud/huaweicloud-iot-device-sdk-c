@@ -565,106 +565,261 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 				if (!strcmp(service_id, SUB_DEVICE_MANAGER)) {
 
 					event->services[i].servie_id = EN_IOTA_EVENT_SUB_DEVICE_MANAGER;
-					event->services[i].paras = (EN_IOTA_DEVICE_PARAS*)malloc(sizeof(EN_IOTA_DEVICE_PARAS));
-					if (event->services[i].paras == NULL) {
-						PrintfLog(EN_LOG_LEVEL_ERROR, "HandleEventsDown(): there is not enough memory here.\n");
-						free(event->services);
-						free(event->mqtt_msg_info);
-						free(event);
-						return;
-					}
 
-					JSON *devices = JSON_GetObjectFromObject(paras, DEVICES);                                 //get object of devices
-
-					int devices_count = JSON_GetArraySize(devices);                                                 //get size of devicesSize
-
-					if (devices_count > MAX_EVENT_DEVICE_COUNT) {
-						PrintfLog(EN_LOG_LEVEL_ERROR, "messageArrivaled: HandleEventsDown(), devices_count is too large.\n"); //you can increase the MAX_EVENT_DEVICE_COUNT in iota_init.h
-						JSON_Delete(root);
-						break;
-					}
-
-					event->services[i].paras->devices = (EN_IOTA_DEVICE_INFO*)malloc(sizeof(EN_IOTA_DEVICE_INFO) * devices_count);
-					if (event->services[i].paras == NULL) {
-						PrintfLog(EN_LOG_LEVEL_ERROR, "HandleEventsDown(): there is not enough memory here.\n");
-						while(i >= 0) {
-							free(event->services[i].paras);
-							i--;
+					//if it is the platform inform the gateway to add or delete the sub device
+					if(!strcmp(event_type, DELETE_SUB_DEVICE_NOTIFY) || !strcmp(event_type, ADD_SUB_DEVICE_NOTIFY)) {
+						event->services[i].paras = (EN_IOTA_DEVICE_PARAS*)malloc(sizeof(EN_IOTA_DEVICE_PARAS));
+						if (event->services[i].paras == NULL) {
+							PrintfLog(EN_LOG_LEVEL_ERROR, "HandleEventsDown(): there is not enough memory here.\n");
+							free(event->services);
+							free(event->mqtt_msg_info);
+							free(event);
+							return;
 						}
-						free(event->services);
-						free(event->mqtt_msg_info);
-						free(event);
-						return;
+
+						JSON *devices = JSON_GetObjectFromObject(paras, DEVICES);                                 //get object of devices
+
+						int devices_count = JSON_GetArraySize(devices);                                                 //get size of devicesSize
+
+						if (devices_count > MAX_EVENT_DEVICE_COUNT) {
+							PrintfLog(EN_LOG_LEVEL_ERROR, "messageArrivaled: HandleEventsDown(), devices_count is too large.\n"); //you can increase the MAX_EVENT_DEVICE_COUNT in iota_init.h
+//							JSON_Delete(root);
+							break;
+						}
+
+						event->services[i].paras->devices = (EN_IOTA_DEVICE_INFO*)malloc(sizeof(EN_IOTA_DEVICE_INFO) * devices_count);
+						if (event->services[i].paras == NULL) {
+							PrintfLog(EN_LOG_LEVEL_ERROR, "HandleEventsDown(): there is not enough memory here.\n");
+							while(i >= 0) {
+								free(event->services[i].paras);
+								i--;
+							}
+							free(event->services);
+							free(event->mqtt_msg_info);
+							free(event);
+							return;
+						}
+
+						event->services[i].paras->devices_count = devices_count;
+
+						long long version = getLLongValueFromStr(message, VERSION_JSON);
+						event->services[i].paras->version = version;
+						int j = 0;
+
+						//adding a sub device notify
+						if (!strcmp(event_type, ADD_SUB_DEVICE_NOTIFY)) {
+							event->services[i].event_type = EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY;
+							while(devices_count > 0) {
+								JSON *deviceInfo = JSON_GetObjectFromArray(devices, j);                                 //get object of deviceInfo
+
+								char *parent_device_id = JSON_GetStringFromObject(deviceInfo, PARENT_DEVICE_ID, NULL);    //get value of parent_device_id
+								event->services[i].paras->devices[j].parent_device_id = parent_device_id;
+
+								char *node_id = JSON_GetStringFromObject(deviceInfo, NODE_ID, NULL);    //get value of node_id
+								event->services[i].paras->devices[j].node_id = node_id;
+
+								char *device_id = JSON_GetStringFromObject(deviceInfo, DEVICE_ID, NULL);    //get value of device_id
+								event->services[i].paras->devices[j].device_id = device_id;
+
+								char *name = JSON_GetStringFromObject(deviceInfo, NAME, NULL);    //get value of name
+								event->services[i].paras->devices[j].name = name;
+
+								char *description = JSON_GetStringFromObject(deviceInfo, DESCRIPTION, NULL);    //get value of description
+								event->services[i].paras->devices[j].description = description;
+
+								char *manufacturer_id = JSON_GetStringFromObject(deviceInfo, MANUFACTURER_ID, NULL);    //get value of manufacturer_id
+								event->services[i].paras->devices[j].manufacturer_id = manufacturer_id;
+
+								char *model = JSON_GetStringFromObject(deviceInfo, MODEL, NULL);    //get value of model
+								event->services[i].paras->devices[j].model = model;
+
+								char *product_id = JSON_GetStringFromObject(deviceInfo, PRODUCT_ID, NULL);    //get value of product_id
+								event->services[i].paras->devices[j].product_id = product_id;
+
+								char *fw_version = JSON_GetStringFromObject(deviceInfo, FW_VERSION, NULL);    //get value of fw_version
+								event->services[i].paras->devices[j].fw_version = fw_version;
+
+								char *sw_version = JSON_GetStringFromObject(deviceInfo, SW_VERSION, NULL);    //get value of sw_version
+								event->services[i].paras->devices[j].sw_version = sw_version;
+
+								char *status = JSON_GetStringFromObject(deviceInfo, STATUS, NULL);    //get value of status
+								event->services[i].paras->devices[j].status = status;
+
+								char *extension_info = JSON_GetStringFromObject(deviceInfo, EXTENSION_INFO, NULL);    //get value of status
+								event->services[i].paras->devices[j].extension_info = extension_info;
+
+								j++;
+								devices_count--;
+							}
+						}
+
+						//deleting a sub device notify
+						if (!strcmp(event_type, DELETE_SUB_DEVICE_NOTIFY)) {
+							event->services[i].event_type = EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY;
+							while(devices_count > 0) {
+								JSON *deviceInfo = JSON_GetObjectFromArray(devices, j);                                 //get object of deviceInfo
+
+								char *parent_device_id = JSON_GetStringFromObject(deviceInfo, PARENT_DEVICE_ID, NULL);    //get value of parent_device_id
+								event->services[i].paras->devices[j].parent_device_id = parent_device_id;
+
+								char *node_id = JSON_GetStringFromObject(deviceInfo, NODE_ID, NULL);    //get value of node_id
+								event->services[i].paras->devices[j].node_id = node_id;
+
+								char *device_id = JSON_GetStringFromObject(deviceInfo, DEVICE_ID, NULL);    //get value of device_id
+								event->services[i].paras->devices[j].device_id = device_id;
+
+								j++;
+								devices_count--;
+
+							}
+						}
 					}
 
-					event->services[i].paras->devices_count = devices_count;
+					//the response of gateway adding a sub device
+					if(!strcmp(event_type, ADD_SUB_DEVICE_RESPONSE)) {
 
-					long long version = getLLongValueFromStr(message, VERSION_JSON);
-					event->services[i].paras->version = version;
-					int j = 0;
+						char *event_id = JSON_GetStringFromObject(serviceEvent, EVENT_ID, NULL);    //get value of event_id
+						event->services[i].event_id = event_id;
+						event->services[i].event_type = EN_IOTA_EVENT_ADD_SUB_DEVICE_RESPONSE;
 
-					//add a sub device
-					if (!strcmp(event_type, ADD_SUB_DEVICE_NOTIFY)) {
-						event->services[i].event_type = EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY;
-						while(devices_count > 0) {
-							JSON *deviceInfo = JSON_GetObjectFromArray(devices, j);                                 //get object of deviceInfo
+						event->services[i].gtw_add_device_paras = (EN_IOTA_GTW_ADD_DEVICE_PARAS*)malloc(sizeof(EN_IOTA_GTW_ADD_DEVICE_PARAS));
+						if(event->services[i].gtw_add_device_paras == NULL) {
+							PrintfLog(EN_LOG_LEVEL_ERROR, "HandleEventsDown(): there is not enough memory here.\n");
+							free(event->services);
+							free(event->mqtt_msg_info);
+							free(event);
+							return;
+						}
+
+
+						JSON *successful_devices = JSON_GetObjectFromObject(paras, SUCCESSFUL_DEVICES);
+						int successful_devices_count = JSON_GetArraySize(successful_devices);
+						event->services[i].gtw_add_device_paras->successful_devices_count = successful_devices_count;
+
+						event->services[i].gtw_add_device_paras->successful_devices = (EN_IOTA_DEVICE_INFO*)malloc(sizeof(EN_IOTA_DEVICE_INFO) * successful_devices_count);
+						int j = 0;
+						while(successful_devices_count > 0) {
+							JSON *deviceInfo = JSON_GetObjectFromArray(successful_devices, j);
 
 							char *parent_device_id = JSON_GetStringFromObject(deviceInfo, PARENT_DEVICE_ID, NULL);    //get value of parent_device_id
-							event->services[i].paras->devices[j].parent_device_id = parent_device_id;
+							event->services[i].gtw_add_device_paras->successful_devices[j].parent_device_id = parent_device_id;
 
 							char *node_id = JSON_GetStringFromObject(deviceInfo, NODE_ID, NULL);    //get value of node_id
-							event->services[i].paras->devices[j].node_id = node_id;
+							event->services[i].gtw_add_device_paras->successful_devices[j].node_id = node_id;
 
 							char *device_id = JSON_GetStringFromObject(deviceInfo, DEVICE_ID, NULL);    //get value of device_id
-							event->services[i].paras->devices[j].device_id = device_id;
+							event->services[i].gtw_add_device_paras->successful_devices[j].device_id = device_id;
 
 							char *name = JSON_GetStringFromObject(deviceInfo, NAME, NULL);    //get value of name
-							event->services[i].paras->devices[j].name = name;
+							event->services[i].gtw_add_device_paras->successful_devices[j].name = name;
 
 							char *description = JSON_GetStringFromObject(deviceInfo, DESCRIPTION, NULL);    //get value of description
-							event->services[i].paras->devices[j].description = description;
+							event->services[i].gtw_add_device_paras->successful_devices[j].description = description;
 
 							char *manufacturer_id = JSON_GetStringFromObject(deviceInfo, MANUFACTURER_ID, NULL);    //get value of manufacturer_id
-							event->services[i].paras->devices[j].manufacturer_id = manufacturer_id;
+							event->services[i].gtw_add_device_paras->successful_devices[j].manufacturer_id = manufacturer_id;
 
 							char *model = JSON_GetStringFromObject(deviceInfo, MODEL, NULL);    //get value of model
-							event->services[i].paras->devices[j].model = model;
+							event->services[i].gtw_add_device_paras->successful_devices[j].model = model;
 
 							char *product_id = JSON_GetStringFromObject(deviceInfo, PRODUCT_ID, NULL);    //get value of product_id
-							event->services[i].paras->devices[j].product_id = product_id;
+							event->services[i].gtw_add_device_paras->successful_devices[j].product_id = product_id;
 
 							char *fw_version = JSON_GetStringFromObject(deviceInfo, FW_VERSION, NULL);    //get value of fw_version
-							event->services[i].paras->devices[j].fw_version = fw_version;
+							event->services[i].gtw_add_device_paras->successful_devices[j].fw_version = fw_version;
 
 							char *sw_version = JSON_GetStringFromObject(deviceInfo, SW_VERSION, NULL);    //get value of sw_version
-							event->services[i].paras->devices[j].sw_version = sw_version;
+							event->services[i].gtw_add_device_paras->successful_devices[j].sw_version = sw_version;
 
 							char *status = JSON_GetStringFromObject(deviceInfo, STATUS, NULL);    //get value of status
-							event->services[i].paras->devices[j].status = status;
+							event->services[i].gtw_add_device_paras->successful_devices[j].status = status;
+
+							char *extension_info = JSON_GetStringFromObject(deviceInfo, EXTENSION_INFO, NULL);    //get value of status
+							event->services[i].gtw_add_device_paras->successful_devices[j].extension_info = extension_info;
 
 							j++;
-							devices_count--;
+							successful_devices_count--;
+
+						}
+
+
+						JSON *failed_devices = JSON_GetObjectFromObject(paras, FAILED_DEVICES);
+						int failed_devices_count = JSON_GetArraySize(failed_devices);
+
+						event->services[i].gtw_add_device_paras->failed_devices_count = failed_devices_count;
+
+						event->services[i].gtw_add_device_paras->failed_devices = (EN_IOTA_ADD_DEVICE_FAILED_REASON*)malloc(sizeof(EN_IOTA_ADD_DEVICE_FAILED_REASON) * failed_devices_count);
+						int k = 0;
+						while (failed_devices_count > 0){
+							JSON *reason = JSON_GetObjectFromArray(failed_devices, k);
+
+							char *node_id = JSON_GetStringFromObject(reason, NODE_ID, NULL);    //get value of parent_device_id
+							event->services[i].gtw_add_device_paras->failed_devices[k].node_id = node_id;
+
+							char *product_id = JSON_GetStringFromObject(reason, PRODUCT_ID, NULL);    //get value of parent_device_id
+							event->services[i].gtw_add_device_paras->failed_devices[k].product_id = product_id;
+
+							char *error_code = JSON_GetStringFromObject(reason, ERROR_CODE, NULL);
+							event->services[i].gtw_add_device_paras->failed_devices[k].error_code = error_code;
+
+						    char *error_msg = JSON_GetStringFromObject(reason, ERROR_MSG, NULL);
+							event->services[i].gtw_add_device_paras->failed_devices[k].error_msg = error_msg;
+
+							k++;
+							failed_devices_count--;
 						}
 					}
 
-					//delete a sub device
-					if (!strcmp(event_type, DELETE_SUB_DEVICE_NOTIFY)) {
-						event->services[i].event_type = EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY;
-						while(devices_count > 0) {
-							JSON *deviceInfo = JSON_GetObjectFromArray(devices, j);                                 //get object of deviceInfo
+					//the response of gateway deleting a sub device
+					if(!strcmp(event_type, DEL_SUB_DEVICE_RESPONSE)) {
 
-							char *parent_device_id = JSON_GetStringFromObject(deviceInfo, PARENT_DEVICE_ID, NULL);    //get value of parent_device_id
-							event->services[i].paras->devices[j].parent_device_id = parent_device_id;
+						char *event_id = JSON_GetStringFromObject(serviceEvent, EVENT_ID, NULL);    //get value of event_id
+						event->services[i].event_id = event_id;
+						event->services[i].event_type = EN_IOTA_EVENT_DEL_SUB_DEVICE_RESPONSE;
 
-							char *node_id = JSON_GetStringFromObject(deviceInfo, NODE_ID, NULL);    //get value of node_id
-							event->services[i].paras->devices[j].node_id = node_id;
+						event->services[i].gtw_del_device_paras = (EN_IOTA_GTW_DEL_DEVICE_PARAS*)malloc(sizeof(EN_IOTA_GTW_DEL_DEVICE_PARAS));
+						if(event->services[i].gtw_del_device_paras == NULL) {
+							PrintfLog(EN_LOG_LEVEL_ERROR, "HandleEventsDown(): there is not enough memory here.\n");
+							free(event->services);
+							free(event->mqtt_msg_info);
+							free(event);
+							return;
+						}
 
-							char *device_id = JSON_GetStringFromObject(deviceInfo, DEVICE_ID, NULL);    //get value of device_id
-							event->services[i].paras->devices[j].device_id = device_id;
 
+						JSON *successful_devices = JSON_GetObjectFromObject(paras, SUCCESSFUL_DEVICES);
+						int successful_devices_count = JSON_GetArraySize(successful_devices);
+						event->services[i].gtw_del_device_paras->successful_devices_count = successful_devices_count;
+
+						event->services[i].gtw_del_device_paras->successful_devices = (HW_CHAR*)malloc(sizeof(HW_CHAR) * successful_devices_count);
+						int j = 0;
+						while(successful_devices_count > 0){
+							char *device_id = JSON_GetStringFromArray(successful_devices, j, NULL);
+							event->services[i].gtw_del_device_paras->successful_devices[j] = device_id;
 							j++;
-							devices_count--;
+							successful_devices_count--;
+						}
 
+
+						JSON *failed_devices = JSON_GetObjectFromObject(paras, FAILED_DEVICES);
+						int failed_devices_count = JSON_GetArraySize(failed_devices);
+						event->services[i].gtw_del_device_paras->failed_devices_count = failed_devices_count;
+
+						event->services[i].gtw_del_device_paras->failed_devices = (EN_IOTA_DEL_DEVICE_FAILED_REASON*)malloc(sizeof(EN_IOTA_DEL_DEVICE_FAILED_REASON) * failed_devices_count);
+						int k = 0;
+						while(failed_devices_count > 0){
+							char *reason = JSON_GetObjectFromArray(failed_devices, k);
+
+							char *device_id = JSON_GetStringFromObject(reason, DEVICE_ID, NULL);
+							event->services[i].gtw_del_device_paras->failed_devices[k].device_id = device_id;
+
+							char *error_code = JSON_GetStringFromObject(reason, ERROR_CODE, NULL);
+							event->services[i].gtw_del_device_paras->failed_devices[k].error_code = error_code;
+
+						    char *error_msg = JSON_GetStringFromObject(reason, ERROR_MSG, NULL);
+							event->services[i].gtw_del_device_paras->failed_devices[k].error_msg = error_msg;
+							k++;
+							failed_devices_count--;
 						}
 					}
 				}
@@ -746,8 +901,20 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 			int m;
 			for (m = 0;m < services_count_copy;m++) {
 				if (event->services[m].servie_id == EN_IOTA_EVENT_SUB_DEVICE_MANAGER) {
-					MemFree(&event->services[m].paras->devices);
-					MemFree(&event->services[m].paras);
+
+					if((event->services[m].event_type == EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY) || (event->services[m].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY)) {
+						MemFree(&event->services[m].paras->devices);
+						MemFree(&event->services[m].paras);
+					} else if (event->services[m].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_RESPONSE){
+
+						MemFree(&event->services[m].gtw_add_device_paras->successful_devices);
+						MemFree(&event->services[m].gtw_add_device_paras->failed_devices);
+						MemFree(&event->services[m].gtw_add_device_paras);
+					} else if (event->services[m].event_type == EN_IOTA_EVENT_DEL_SUB_DEVICE_RESPONSE){
+						MemFree(&event->services[m].gtw_del_device_paras->successful_devices);
+						MemFree(&event->services[m].gtw_del_device_paras->failed_devices);
+						MemFree(&event->services[m].gtw_del_device_paras);
+					}
 				} else if (event->services[m].servie_id == EN_IOTA_EVENT_OTA) {
 					MemFree(&event->services[m].ota_paras);
 				} else if (event->services[m].servie_id == EN_IOTA_EVENT_TIME_SYNC) {
