@@ -50,6 +50,24 @@ void OnLoginSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	if (onConnSuccess) {
 		(onConnSuccess)(rsp);
 	}
+
+	//report device log
+	long long timestamp = getTime();
+	char timeStampStr[14];
+	sprintf(timeStampStr,"%lld",timestamp);
+
+	IOTA_ReportDeviceLog("DEVICE_STATUS", "login success", timeStampStr, NULL);
+
+	//report sdk version
+	ST_IOTA_DEVICE_INFO_REPORT deviceInfo;
+
+	deviceInfo.device_sdk_version = SDK_VERSION;
+	deviceInfo.sw_version = NULL;
+	deviceInfo.fw_version = NULL;
+	deviceInfo.event_time = NULL;
+	deviceInfo.object_device_id = NULL;
+
+	IOTA_ReportDeviceInfo(&deviceInfo, NULL);
 }
 
 void OnMessageArrived(void *context, int token, int code, const char *topic, char *message) {
@@ -885,6 +903,24 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 
 				}
 
+				//device log
+				if (!strcmp(service_id, LOG)) {
+					event->services[i].servie_id = EN_IOTA_EVENT_DEVICE_LOG;
+					event->services[i].device_log_paras = (EN_IOTA_DEVICE_LOG_PARAS*)malloc(sizeof(EN_IOTA_DEVICE_LOG_PARAS));
+
+					if (!strcmp(event_type, LOG_CONFIG)) {
+						event->services[i].event_type = EN_IOTA_EVENT_LOG_CONFIG;
+
+						char *log_switch = JSON_GetStringFromObject(paras, SWITCH, NULL);
+						event->services[i].device_log_paras->log_switch = log_switch;
+
+						char *end_time = JSON_GetStringFromObject(paras, END_TIME, NULL);
+						event->services[i].device_log_paras->end_time = end_time;
+
+					}
+
+				}
+
 			}
 
 			i++;
@@ -919,6 +955,8 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 					MemFree(&event->services[m].ota_paras);
 				} else if (event->services[m].servie_id == EN_IOTA_EVENT_TIME_SYNC) {
 					MemFree(&event->services[m].ntp_paras);
+				} else if (event->services[m].servie_id == EN_IOTA_EVENT_DEVICE_LOG) {
+					MemFree(&event->services[m].device_log_paras);
 				}
 			}
 

@@ -1184,10 +1184,6 @@ HW_API_FUNC HW_INT IOTA_SubscribeBoostrap() {
 
 
 /**
- * ----------------------------deprecated below£¬do not use it-------------------------------------->
- */
-
-/**
  *@Description: get NTP time.Value is returned in the event callback function
  *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
     			   provide access to the context information in the callback.
@@ -1229,6 +1225,102 @@ HW_API_FUNC HW_INT IOTA_GetNTPTime(void *context) {
 	}
 
 }
+
+/**
+ *@Description: report device log to the iot platform
+ *@param type: the type of device log, it can only be as follows£º
+ 	 	 	   DEVICE_STATUS, DEVICE_PROPERTY, DEVICE_MESSAGE, DEVICE_COMMAND
+ *@param content£ºthe log content
+ *@param timestamp£ºtime stamp accurated to milliseconds
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR *timestamp, void *context) {
+
+	cJSON *root, *services, *serviceEvent;
+	root = cJSON_CreateObject();
+	services = cJSON_CreateArray();
+	serviceEvent = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(serviceEvent, SERVICE_ID, LOG);
+	cJSON_AddStringToObject(serviceEvent, EVENT_TYPE, LOG_REPORT);
+
+	cJSON *paras;
+	paras = cJSON_CreateObject();
+	cJSON_AddStringToObject(paras, CONTENT, content);
+	cJSON_AddStringToObject(paras, TYPE, type);
+	cJSON_AddStringToObject(paras, TIMESTAMP, timestamp);
+
+	cJSON_AddItemToObject(serviceEvent, PARAS, paras);
+	cJSON_AddItemToArray(services, serviceEvent);
+	cJSON_AddItemToObject(root, SERVICES, services);
+
+	char *payload;
+	payload = cJSON_Print(root);
+	cJSON_Delete(root);
+
+	int messageId = 0;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = EventUp(payload, context);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_ReportDeviceLog() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+
+}
+
+
+/**
+ *@Description: report device info to the iot platform
+ *@param timestamp£ºST_IOTA_DEVICE_INFO_REPORT structure
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_ReportDeviceInfo(ST_IOTA_DEVICE_INFO_REPORT *device_info_report, void *context) {
+
+	cJSON *root, *services, *serviceEvent;
+	root = cJSON_CreateObject();
+	services = cJSON_CreateArray();
+	serviceEvent = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, device_info_report->object_device_id);
+	cJSON_AddStringToObject(serviceEvent, SERVICE_ID, SDK_INFO);
+	cJSON_AddStringToObject(serviceEvent, EVENT_TYPE, SDK_INFO_REPORT);
+	cJSON_AddStringToObject(serviceEvent, EVENT_TIME, device_info_report->event_time);
+
+	cJSON *paras;
+	paras = cJSON_CreateObject();
+	cJSON_AddStringToObject(paras, DEVICE_SDK_VERSION, device_info_report->device_sdk_version);
+	cJSON_AddStringToObject(paras, SW_VERSION, device_info_report->sw_version);
+	cJSON_AddStringToObject(paras, FW_VERSION, device_info_report->fw_version);
+
+	cJSON_AddItemToObject(serviceEvent, PARAS, paras);
+	cJSON_AddItemToArray(services, serviceEvent);
+	cJSON_AddItemToObject(root, SERVICES, services);
+
+	char *payload;
+	payload = cJSON_Print(root);
+	cJSON_Delete(root);
+
+	int messageId = 0;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = EventUp(payload, context);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_ReportDeviceInfo() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+}
+
+
+/**
+ * ----------------------------deprecated below£¬do not use it-------------------------------------->
+ */
 
 //Reserved interface for transparent transmission
 HW_API_FUNC HW_INT IOTA_ReportSubDeviceInfo(HW_CHAR *pcPayload, void *context) {

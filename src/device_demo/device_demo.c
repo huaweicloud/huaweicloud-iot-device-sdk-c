@@ -100,6 +100,7 @@ void Test_CmdRspV3();
 void Test_UpdateSubDeviceStatus(char *deviceId);
 void Test_GtwAddSubDevice();
 void Test_GtwDelSubDevice();
+void Test_ReportDeviceInfo();
 
 
 
@@ -385,6 +386,23 @@ void Test_GtwDelSubDevice () {
 	}
 }
 
+void Test_ReportDeviceInfo() {
+	ST_IOTA_DEVICE_INFO_REPORT deviceInfo;
+
+	deviceInfo.device_sdk_version = SDK_VERSION;
+	deviceInfo.sw_version = "v1.0";
+	deviceInfo.fw_version = "v1.0";
+	deviceInfo.event_time = NULL;
+	deviceInfo.object_device_id = username_;
+
+	int messageId = IOTA_ReportDeviceInfo(&deviceInfo, NULL);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportDeviceInfo() failed, messageId %d\n", messageId);
+	}
+
+}
+
+
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
 void HandleConnectSuccess (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
@@ -558,7 +576,7 @@ void HandleEventsDown(EN_IOTA_EVENT *message){
 
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), messageId %d\n", message->mqtt_msg_info->messageId);
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), services_count %d\n", message->services_count);
-	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), code %s\n", message->object_device_id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), object_device_id %s\n", message->object_device_id);
 	int i = 0;
 	while (message->services_count > 0) {
 		printf("servie_id: %d \n", message->services[i].servie_id);
@@ -657,6 +675,15 @@ void HandleEventsDown(EN_IOTA_EVENT *message){
 				}
 			}
 
+		} else if (message->services[i].servie_id == EN_IOTA_EVENT_TIME_SYNC) {
+			if(message->services[i].event_type == EN_IOTA_EVENT_GET_TIME_SYNC_RESPONSE) {
+				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_real_time: %lld \n", message->services[i].ntp_paras->device_real_time);
+			}
+		} else if (message->services[i].servie_id == EN_IOTA_EVENT_DEVICE_LOG) {
+			if(message->services[i].event_type == EN_IOTA_EVENT_LOG_CONFIG) {
+				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), log_switch: %s \n", message->services[i].device_log_paras->log_switch);
+				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), end_time: %s \n", message->services[i].device_log_paras->end_time);
+			}
 		}
 		i++;
 		message->services_count--;
@@ -742,6 +769,21 @@ int main(int argc, char **argv) {
 	TimeSleep(10500);
 	int count = 0;
 	while (count < 10000) {
+
+		//report device info
+		Test_ReportDeviceInfo();
+		TimeSleep(1500);
+
+		//NTP
+		IOTA_GetNTPTime(NULL);
+
+		TimeSleep(1500);
+
+		//report device log
+		long long timestamp = getTime();
+		char timeStampStr[14];
+		sprintf(timeStampStr,"%lld",timestamp);
+		IOTA_ReportDeviceLog("DEVICE_STATUS", "device log", timeStampStr, NULL);
 
 		//message up
 		Test_MessageReport();
