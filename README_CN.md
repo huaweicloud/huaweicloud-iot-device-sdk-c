@@ -34,9 +34,15 @@
 
 8、网关新增/删除子设备
 
+9、增加时间同步功能
+
+10、增加设备日志上报接口
+
+11、增加设备信息上报接口
+
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
-*2021/01/07*
+*2021/02/25*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。

@@ -122,6 +122,14 @@ typedef struct {
 	HW_CHAR *body; //the response body obtained from the profile can be parsed into JSON
 } ST_IOTA_COMMAND_RSP_V3;
 
+typedef struct {
+	HW_CHAR *object_device_id;
+	HW_CHAR *event_time;
+	HW_CHAR *device_sdk_version;
+	HW_CHAR *sw_version;
+	HW_CHAR *fw_version;
+} ST_IOTA_DEVICE_INFO_REPORT;
+
 HW_API_FUNC HW_INT IOTA_ServiceReportData(HW_CHAR *pcDeviceId, HW_CHAR *pcServiceId, HW_CHAR *pcServiceProperties);
 HW_API_FUNC HW_INT IOTA_ServiceCommandRespense(HW_UINT uiMid, HW_UINT uiResultCode, HW_CHAR *pcCommandRespense);
 HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas, HW_INT compressFlag, void *context);
@@ -152,7 +160,9 @@ HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_st
 HW_API_FUNC HW_INT IOTA_SubscribeBoostrap();
 HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW_INT deviceNum, void *context);
 HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_INT deviceNum, void *context);
+HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR *timestamp, void *context);
 
+#define SDK_VERSION					 "C_v1.0.0"
 #define OTA_PORT 					 8943
 #define BUFSIZE 					 4096
 #define PKGNAME_MAX 				 20  //the max length of the package name
@@ -255,7 +265,6 @@ HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_I
 #define SDK_INFO_REPORT				 "sdk_info_report"
 #define TYPE						 "type"
 #define SDK_LANGUAGE				 "C"
-#define SDK_VERSION					 "0.8.0"
 #define SDK_TIME					 "$time_sync"
 #define SDK_NTP_REQUEST				 "time_sync_request"
 #define DEVICE_SEND_TIME			 "device_send_time"
@@ -273,6 +282,15 @@ HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_I
 #define ONLINE						 "ONLINE"
 #define OFFLINE						 "OFFLINE"
 #define ADDRESS						 "address"
+#define LOG							 "$log"
+#define LOG_CONFIG					 "log_config"
+#define SWITCH						 "switch"
+#define END_TIME					 "end_time"
+#define LOG_REPORT					 "log_report"
+#define TIMESTAMP					 "timestamp"
+#define DEVICE_SDK_VERSION			 "device_sdk_version"
+#define SW_VERSION					 "sw_version"
+#define FW_VERSION					 "fw_version"
 
 /**
  * ----------------------------deprecated below------------------------------------->
