@@ -396,7 +396,7 @@ int MqttBase_init(char *workPath) {
 		return IOTA_FAILURE;
 	}
 
-	ca_path = CombineStrings(2, workDir, "/conf/rootcert.pem"); //ca_path cannot be released until the programe is destoried
+	ca_path = CombineStrings(2, workDir, "/conf/rootcert.pem"); //ca_path cannot be released until the programe is destoried, must replace with "/conf/bsrootcert.pem" for bootstraping
 
 #if defined(WIN32) || defined(WIN64)
 	char *libPath = CombineStrings(2, workDir, "/lib/paho-mqtt3as.dll");
