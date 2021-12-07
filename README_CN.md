@@ -129,7 +129,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	  
 	  :set nu
 	
-	- 在129行之后添加下面两行（[3.2](#3.2)中自定义的openssl的头文件和库文件位置）
+	- 在"DOXYGEN_COMMAND"之后添加下面两行（[3.2](#3.2)中自定义的openssl的头文件和库文件位置）
 	  
 	  CFLAGS += -I/home/test/openssl/include  
 	  
@@ -137,7 +137,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	  
 	  ![](./doc/doc_cn/paho_makefile1.png)
 	  
-	- 把图中195行、197行、199行、201行都改成对应的地址
+	- 在CCFLAGS_SO中添加openssl的头文件引用、LDFLAGS_CS、LDFLAGS_AS以及FLAGS_EXES中添加库文件引用（随着paho版本的更新，有的版本会默认添加该引用，此时可不需要再修改）
 	  ![](./doc/doc_cn/paho_makefile2.png)
 	
 4. 编译
@@ -153,7 +153,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	![](./doc/doc_cn/paho.png)
 
 6. 拷贝paho库文件
-	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下（同时将paho源码目录下src文件夹里的头文件（MQTTAsync.h/MQTTClient.h/MQTTClientPersistence.h/MQTTProperties.h/MQTTReasonCodes.h/MQTTSubscribeOpts.h）拷贝到SDK的include/base目录下）。
+	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下（同时将paho源码目录下src文件夹里的头文件（MQTTAsync.h/MQTTClient.h/MQTTClientPersistence.h/MQTTProperties.h/MQTTReasonCodes.h/MQTTSubscribeOpts.h）拷贝到SDK的include/base目录下，注意：有的paho版本会有 MQTTExportDeclarations.h 头文件，建议可以将MQTT相关的头文件都添加进去)。
 
 
 <h2 id="3.4">3.4 编译zlib库</h2>  
