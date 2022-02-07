@@ -46,7 +46,8 @@ USER_TOPIC_MSG_CALLBACK_HANDLER onUserTopicMessage;
 BOOTSTRAP_CALLBACK_HANDLER onBootstrap;
 
 void OnLoginSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
-//	SubscribeAll();
+	//The platform subscribes to system topic with QoS of 1 by default
+	// SubscribeAll();
 	if (onConnSuccess) {
 		(onConnSuccess)(rsp);
 	}
