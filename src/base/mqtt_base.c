@@ -71,6 +71,7 @@ char *workDir = NULL;
 char *logDir = NULL;
 
 int initFlag = 0;
+int checkTimestamp = 1; //checking timestamp, 0 is not checking¡ê? others are checking.The default value is 1;
 int mqttClientCreateFlag = 0; //this mqttClientCreateFlag is used to control the invocation of MQTTAsync_create, otherwise, there would be message leak.
 
 char *ca_path = NULL;
@@ -619,7 +620,12 @@ int MqttBase_CreateConnection() {
 
 	pthread_mutex_lock(&login_locker);
 
-	char *temp_authMode = "_0_0_";
+	char *temp_authMode = NULL;
+	if (checkTimestamp == 0) {
+		temp_authMode = "_0_0_";
+	} else {
+		temp_authMode = "_0_1_";
+	}
 
 	if (!mqttClientCreateFlag) {
 		if (serverIp == NULL || port == NULL || username == NULL) {

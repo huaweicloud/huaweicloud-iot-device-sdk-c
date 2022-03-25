@@ -42,9 +42,11 @@
 
 12、增加各版本证书兼容说明
 
+13、默认校验时间戳
+
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
-*2022/02/15*
+*2022/03/25*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
