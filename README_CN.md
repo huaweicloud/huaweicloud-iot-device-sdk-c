@@ -1,4 +1,4 @@
-[English](./README.md) | 简体中文
+﻿[English](./README.md) | 简体中文
 
 #  huaweicloud-iot-device-sdk-c 开发指南
 
@@ -42,7 +42,11 @@
 
 12、增加各版本证书兼容说明
 
-13、默认校验时间戳
+13、是否校验时间戳可以配置
+
+14、自动生成so库文件
+
+15、增加mqtts不校验平台公钥场景
 
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
@@ -370,7 +374,7 @@ void setMyCallbacks(){
   
 - **设备消息/属性上报**
   
-  设备鉴权通过后，网关设备可以调用SDK的“设备消息上报”和“设备属性上报”接口上报数据，同时网关可以上报命令响应结果，建议上报数据的间隔不要小于几百毫秒，主要包括“平台命令下发响应”、“平台设置设备属性响应”、“平台查询设备属性响应”。
+  设备鉴权通过后, 网关设备可以调用SDK的“设备消息上报”和“设备属性上报”接口上报数据，同时网关可以上报命令响应结果，建议上报数据的间隔不要小于几百毫秒，主要包括“平台命令下发响应”、“平台设置设备属性响应”、“平台查询设备属性响应”。
   
   - 设备消息上报接口：
     
@@ -524,6 +528,9 @@ void SetAuthConfig() {
 	通过设备发放功能，可以将设备发放到不同的region，参考文档：https://support.huaweicloud.com/qs-iotps/iot_03_0006.html  注意：流程可参考“快速入门”中的各种接入示例，SDK已自动实现示例中的“引导设备”。详细的步骤可参考链接中的“用户指南”。
 	SDK中需要将主目录下的Makefile里的OBJS中的device_demo.o，同时将bootstrap_demo.o放开。    
 	![](./doc/doc_cn/bootstrap.png)
+	
+- **bootstrap接入场景**  
+当前，平台使用了 [DigiCert Global Root CA.](https://global-root-ca.chain-demos.digicert.com/info/index.html) 和 [GlobalSign Root CA - R3](https://valid.r3.roots.globalsign.com/) 两个权威CA签发的证书。conf目录下的证书默认是跟IoTDA的基础版域名绑定的。如果需要切换到其他IoTDA版本，请参考官方文档的 [证书资源](https://support.huaweicloud.com/devg-iothub/iot_02_1004.html#section3) 章节。
 
 - **编译并运行程序**
 1. 将huaweicloud-iot-device-sdk-c-master.zip压缩包拷贝到Linux环境中，通过如下命令解压：
