@@ -42,7 +42,11 @@
 
 12、增加各版本证书兼容说明
 
-13、默认校验时间戳
+13、是否校验时间戳可以配置
+
+14、自动生成so库文件
+
+15、增加mqtts不校验平台公钥场景
 
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 

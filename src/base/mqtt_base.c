@@ -70,8 +70,9 @@ int bs_reg_mode = 0;
 char *workDir = NULL;
 char *logDir = NULL;
 
+int verifyCert = 0;
 int initFlag = 0;
-int checkTimestamp = 1; //checking timestamp, 0 is not checking¡ê? others are checking.The default value is 1;
+int checkTimestamp = 0; //checking timestamp, 0 is not checking¡ê? others are checking.The default value is 1;
 int mqttClientCreateFlag = 0; //this mqttClientCreateFlag is used to control the invocation of MQTTAsync_create, otherwise, there would be message leak.
 
 char *ca_path = NULL;
@@ -657,16 +658,20 @@ int MqttBase_CreateConnection() {
 		}
 
 		if (StrInStr(port, MQTTS_PORT)) {
-			if (access(ca_path, 0)) {
-				PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_CreateConnection() error, ca file is NOT accessible\n");
-				MemFree(&loginTimestamp);
-				pthread_mutex_unlock(&login_locker);
-				return IOTA_CERTIFICATE_NOT_FOUND;
+			if (verifyCert == 0) {
+				ssl_opts.trustStore = NULL;
+				ssl_opts.enableServerCertAuth = FALSE; // TRUE: enable server certificate authentication, FALSE: disable
+			} else{
+				if (access(ca_path, 0)) {
+					PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_CreateConnection() error, ca file is NOT accessible\n");
+					MemFree(&loginTimestamp);
+					pthread_mutex_unlock(&login_locker);
+					return IOTA_CERTIFICATE_NOT_FOUND;
+				}
+				ssl_opts.trustStore = ca_path;
+				ssl_opts.enableServerCertAuth = TRUE; // TRUE: enable server certificate authentication, FALSE: disable
+				// ssl_opts.verify = 0; // 0 for no verifying the hostname, 1 for verifying the hostname
 			}
-			ssl_opts.trustStore = ca_path;
-			ssl_opts.enabledCipherSuites = "TLSv1.2";
-			ssl_opts.enableServerCertAuth = TRUE; // TRUE: enable server certificate authentication, FALSE: disable
-			// ssl_opts.verify = 0; // 0 for no verifying the hostname, 1 for verifying the hostname
 
 			if (authMode) {
 				if (access(cert_path, 0) || access(key_path, 0)) {
