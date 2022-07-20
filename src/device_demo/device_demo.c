@@ -402,6 +402,42 @@ void Test_ReportDeviceInfo() {
 
 }
 
+void Text_ReportFile(HW_CHAR * fileName, HW_CHAR *openFile){
+	//传递文件名
+	ST_FILE_MANA_INFO_REPORT deviceInfo;
+
+	deviceInfo.event_type = FILE_EVENT_TYPE;
+	deviceInfo.file_name  = fileName;
+	deviceInfo.file_size = 0;
+	deviceInfo.file_hash_code = openFile;
+	deviceInfo.object_device_id = NULL;
+
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: FILE_ReportFile() hello \n");
+	int messageId = FILE_ReportFile(&deviceInfo, NULL);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: FILE_ReportFile() failed, messageId %d\n", messageId);
+	}
+
+}
+
+void Text_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo){
+	//传递文件名
+	ST_FILE_MANA_INFO_REPORT deviceInfo;
+
+	deviceInfo.event_type = FILE_EVENT_DOWN;
+	deviceInfo.file_name  = fileName;
+	deviceInfo.file_size = 0;
+	deviceInfo.file_hash_code = DowFileTo;
+	deviceInfo.object_device_id = NULL;
+
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: Text_DownloadFile() hello \n");
+	int messageId = FILE_ReportFile(&deviceInfo, NULL);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: FILE_ReportFile() failed, messageId %d\n", messageId);
+	}
+
+}
+
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -683,6 +719,13 @@ void HandleEventsDown(EN_IOTA_EVENT *message){
 			if(message->services[i].event_type == EN_IOTA_EVENT_LOG_CONFIG) {
 				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), log_switch: %s \n", message->services[i].device_log_paras->log_switch);
 				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), end_time: %s \n", message->services[i].device_log_paras->end_time);
+			}
+		}else if (message->services[i].servie_id == EN_IOTA_EVENT_FILE_MANAGER){
+			if(message->services[i].event_type == EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE){
+				FILE_Upload(message->services[i].file_paras->url, message->services[i].file_paras->openFile, 3000);
+			}
+			if(message->services[i].event_type == EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE){
+				FiLE_Download(message->services[i].file_paras->url, message->services[i].file_paras->openFile, 3000);
 			}
 		}
 		i++;
