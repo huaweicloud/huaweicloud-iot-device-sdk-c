@@ -34,6 +34,8 @@
 #include "cJSON.h"
 #include "iota_datatrans.h"
 
+#include "file_manager.h"
+
 EVENT_CALLBACK_HANDLER onEventDown;
 CMD_CALLBACK_HANDLER onCmd;
 CMD_CALLBACK_HANDLER_V3 onCmdV3;
@@ -921,7 +923,28 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 					}
 
 				}
+				//File manager _longsj
+				if(!strcmp(service_id, FILE_SERVICE_ID)){
+					event->services[i].servie_id = EN_IOTA_EVENT_FILE_MANAGER;
+					event->services[i].file_paras = (EN_IOTA_FILE_PARAS*)malloc(sizeof(EN_IOTA_FILE_PARAS));
 
+					if(!strcmp(event_type,FILE_EVENT_TYPE_RES)){
+						event->services[i].event_type = EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE;
+					}
+
+					if(!strcmp(event_type,FILE_EVENT_DOWN_RES)){
+						event->services[i].event_type = EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE;
+					}
+					
+					char *url = JSON_GetStringFromObject(paras, URL, NULL);
+					cJSON *file = cJSON_GetObjectItem(paras, FILE_ATTRIBUTES);
+					char *fileName = JSON_GetStringFromObject(file, HASH_CODE, NULL);
+
+					event->services[i].file_paras->url = url;
+					event->services[i].file_paras->openFile = fileName;
+					PrintfLog(EN_LOG_LEVEL_INFO,"OnMessageArrived() url = %s\n",event->services[i].file_paras->url);
+					PrintfLog(EN_LOG_LEVEL_INFO,"OnMessageArrived() openFile = %s\n",event->services[i].file_paras->openFile);
+				}
 			}
 
 			i++;
