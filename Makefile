@@ -95,3 +95,4 @@ all:	$(TARGET)
 
 clean:
 	rm -f $(OBJS) $(TARGET) *.d
+gh

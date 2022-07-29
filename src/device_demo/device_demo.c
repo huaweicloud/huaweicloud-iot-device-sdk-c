@@ -43,6 +43,7 @@
 #include "string.h"
 #include "cJSON.h"
 #include "iota_error_type.h"
+#include "file_manager.h"
 
 /* if you want to use syslog,you should do this:
  *
@@ -402,8 +403,7 @@ void Test_ReportDeviceInfo() {
 
 }
 
-void Text_ReportFile(HW_CHAR * fileName, HW_CHAR *openFile){
-	//传递文件名
+void Text_ReportFile(HW_CHAR *fileName, HW_CHAR *openFile){
 	ST_FILE_MANA_INFO_REPORT deviceInfo;
 
 	deviceInfo.event_type = FILE_EVENT_TYPE;
@@ -412,7 +412,6 @@ void Text_ReportFile(HW_CHAR * fileName, HW_CHAR *openFile){
 	deviceInfo.file_hash_code = openFile;
 	deviceInfo.object_device_id = NULL;
 
-	PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: FILE_ReportFile() hello \n");
 	int messageId = FILE_ReportFile(&deviceInfo, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: FILE_ReportFile() failed, messageId %d\n", messageId);
@@ -420,8 +419,7 @@ void Text_ReportFile(HW_CHAR * fileName, HW_CHAR *openFile){
 
 }
 
-void Text_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo){
-	//传递文件名
+void Text_DownloadFile(HW_CHAR *fileName, HW_CHAR *DowFileTo){
 	ST_FILE_MANA_INFO_REPORT deviceInfo;
 
 	deviceInfo.event_type = FILE_EVENT_DOWN;
@@ -430,7 +428,6 @@ void Text_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo){
 	deviceInfo.file_hash_code = DowFileTo;
 	deviceInfo.object_device_id = NULL;
 
-	PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: Text_DownloadFile() hello \n");
 	int messageId = FILE_ReportFile(&deviceInfo, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: FILE_ReportFile() failed, messageId %d\n", messageId);
