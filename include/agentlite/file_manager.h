@@ -87,8 +87,8 @@ typedef struct {
 #define FILE_END						1
 #define FILE_OPEN_ERR       			-112
 
-HW_API_FUNC HW_INT FILE_Upload(HW_CHAR *url,HW_CHAR *data ,HW_INT timeout);
-HW_API_FUNC HW_INT FiLE_Download(HW_CHAR *url,HW_CHAR *data ,HW_INT timeout);
+HW_API_FUNC HW_INT FILE_Upload(HW_CHAR *url, HW_CHAR *data, HW_INT timeout);
+HW_API_FUNC HW_INT FiLE_Download(HW_CHAR *url, HW_CHAR *data, HW_INT timeout);
 HW_API_FUNC HW_INT FILE_ReportFile(ST_FILE_MANA_INFO_REPORT *device_info_report, void *context);
 static void FILE_FileResponse(int result, HW_CHAR *filePath, HW_INT readOrwrite);
 #endif

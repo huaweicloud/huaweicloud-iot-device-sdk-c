@@ -58,7 +58,7 @@ char *bootstrap_address = "iot-bs.cn-north-4.myhuaweicloud.com";
 
 char* serverIp_ = NULL;
 //char* serverIp_ = "iot-mqtts.cn-north-4.myhuaweicloud.com";
-int port_ = 1883;
+int port_ = 8883;
 
 char *password_ = "XXXX";
 

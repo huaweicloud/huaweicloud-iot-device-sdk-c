@@ -948,6 +948,7 @@ HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT time
 			} else {
 				break;
 			}
+
 		}
 		buf[read_length] = '\0';
 
