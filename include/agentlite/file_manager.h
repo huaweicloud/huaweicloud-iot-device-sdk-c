@@ -29,7 +29,7 @@ typedef struct {
 
 #define FILE_HTTP_GET				"GET "
 #define FILE_HTTP_PUT				"PUT "
-#define FILE_HEADER_LENGTH			1000
+#define FILE_HEADER_LENGTH			1x000
 #define FILE_IP_URI_LEN				1500
 #define OTA_HTTP_HOST				"Host: " 
 #define FILE_CONTENT_TYPE			"Content-Type: text/plain\r\n"
@@ -39,7 +39,7 @@ typedef struct {
 #define FILE_HTTP_VERSION			" HTTP/1.1\r\n"
 #define FILE_LINEFEED				"\r\n"
 #define FILE_CRLF					"\r\n\r\n"
-#define DOUBLE_OBLIQUE_LINE 		"//"
+#define DOUBLE_OBLIQUE_LINE			"//"
 #define SINGLE_SLANT				"/"
 #define COLON						":"
 
@@ -71,24 +71,24 @@ typedef struct {
 #define FILE_ATTRIBUTES				"file_attributes"
 #define FILE_HTTP_RESPONSE_VERSION	"HTTP/1.1 "
 
-#define FILE_SUCCESS 					0
-#define FILE_FAILURE 					-1
+#define FILE_SUCCESS					0
+#define FILE_FAILURE					-1
 #define FILE_PARAMETER_EMPTY 			-101
 #define FILE_RESOURCE_NOT_AVAILABLE		-102
 #define FILE_INITIALIZATION_REPEATED	-103
-#define FILE_WRITE_FAILED 	        	-104
+#define FILE_WRITE_FAILED				-104
 #define FILE_READ_FAILED				-105
 #define FILE_SSL_CONNECT_FAILED			-106
 #define FILE_MQTT_CONNECT_EXISTED		-107
 #define FILE_CERTIFICATE_NOT_FOUND		-108
 #define FILE_MQTT_DISCONNECT_FAILED		-109
-#define FILE_PARSE_JSON_FAILED 			-110
-#define FILE_PARAMETER_ERROR 			-111
+#define FILE_PARSE_JSON_FAILED			-110
+#define FILE_PARAMETER_ERROR			-111
 #define FILE_END						1
-#define FILE_OPEN_ERR					-112
+#define FILE_OPEN_ERR       			-112
 
-HW_API_FUNC HW_INT FILE_Upload(HW_CHAR *url, HW_CHAR *data, HW_INT timeout);
-HW_API_FUNC HW_INT FiLE_Download(HW_CHAR *url, HW_CHAR *data, HW_INT timeout);
+HW_API_FUNC HW_INT FILE_Upload(HW_CHAR *url,HW_CHAR *data ,HW_INT timeout);
+HW_API_FUNC HW_INT FiLE_Download(HW_CHAR *url,HW_CHAR *data ,HW_INT timeout);
 HW_API_FUNC HW_INT FILE_ReportFile(ST_FILE_MANA_INFO_REPORT *device_info_report, void *context);
 static void FILE_FileResponse(int result, HW_CHAR *filePath, HW_INT readOrwrite);
 #endif

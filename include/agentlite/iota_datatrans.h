@@ -130,6 +130,7 @@ typedef struct {
 	HW_CHAR *fw_version;
 } ST_IOTA_DEVICE_INFO_REPORT;
 
+
 HW_API_FUNC HW_INT IOTA_ServiceReportData(HW_CHAR *pcDeviceId, HW_CHAR *pcServiceId, HW_CHAR *pcServiceProperties);
 HW_API_FUNC HW_INT IOTA_ServiceCommandRespense(HW_UINT uiMid, HW_UINT uiResultCode, HW_CHAR *pcCommandRespense);
 HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas, HW_INT compressFlag, void *context);
@@ -161,6 +162,7 @@ HW_API_FUNC HW_INT IOTA_SubscribeBoostrap();
 HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW_INT deviceNum, void *context);
 HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_INT deviceNum, void *context);
 HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR *timestamp, void *context);
+HW_API_FUNC HW_INT IOTA_ReportFile(ST_IOTA_FILE_INFO_REPORT *deviceInfo, void *context);
 
 #define SDK_VERSION					 "C_v1.0.0"
 #define OTA_PORT 					 8943
@@ -178,6 +180,8 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR
 #define OTA_HTTP_HOST 				 "Host: "    //do not delete the blank space
 #define HTTP_OK 					 "200"
 #define FILE_NAME 					 "filename="
+#define FILE_NAME_L					 "filename"
+#define OTA_LINEFEED 				 "\n"
 #define OTA_LINEFEED 				 "\n"
 #define OTA_CONTENT_TYPE 			 "Content-Type: application/json\n"  //do not delete the blank space and '\n
 #define OTA_AUTH 					 "Authorization:Bearer "   //do not delete the blank space
@@ -291,6 +295,12 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR
 #define DEVICE_SDK_VERSION			 "device_sdk_version"
 #define SW_VERSION					 "sw_version"
 #define FW_VERSION					 "fw_version"
+
+
+#define FILE_ATTRIBUTES  			 "file_attribtes"
+#define HASH_CODE  			 		 "hash_code"
+#define SIZE  			 			 "size"
+
 
 /**
  * ----------------------------deprecated below------------------------------------->

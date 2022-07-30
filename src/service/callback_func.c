@@ -923,7 +923,7 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 					}
 
 				}
-				//File manager
+				//File manager _longsj
 				if(!strcmp(service_id, FILE_SERVICE_ID)){
 					event->services[i].servie_id = EN_IOTA_EVENT_FILE_MANAGER;
 					event->services[i].file_paras = (EN_IOTA_FILE_PARAS*)malloc(sizeof(EN_IOTA_FILE_PARAS));

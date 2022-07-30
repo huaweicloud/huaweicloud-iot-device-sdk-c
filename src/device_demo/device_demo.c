@@ -44,7 +44,6 @@
 #include "cJSON.h"
 #include "iota_error_type.h"
 #include "file_manager.h"
-
 /* if you want to use syslog,you should do this:
  *
  * #include "syslog.h"
@@ -55,11 +54,11 @@
 char *workPath = ".";
 char *gatewayId = NULL;
 
-char *serverIp_ = "iot-mqtts.cn-north-4.myhuaweicloud.com";
-int port_ = 8883;
+char *serverIp_ = "a1627c840c.iot-mqtts.cn-north-4.myhuaweicloud.com";
+int port_ = 1883;
 
-char *username_ = "XXXXX"; //deviceId, The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username
-char *password_ = "XXXXX";
+char *username_ = "629431acacbbb07117516714_text"; //deviceId, The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username
+char *password_ = "12345678";
 
 int disconnected_ = 0;
 
@@ -75,7 +74,7 @@ void Test_PropSetResponse(char *requestId);
 void Test_PropGetResponse(char *requestId);
 void Test_ReportOTAVersion(void);
 void Test_ReportUpgradeStatus(int i, char *version);
-void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp); 
 void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandleDisConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
@@ -102,8 +101,8 @@ void Test_UpdateSubDeviceStatus(char *deviceId);
 void Test_GtwAddSubDevice();
 void Test_GtwDelSubDevice();
 void Test_ReportDeviceInfo();
-
-
+void Text_ReportFile(HW_CHAR * fileName, HW_CHAR *openFile);
+void Text_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo);
 
 void TimeSleep(int ms) {
 #if defined(WIN32) || defined(WIN64)
@@ -128,7 +127,7 @@ void Test_MessageReport() {
 
 //V3 report
 void Test_ReportJson() {
-	int serviceNum = 2;  //reported services' totol count
+	int serviceNum = 3;  //reported services' totol count
 	ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
 
 	//---------------the data of service1-------------------------------
@@ -144,6 +143,13 @@ void Test_ReportJson() {
 	services[1].event_time = NULL ;
 	services[1].service_id = "CPU";
 	services[1].properties = service2;
+
+	//---------------the data of service3-------------------------------
+	char *service3 = "{\"longA\":\"9.89\",\"long_string\":\"hello!\"}";
+
+	services[1].event_time = NULL ;
+	services[1].service_id = "Long";
+	services[1].properties = service3;
 
 	int messageId = IOTA_PropertiesReportV3(services, serviceNum, NULL);
 	if (messageId != 0) {
@@ -345,7 +351,7 @@ void Test_GtwAddSubDevice() {
 	int deviceNum = 2;
 
     subDeviceInfos.deviceInfo[0].description = "description";
-	subDeviceInfos.deviceInfo[0].device_id = "device_id123";
+	subDeviceInfos.deviceInfo[0].device_id = "628207ef2d5e854503d5a738_node_id123";
 	subDeviceInfos.deviceInfo[0].extension_info = NULL;
 	subDeviceInfos.deviceInfo[0].name = "sub_device111";
 	subDeviceInfos.deviceInfo[0].node_id = "node_id123";
@@ -353,13 +359,13 @@ void Test_GtwAddSubDevice() {
   	subDeviceInfos.deviceInfo[0].product_id = "your_product_id";
 
     subDeviceInfos.deviceInfo[1].description = "description";
-	subDeviceInfos.deviceInfo[1].device_id = "device_id1234";
+	subDeviceInfos.deviceInfo[1].device_id = "628207ef2d5e854503d5a738_device_id1234";
 	subDeviceInfos.deviceInfo[1].extension_info = NULL;
 	subDeviceInfos.deviceInfo[1].name = "sub_device222";
-	subDeviceInfos.deviceInfo[1].node_id = "node_id123";
+	subDeviceInfos.deviceInfo[1].node_id = "device_id1234";
 	subDeviceInfos.deviceInfo[1].parent_device_id = NULL;
-  	subDeviceInfos.deviceInfo[0].product_id = "your_product_id";
-	subDeviceInfos.deviceInfo[1].product_id = "5f58768785edc002bc69cbf2";
+  	subDeviceInfos.deviceInfo[0].product_id = "628207ef2d5e854503d5a738_text456";
+	subDeviceInfos.deviceInfo[1].product_id = "628207ef2d5e854503d5a738_text456";
 
 	subDeviceInfos.event_id = "123123";
 	subDeviceInfos.event_time = NULL;
@@ -403,7 +409,8 @@ void Test_ReportDeviceInfo() {
 
 }
 
-void Text_ReportFile(HW_CHAR *fileName, HW_CHAR *openFile){
+void Text_ReportFile(HW_CHAR * fileName, HW_CHAR *openFile){
+	//传递文件名
 	ST_FILE_MANA_INFO_REPORT deviceInfo;
 
 	deviceInfo.event_type = FILE_EVENT_TYPE;
@@ -412,6 +419,7 @@ void Text_ReportFile(HW_CHAR *fileName, HW_CHAR *openFile){
 	deviceInfo.file_hash_code = openFile;
 	deviceInfo.object_device_id = NULL;
 
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: FILE_ReportFile() hello \n");
 	int messageId = FILE_ReportFile(&deviceInfo, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: FILE_ReportFile() failed, messageId %d\n", messageId);
@@ -419,7 +427,8 @@ void Text_ReportFile(HW_CHAR *fileName, HW_CHAR *openFile){
 
 }
 
-void Text_DownloadFile(HW_CHAR *fileName, HW_CHAR *DowFileTo){
+void Text_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo){
+	//传递文件名
 	ST_FILE_MANA_INFO_REPORT deviceInfo;
 
 	deviceInfo.event_type = FILE_EVENT_DOWN;
@@ -428,6 +437,7 @@ void Text_DownloadFile(HW_CHAR *fileName, HW_CHAR *DowFileTo){
 	deviceInfo.file_hash_code = DowFileTo;
 	deviceInfo.object_device_id = NULL;
 
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: Text_DownloadFile() hello \n");
 	int messageId = FILE_ReportFile(&deviceInfo, NULL);
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: FILE_ReportFile() failed, messageId %d\n", messageId);
@@ -754,7 +764,7 @@ void SetAuthConfig() {
 
 
 void SetMyCallbacks() {
-	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess); 
 	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
 
 	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisConnectSuccess);
@@ -784,6 +794,8 @@ void MyPrintLog(int level, char *format, va_list args) {
 	 * */
 }
 
+
+
 int main(int argc, char **argv) {
 #if defined(_DEBUG)
 	setvbuf(stdout, NULL, _IONBF, 0); //in order to make the console log printed immediately at debug mode
@@ -808,17 +820,23 @@ int main(int argc, char **argv) {
 
 	TimeSleep(10500);
 	int count = 0;
+
+	//Text_ReportFile("hhhh.txt", "/home/longshijing/hhhh.txt");
+	//Text_DownloadFile("hhhh.txt", "/home/longshijing/hhh.txt");
 	while (count < 10000) {
 
 		//report device info
-		Test_ReportDeviceInfo();
-		TimeSleep(1500);
+		//Test_ReportDeviceInfo();
+		//TimeSleep(1500);
 
 		//NTP
 		IOTA_GetNTPTime(NULL);
 
 		TimeSleep(1500);
 
+		
+		TimeSleep(1500);
+/*
 		//report device log
 		long long timestamp = getTime();
 		char timeStampStr[14];
@@ -831,37 +849,37 @@ int main(int argc, char **argv) {
 		TimeSleep(1500);
 
 		//properties report
-		Test_PropertiesReport();
+		Test_PropertiesReport();  //上报设备属性
 		
 		TimeSleep(1500);
 
 		//batchProperties report
-		Test_BatchPropertiesReport(NULL);
+		Test_BatchPropertiesReport(NULL); 
 
 		TimeSleep(1500);
 		
 		//command response
-		Test_CommandResponse("1005");
+		Test_CommandResponse("1005"); //上报命令
 
 		TimeSleep(1500);
 
 		//propSetResponse
-		Test_PropSetResponse("1006");
+		Test_PropSetResponse("1006"); //上报属性设置结果
 
 		TimeSleep(1500);
 
 		//propSetResponse
-		Test_PropGetResponse("1007");
+		Test_PropGetResponse("1007"); //属性获取-查询结果
 
 		TimeSleep(5500);
 
-		IOTA_SubscribeUserTopic("devMsg");
+		IOTA_SubscribeUserTopic("devMsg");  //自定义topic
 		
 		TimeSleep(1500);
 
 		//get device shadow
-		IOTA_GetDeviceShadow("1232", NULL, NULL, NULL);
-
+		IOTA_GetDeviceShadow("1232", NULL, NULL, NULL); //获取影子数据
+	*/
 		count++;
 	}
 
