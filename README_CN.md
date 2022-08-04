@@ -1,4 +1,4 @@
-﻿[English](./README.md) | 简体中文
+[English](./README.md) | 简体中文
 
 #  huaweicloud-iot-device-sdk-c 开发指南
 
@@ -18,6 +18,12 @@
 <!-- /TOC -->
 
 <h1 id="0">0.版本更新说明</h1>
+1、增加文件上传、下载功能
+
+*2022/08/2*
+
+
+
 1、增加泛协议接入场景
 
 2、增加boostrap场景
@@ -42,15 +48,11 @@
 
 12、增加各版本证书兼容说明
 
-13、是否校验时间戳可以配置
-
-14、自动生成so库文件
-
-15、增加mqtts不校验平台公钥场景
+13、默认校验时间戳
 
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
-*2022/05/25*
+*2022/03/25*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -71,6 +73,8 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 - 支持设备影子查询
 
 - 支持自定义日志收集能力
+
+- 支持文件上下传
 
   
 
@@ -374,7 +378,7 @@ void setMyCallbacks(){
   
 - **设备消息/属性上报**
   
-  设备鉴权通过后, 网关设备可以调用SDK的“设备消息上报”和“设备属性上报”接口上报数据，同时网关可以上报命令响应结果，建议上报数据的间隔不要小于几百毫秒，主要包括“平台命令下发响应”、“平台设置设备属性响应”、“平台查询设备属性响应”。
+  设备鉴权通过后，网关设备可以调用SDK的“设备消息上报”和“设备属性上报”接口上报数据，同时网关可以上报命令响应结果，建议上报数据的间隔不要小于几百毫秒，主要包括“平台命令下发响应”、“平台设置设备属性响应”、“平台查询设备属性响应”。
   
   - 设备消息上报接口：
     
@@ -520,6 +524,59 @@ void SetAuthConfig() {
 
   请参考主目录下的**API文档**。
   
+- **文件上传、下载**
+
+ 1. 在控制台界面上配置文件上传OBS桶, 进行文件授权。具体OBS桶创建请看： [创建桶_对象存储服务 OBS_控制台指南_管理桶_华为云 (huaweicloud.com)](https://support.huaweicloud.com/usermanual-obs/zh-cn_topic_0045829088.html) 
+
+![](./doc/doc_cn/sdk_file_obs.png)
+
+ 2. SDK代码配置
+
+  - 文件上传\下载接口：
+
+    1. ` HW_API_FUNC HW_INT IOTA_UploadFileGetUrl(ST_FILE_MANA_INFO_REPORT *device_info_report, void *context);` 
+
+    2. ` HW_API_FUNC HW_INT IOTA_DownloadFileGetUrl(ST_FILE_MANA_INFO_REPORT *device_info_report, void *context);`
+    
+    IOTA_UploadFileGetUrl为文件上传接口，数据流传输方向：设备 -> 华为云OBS。IOTA_DownloadFileGetUrl为文件下载接口，数据流传输方向：华为云OBS ->设备。
+
+  - 文件上传实现：
+    demo中的void Test_UploadFile(HW_CHAR *fileName, HW_CHAR *openFile)演示了该接口中文件上传的具体实现。通过Test_ReportFile() 测试接口可以将文件从设备上传到华为云OBS桶中。注意，当fileName名字不变时，OBS桶中文件将被覆盖。
+
+```C
+void Test_UploadFile(HW_CHAR *fileName, HW_CHAR *openFile){
+	
+    ST_FILE_MANA_INFO_REPORT deviceInfo;
+	deviceInfo.file_name  = fileName; //OBS桶中的文件名
+	deviceInfo.file_size = 0; //文件大小，为0时使用默认大小
+	deviceInfo.file_hash_code = openFile; //设备中要上传文件的路径
+	deviceInfo.object_device_id = NULL;  
+
+	int messageId = FILE_ReportFile(&deviceInfo, NULL);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: FILE_ReportFile() failed, messageId %d\n", messageId);
+	}
+}
+```
+  - 文件下载实现：
+    demo中的void Test_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo)演示了该接口中文件下载的具体实现。通过该函数可以将华为云OBS桶中的文件下载到设备中。当DowFileTo名字不变时，设备中的文件内容将被覆盖。
+````C
+void Test_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo){
+	
+    ST_FILE_MANA_INFO_REPORT deviceInfo;
+	deviceInfo.file_name  = fileName; //OBS桶中的文件名
+	deviceInfo.file_size = 0;//文件大小，为0时使用默认大小
+	deviceInfo.file_hash_code = DowFileTo; //下载到的文件放在该路径下
+	deviceInfo.object_device_id = NULL;
+
+	int messageId = FILE_ReportFile(&deviceInfo, NULL);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: FILE_ReportFile() failed, messageId %d\n", messageId);
+	}
+}
+````
+
+
 - **泛协议接入场景**  
 
 	[泛协议接入demo](./doc/doc_cn/generic_protocol.md)
@@ -528,9 +585,6 @@ void SetAuthConfig() {
 	通过设备发放功能，可以将设备发放到不同的region，参考文档：https://support.huaweicloud.com/qs-iotps/iot_03_0006.html  注意：流程可参考“快速入门”中的各种接入示例，SDK已自动实现示例中的“引导设备”。详细的步骤可参考链接中的“用户指南”。
 	SDK中需要将主目录下的Makefile里的OBJS中的device_demo.o，同时将bootstrap_demo.o放开。    
 	![](./doc/doc_cn/bootstrap.png)
-	
-- **bootstrap接入场景**  
-当前，平台使用了 [DigiCert Global Root CA.](https://global-root-ca.chain-demos.digicert.com/info/index.html) 和 [GlobalSign Root CA - R3](https://valid.r3.roots.globalsign.com/) 两个权威CA签发的证书。conf目录下的证书默认是跟IoTDA的基础版域名绑定的。如果需要切换到其他IoTDA版本，请参考官方文档的 [证书资源](https://support.huaweicloud.com/devg-iothub/iot_02_1004.html#section3) 章节。
 
 - **编译并运行程序**
 1. 将huaweicloud-iot-device-sdk-c-master.zip压缩包拷贝到Linux环境中，通过如下命令解压：
