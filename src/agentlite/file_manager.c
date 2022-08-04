@@ -241,7 +241,7 @@ static HW_INT FILE_HttpsRead(SSL *ssl, HW_CHAR *filePath, HW_INT readOrwrite)
     int result = FILE_FAILURE;
     // Return value
     int read_length = 0;
-    int headerFlag = 0; // to judge if read the response header
+    int headerFlag = 0; 
     char buf[BUFSIZE];
 
     FILE *fp = NULL;
@@ -265,7 +265,6 @@ static HW_INT FILE_HttpsRead(SSL *ssl, HW_CHAR *filePath, HW_INT readOrwrite)
                 buf1 = strstr(buf, FILE_CRLF) + strlen(FILE_CRLF);
             }
             result = FILE_HttpsReadDataProcessing(buf, &len);
-            PrintfLog(EN_LOG_LEVEL_INFO, "FILE_datatrans: FILE_HttpsRead() result = %d.\n", result);
             PrintfLog(EN_LOG_LEVEL_INFO, "FILE_datatrans: FILE_HttpsRead() buf = %s.\n", buf);
         } else {
             if (readOrwrite == 1) {
@@ -380,13 +379,12 @@ HW_API_FUNC HW_INT FILE_OBSTransmission(HW_CHAR *url, HW_CHAR *filePath, HW_INT 
     // 设置soket
     int fd = FILE_Socket(timeout);
     if (fd < 0) {
-        return FILE_FAILURE;
+        return FILE_HTTP_CONNECT_EXISTED;
     }
-
     // TCP连接
     result = FILE_TcpConn(fd, FILE_IP, FILE_PORT);
     if (result < 0) {
-        return FILE_FAILURE;
+        return FILE_HTTP_DISCONNECT_FAILED;
     }
     PrintfLog(EN_LOG_LEVEL_INFO, "FILE_datatrans: FILE_OBSTransmission() connect server success by tcp.\n");
 
@@ -447,7 +445,14 @@ HW_API_FUNC HW_INT FiLE_Download(HW_CHAR *url, HW_CHAR *filePath, HW_INT timeout
 }
 
 /* * MQTT request* */
-HW_API_FUNC HW_INT FILE_ReportFile(ST_FILE_MANA_INFO_REPORT *device_info_report, void *context)
+/**
+ * @Description: upload File get URL obtain
+ * @param device_info_report: Relevant data of documents
+ * @param context: A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_UploadFileGetUrl(ST_FILE_MANA_INFO_REPORT *device_info_report, void *context)
 {
     if (device_info_report == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "the deviceInfo cannot be null\n");
@@ -464,12 +469,65 @@ HW_API_FUNC HW_INT FILE_ReportFile(ST_FILE_MANA_INFO_REPORT *device_info_report,
         cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, device_info_report->object_device_id);
     }
     cJSON_AddStringToObject(serviceDatas, SERVICE_ID, FILE_SERVICE_ID);
-    cJSON_AddStringToObject(serviceDatas, EVENT_TYPE, device_info_report->event_type);
+    cJSON_AddStringToObject(serviceDatas, EVENT_TYPE, FILE_EVENT_UP);
     cJSON_AddStringToObject(serviceDatas, EVENT_TIME, GetEventTimesStamp());
 
     cJSON_AddStringToObject(paras, FILE_NAME_L, device_info_report->file_name);
     cJSON_AddStringToObject(file, HASH_CODE, device_info_report->file_hash_code);
-    if (device_info_report->file_size != NULL) {
+    if (device_info_report->file_size != 0) {
+        cJSON_AddNumberToObject(file, SIZE, device_info_report->file_size);
+    }
+
+    cJSON_AddItemToObject(paras, FILE_ATTRIBUTES, file);
+    cJSON_AddItemToObject(serviceDatas, PARAS, paras);
+    cJSON_AddItemToArray(services, serviceDatas);
+    cJSON_AddItemToObject(root, SERVICES, services);
+
+    char *payload;
+    payload = cJSON_Print(root);
+    cJSON_Delete(root);
+
+    int messageId = 0;
+    if (payload == NULL) {
+        return FILE_FAILURE;
+    } else {
+        messageId = EventUp(payload, context);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "FILE_datatrans: FILE_ReportFile() with payload %s ==>\n", payload);
+        free(payload);
+        return messageId;
+    }
+}
+
+/**
+ * @Description: Download File get URL obtain
+ * @param device_info_report: Relevant data of documents
+ * @param context: A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_DownloadFileGetUrl(ST_FILE_MANA_INFO_REPORT *device_info_report, void *context)
+{
+    if (device_info_report == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "the deviceInfo cannot be null\n");
+        return -1;
+    }
+    cJSON *root, *services, *serviceDatas, *paras, *file;
+    root = cJSON_CreateObject();
+    services = cJSON_CreateArray();
+    serviceDatas = cJSON_CreateObject();
+    paras = cJSON_CreateObject();
+    file = cJSON_CreateObject();
+
+    if (device_info_report->object_device_id != NULL) {
+        cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, device_info_report->object_device_id);
+    }
+    cJSON_AddStringToObject(serviceDatas, SERVICE_ID, FILE_SERVICE_ID);
+    cJSON_AddStringToObject(serviceDatas, EVENT_TYPE, FILE_EVENT_DOWN);
+    cJSON_AddStringToObject(serviceDatas, EVENT_TIME, GetEventTimesStamp());
+
+    cJSON_AddStringToObject(paras, FILE_NAME_L, device_info_report->file_name);
+    cJSON_AddStringToObject(file, HASH_CODE, device_info_report->file_hash_code);
+    if (device_info_report->file_size != 0) {
         cJSON_AddNumberToObject(file, SIZE, device_info_report->file_size);
     }
 

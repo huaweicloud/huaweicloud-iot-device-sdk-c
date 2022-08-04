@@ -14,7 +14,6 @@ typedef struct {
 	HW_INT file_size;
 	HW_CHAR *file_hash_code;
 	HW_CHAR *object_device_id;
-    HW_CHAR *event_type;
 }ST_FILE_MANA_INFO_REPORT;
 
 typedef struct {
@@ -29,7 +28,7 @@ typedef struct {
 
 #define FILE_HTTP_GET				"GET "
 #define FILE_HTTP_PUT				"PUT "
-#define FILE_HEADER_LENGTH			1x000
+#define FILE_HEADER_LENGTH			1000
 #define FILE_IP_URI_LEN				1500
 #define OTA_HTTP_HOST				"Host: " 
 #define FILE_CONTENT_TYPE			"Content-Type: text/plain\r\n"
@@ -64,9 +63,9 @@ typedef struct {
 #define PARAS						"paras"
 #define SERVICES					"services"
 #define FILE_SERVICE_ID				"$file_manager"
-#define FILE_EVENT_TYPE				"get_upload_url"
+#define FILE_EVENT_UP				"get_upload_url"
 #define FILE_EVENT_DOWN				"get_download_url"
-#define FILE_EVENT_TYPE_RES			"get_upload_url_response"
+#define FILE_EVENT_UP_RES			"get_upload_url_response"
 #define FILE_EVENT_DOWN_RES			"get_download_url_response"
 #define FILE_ATTRIBUTES				"file_attributes"
 #define FILE_HTTP_RESPONSE_VERSION	"HTTP/1.1 "
@@ -79,9 +78,9 @@ typedef struct {
 #define FILE_WRITE_FAILED				-104
 #define FILE_READ_FAILED				-105
 #define FILE_SSL_CONNECT_FAILED			-106
-#define FILE_MQTT_CONNECT_EXISTED		-107
+#define FILE_HTTP_CONNECT_EXISTED		-107
 #define FILE_CERTIFICATE_NOT_FOUND		-108
-#define FILE_MQTT_DISCONNECT_FAILED		-109
+#define FILE_HTTP_DISCONNECT_FAILED		-109
 #define FILE_PARSE_JSON_FAILED			-110
 #define FILE_PARAMETER_ERROR			-111
 #define FILE_END						1
@@ -89,7 +88,8 @@ typedef struct {
 
 HW_API_FUNC HW_INT FILE_Upload(HW_CHAR *url, HW_CHAR *data, HW_INT timeout);
 HW_API_FUNC HW_INT FiLE_Download(HW_CHAR *url, HW_CHAR *data, HW_INT timeout);
-HW_API_FUNC HW_INT FILE_ReportFile(ST_FILE_MANA_INFO_REPORT *device_info_report, void *context);
+HW_API_FUNC HW_INT IOTA_DownloadFileGetUrl(ST_FILE_MANA_INFO_REPORT *device_info_report, void *context);
+HW_API_FUNC HW_INT IOTA_UploadFileGetUrl(ST_FILE_MANA_INFO_REPORT *device_info_report, void *context);
 static void FILE_FileResponse(int result, HW_CHAR *filePath, HW_INT readOrwrite);
 #endif
 
