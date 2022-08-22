@@ -660,7 +660,6 @@ int MqttBase_CreateConnection() {
 		if (StrInStr(port, MQTTS_PORT)) {
 			if (verifyCert == 0) {
 				ssl_opts.trustStore = NULL;
-				ssl_opts.enabledCipherSuites = "TLSv1.2";
 				ssl_opts.enableServerCertAuth = FALSE; // TRUE: enable server certificate authentication, FALSE: disable
 			} else{
 				if (access(ca_path, 0)) {
@@ -670,7 +669,6 @@ int MqttBase_CreateConnection() {
 					return IOTA_CERTIFICATE_NOT_FOUND;
 				}
 				ssl_opts.trustStore = ca_path;
-				ssl_opts.enabledCipherSuites = "TLSv1.2";
 				ssl_opts.enableServerCertAuth = TRUE; // TRUE: enable server certificate authentication, FALSE: disable
 				// ssl_opts.verify = 0; // 0 for no verifying the hostname, 1 for verifying the hostname
 			}

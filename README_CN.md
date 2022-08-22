@@ -48,11 +48,9 @@
 
 15、增加mqtts不校验平台公钥场景
 
-16、TLS版本设定为V1.2
-
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
-*2022/08/22*
+*2022/05/25*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
