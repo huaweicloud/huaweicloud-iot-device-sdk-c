@@ -43,7 +43,7 @@
 #include "string.h"
 #include "cJSON.h"
 #include "iota_error_type.h"
-
+#include "mqttv5_util.h"
 /* if you want to use syslog,you should do this:
  *
  * #include "syslog.h"
@@ -102,7 +102,13 @@ void Test_GtwAddSubDevice();
 void Test_GtwDelSubDevice();
 void Test_ReportDeviceInfo();
 
-
+#if defined(MQTTV5)
+void Test_CorreaytionData(char *response_topic);
+void Test_PayloadFormatIndicator();
+void Test_ContentType();
+void Test_UserProperty();
+void Test_PropertiesReport5();
+#endif
 
 void TimeSleep(int ms) {
 #if defined(WIN32) || defined(WIN64)
@@ -111,7 +117,112 @@ void TimeSleep(int ms) {
     usleep(ms * 1000);
 #endif
 }
+//------------------------------------------------------Test  MQTT5.0 ------------------------------------------------------------------------
+#if defined(MQTTV5)
+void Test_CorreaytionData(char *response_topic){
+	MQTTV5_DATA massv5 = mqttv5_initializer;
+	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
+	static int sum = 0;
+	sum++;
+	char num[5] = "";
+	sprintf_s(num, sizeof(num), "%d", sum);
 
+	char *topic_n = "";
+	char *topic = (char *)malloc(strlen(topic_n) + strlen(response_topic) + 3);
+	sprintf_s(topic, sizeof(topic), "%s/%s", topic_n, response_topic);
+
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "Test_CorreaytionData()\n");
+	massv5.response_topic = topic;
+	massv5.correlation_data = num;
+
+	int messageId = IOTA_MessageReport5(mass, 0, NULL , &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+	}
+
+	massv5.response_topic = NULL;
+	massv5.correlation_data = num;
+	mass.topicParas = response_topic;
+	messageId = IOTA_MessageReport5(mass, 0, NULL, &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+	}
+}
+
+void Test_ContentType(){
+	MQTTV5_DATA massv5 = mqttv5_initializer;
+	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
+	
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "Test_ContentType()\n");
+	massv5.contnt_type = "application/json";
+	int messageId = IOTA_MessageReport5(mass, 0, NULL , &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+	}
+}
+
+void Test_UserProperty(){
+	MQTTV5_DATA massv5 = mqttv5_initializer;
+	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
+
+	MQTTV5_USER_PRO user_0;
+	MQTTV5_USER_PRO user_1;
+
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "Test_UserProperty()\n");
+	user_0.key = "region";
+	user_0.Value = "A";
+	user_0.nex = &user_1;
+
+	user_1.key = "type";
+	user_1.Value = "JSON";
+	user_1.nex = NULL;
+
+	massv5.properties = &user_0;
+	int messageId = IOTA_MessageReport5(mass, 0, NULL , &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+	}
+}
+
+void Test_PropertiesReport5(){
+	int serviceNum = 2;  //reported services' totol count
+	ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
+	MQTTV5_DATA massv5 = mqttv5_initializer;	
+	MQTTV5_USER_PRO user_0;
+	MQTTV5_USER_PRO user_1;
+	//---------------the data of service1-------------------------------
+	char *service1 = "{\"Load\":\"6\",\"ImbA_strVal\":\"7\"}";
+
+	services[0].event_time = GetEventTimesStamp(); //if event_time is set to NULL, the time will be the iot-platform's time.
+	services[0].service_id = "parameter";
+	services[0].properties = service1;
+
+	//---------------the data of service2-------------------------------
+	char *service2 = "{\"PhV_phsA\":\"9\",\"PhV_phsB\":\"8\"}";
+
+	services[1].event_time = NULL;
+	services[1].service_id = "analog";
+	services[1].properties = service2;
+
+	massv5.contnt_type = "application/json";
+	user_0.key = "region";
+	user_0.Value = "A";
+	user_0.nex = &user_1;
+
+	user_1.key = "type";
+	user_1.Value = "JSON";
+	user_1.nex = NULL;
+	massv5.properties = &user_0;
+	massv5.response_topic = "NULL";
+	massv5.correlation_data = "1";
+	int messageId = IOTA_PropertiesReport5(services, serviceNum, 0, NULL, &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
+	}
+
+	MemFree(&services[0].event_time);
+}
+#endif
 //------------------------------------------------------Test  data report---------------------------------------------------------------------
 
 void Test_MessageReport() {

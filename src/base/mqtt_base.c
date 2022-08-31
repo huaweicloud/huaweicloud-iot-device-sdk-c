@@ -36,10 +36,13 @@
 #include "mqtt_base.h"
 #include "hmac_sha256.h"
 #include "iota_error_type.h"
+#include "mqttv5_util.h"
 
 #if defined(WIN32) || defined(WIN64)
-typedef int (*pMQTTAsync_create)(MQTTAsync *handle, const char *serverURI, const char *clientId, int persistence_type, void *persistence_context);
+
+
 typedef int (*pMQTTAsync_connect)(MQTTAsync handle, const MQTTAsync_connectOptions *options);
+typedef int (*pMQTTAsync_create)(MQTTAsync *handle, const char *serverURI, const char *clientId, int persistence_type, void *persistence_context);
 typedef int (*pMQTTAsync_send)(MQTTAsync handle, const char *destinationName, int payloadlen, const void *payload, int qos, int retained, MQTTAsync_responseOptions *response);
 typedef int (*pMQTTAsync_sendMessage)(MQTTAsync handle, const char *destinationName, const MQTTAsync_message *msg, MQTTAsync_responseOptions *response);
 typedef int (*pMQTTAsync_setCallbacks)(MQTTAsync handle, void *context, MQTTAsync_connectionLost *cl, MQTTAsync_messageArrived *ma, MQTTAsync_deliveryComplete *dc);
@@ -49,6 +52,12 @@ typedef void (*pMQTTAsync_free)(void *ptr);
 typedef int (*pMQTTAsync_disconnect)(MQTTAsync handle, const MQTTAsync_disconnectOptions *options);
 typedef int (*pMQTTAsync_isConnected)(MQTTAsync handle);
 typedef void (*pMQTTAsync_destroy)(MQTTAsync *handle);
+typedef void (*pMQTTAsync_destroy)(MQTTAsync *handle);
+typedef int (*pMQTTAsync_createWithOptions)(MQTTAsync *handle, const char *serverURI, const char *clientId, int persistence_type, void *persistence_context, MQTTAsync_createOptions *options);
+typedef int (*pMQTTProperties_add)(MQTTProperties* props, const MQTTProperty* prop);
+typedef int (*pMQTTProperties_free)(MQTTProperties* properties);
+typedef int (*pMQTTProperty_getType)(enum MQTTPropertyCodes value);
+typedef const char* (*pMQTTPropertyName)(enum MQTTPropertyCodes value);
 #endif
 
 pthread_mutex_t login_locker = PTHREAD_MUTEX_INITIALIZER;
@@ -85,6 +94,11 @@ MQTTAsync client = NULL;
 #if defined(WIN32) || defined(WIN64)
 HMODULE mqttdll = NULL;
 #endif
+
+#if defined(MQTTV5)
+char **send_mass = NULL;   //MQTT v5 Subject alias heap
+char topic_alias_len = 0;  
+#endif 
 
 char *encrypted_password = NULL;
 
@@ -127,6 +141,197 @@ int GetEncryptedPassword(char **timestamp, char **encryptedPwd) {
 	MemFree(&temp_encrypted_pwd);
 	return IOTA_SUCCESS;
 }
+
+#if defined(MQTTV5)
+void HandleCallbackFailure5(const char *currentFunctionName, MQTT_BASE_CALLBACK_HANDLER callback, void *context, MQTTAsync_failureData5 *response) {
+
+	EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp = (EN_IOTA_MQTT_PROTOCOL_RSP*)malloc(sizeof(EN_IOTA_MQTT_PROTOCOL_RSP));
+
+	if (protocolRsp == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
+		return;
+	}
+
+	protocolRsp->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO*)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+	if (protocolRsp->mqtt_msg_info == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
+		MemFree(&protocolRsp);
+		return;
+	}
+
+	if (response) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: %s error, messageId %d, code %d, message %s\n", currentFunctionName, response->token, response->code, response->message);
+
+		protocolRsp->mqtt_msg_info->context = context;
+		protocolRsp->mqtt_msg_info->messageId = response->token;
+		protocolRsp->mqtt_msg_info->code = response->code;
+
+		protocolRsp->message = (char*) response->message;
+
+	} else {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: %s error, response is NULL\n", currentFunctionName);
+
+
+		protocolRsp->mqtt_msg_info->context = context;
+		protocolRsp->mqtt_msg_info->messageId = 0;
+		protocolRsp->mqtt_msg_info->code = IOTA_FAILURE;
+
+		protocolRsp->message = NULL;
+	}
+
+	if (callback) {
+		(callback)(protocolRsp);
+	}
+
+	MemFree(&protocolRsp->mqtt_msg_info);
+	MemFree(&protocolRsp);
+
+}
+
+void HandleCallbackSuccess5(const char *currentFunctionName, MQTT_BASE_CALLBACK_HANDLER callback, void *context, MQTTAsync_successData5 *response) {
+	PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: %s messageId %d\n", currentFunctionName, response ? response->token : -1);
+
+	EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp = (EN_IOTA_MQTT_PROTOCOL_RSP*)malloc(sizeof(EN_IOTA_MQTT_PROTOCOL_RSP));
+
+	if (protocolRsp == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
+		return;
+	}
+
+	protocolRsp->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO*)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+	if (protocolRsp->mqtt_msg_info == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
+		MemFree(&protocolRsp);
+		return;
+	}
+	protocolRsp->mqtt_msg_info->context = context;
+	protocolRsp->mqtt_msg_info->messageId = response ? response->token : 0;
+	protocolRsp->mqtt_msg_info->code = IOTA_SUCCESS;
+
+	protocolRsp->message = NULL;
+	if(response->properties.count > 0){
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "response properties:\n");
+		logProperties(&response->properties);
+	}
+		
+	if (callback) {
+		(callback)(protocolRsp);
+	}
+	MemFree(&protocolRsp->mqtt_msg_info);
+	MemFree(&protocolRsp);
+}
+
+void logProperties(MQTTProperties *props)
+{
+	int i = 0;
+	#if defined(WIN32) || defined(WIN64)
+		pMQTTProperty_getType MQTTProperty_getType = (pMQTTProperty_getType) GetProcAddress(mqttdll, "MQTTProperty_getType");
+		pMQTTPropertyName MQTTPropertyName = (pMQTTPropertyName) GetProcAddress(mqttdll, "MQTTPropertyName");
+	#endif
+	for (i = 0; i < props->count; ++i)
+	{
+		int id = props->array[i].identifier;
+		const char* name = MQTTPropertyName(id);
+		char* intformat = "Property name %s value %d\n";
+
+		switch (MQTTProperty_getType(id))
+		{
+		case MQTTPROPERTY_TYPE_BYTE:
+		  PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.byte);
+		  break;
+		case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
+		  PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.integer2);
+		  break;
+		case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
+		  PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.integer4);
+		  break;
+		case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
+		  PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.integer4);
+		  break;
+		case MQTTPROPERTY_TYPE_BINARY_DATA:
+		case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
+		  PrintfLog(EN_LOG_LEVEL_DEBUG, "Property name %s value len %s\n", name, props->array[i].value.data.data);
+		  break;
+		case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
+		  PrintfLog(EN_LOG_LEVEL_DEBUG, "Property name %s key %s value %s\n", name, props->array[i].value.data.data,  props->array[i].value.value.data);
+		  break;
+		}
+	}
+}
+MQTTProperties DataConversion(MQTTV5_DATA *properties){
+
+	MQTTProperties pro = MQTTProperties_initializer;
+	MQTTProperty property;
+
+	if(properties == NULL){
+		printf("properties == NULL\n");
+		return pro;
+	}
+	MQTTV5_USER_PRO *user = properties->properties;
+
+	while(user != NULL){
+
+		property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
+		property.value.data.data = user->key;
+		property.value.data.len =  (int)strlen(property.value.data.data);
+		property.value.value.data = user->Value;
+		property.value.value.len = (int)strlen(property.value.value.data);
+		MQTTProperties_add(&pro, &property);
+		user = (MQTTV5_USER_PRO *)user->nex;
+	}
+
+	if(properties->contnt_type != NULL){
+		property.identifier = MQTTPROPERTY_CODE_CONTENT_TYPE;
+		property.value.data.data = properties->contnt_type;
+		property.value.data.len =  (int)strlen(property.value.data.data);
+		MQTTProperties_add(&pro, &property);
+	}
+
+	if(properties->response_topic != NULL){
+		property.identifier = MQTTPROPERTY_CODE_RESPONSE_TOPIC;
+		property.value.data.data = properties->response_topic;
+		property.value.data.len = (int)strlen(property.value.data.data);
+		MQTTProperties_add(&pro, &property);
+	}
+
+	if(properties->correlation_data != NULL){
+		property.identifier = MQTTPROPERTY_CODE_CORRELATION_DATA;
+		property.value.data.data = properties->correlation_data;
+		property.value.data.len = (int)strlen(property.value.data.data);
+		MQTTProperties_add(&pro, &property);
+	}
+	return pro;
+}
+int MQTTV5_Topic_Heap(char *sum){
+
+	if(send_mass == NULL || sum == NULL)
+	{
+		PrintfLog(EN_LOG_LEVEL_DEBUG,"MQTTV5_Topic_Heap() EER\n");
+		return -1;
+	}
+
+    int index = 0;
+    int i  = 0;
+    for(i = 0; i < topic_alias_len ; i++){
+        if( strcmp(sum, send_mass[i]) == 0){
+            index = i;
+            break;
+        }
+    }
+    if(i != topic_alias_len){
+        return index + 1;
+    }else{
+		if( topic_alias_len < TOPIC_ALIAS_MAX){
+			 send_mass[topic_alias_len] = (char *)malloc(sizeof(char)*strlen(sum) + 1);
+        	strcpy(send_mass[topic_alias_len], sum);
+			topic_alias_len++;
+		}else{
+			return -1; 
+		}    
+    }
+    return 0;
+}
+#else
 
 void HandleCallbackFailure(const char *currentFunctionName, MQTT_BASE_CALLBACK_HANDLER callback, void *context, MQTTAsync_failureData *response) {
 
@@ -202,6 +407,7 @@ void HandleCallbackSuccess(const char *currentFunctionName, MQTT_BASE_CALLBACK_H
 	MemFree(&protocolRsp->mqtt_msg_info);
 	MemFree(&protocolRsp);
 }
+#endif 
 
 MQTT_BASE_CALLBACK_HANDLER onConnectS; //in order not to be duplicated with the callback function name set by the application
 MQTT_BASE_CALLBACK_HANDLER onConnectF;
@@ -214,12 +420,66 @@ MQTT_BASE_CALLBACK_HANDLER onPublishS;
 MQTT_BASE_CALLBACK_HANDLER onPublishF;
 MQTT_BASE_CALLBACK_HANDLER_WITH_TOPIC onMessageA;
 
+#if defined(MQTTV5)
+void MqttBase_OnConnectSuccess5(void *context, MQTTAsync_successData5 *response) {
+	if(topic_alias_len == 0 && send_mass == NULL){
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "send_mass Init\n");
+		send_mass = (char **)malloc(TOPIC_ALIAS_MAX * sizeof(char *));
+	}		
+	HandleCallbackSuccess5("MqttBase_OnConnectSuccess()", onConnectS, context, response);
+}
+
+void MqttBase_OnConnectFailure5(void *context, MQTTAsync_failureData5 *response) {
+	HandleCallbackFailure5("MqttBase_OnConnectFailure5()", onConnectF, context, response);
+}
+
+void MqttBase_OnSubscribeSuccess5(void *context, MQTTAsync_successData5 *response) {
+	HandleCallbackSuccess5("MqttBase_OnSubscribeSuccess()", onSubscribeS, context, response);
+}
+
+void MqttBase_OnSubscribeFailure5(void *context, MQTTAsync_failureData5 *response) {
+	HandleCallbackFailure5("MqttBase_OnSubscribeFailure()", onSubscribeF, context, response);
+}
+
+void MqttBase_OnPublishSuccess5(void *context, MQTTAsync_successData5 *response) {
+	HandleCallbackSuccess5("MqttBase_OnPublishSuccess()", onPublishS, context, response);
+}
+
+void MqttBase_OnPublishFailure5(void *context, MQTTAsync_failureData5 *response) {
+	HandleCallbackFailure5("MqttBase_OnPublishFailure5()", onPublishF, context, response);
+}
+
+void MqttBase_OnDisconnectSuccess5(void *context, MQTTAsync_successData5 *response) {
+	HandleCallbackSuccess5("MqttBase_OnDisconnectSuccess5()", onDisconnectS, context, response);
+}
+
+void MqttBase_OnDisconnectFailure5(void *context, MQTTAsync_successData5 *response) {
+	HandleCallbackFailure5("MqttBase_OnDisconnectFailure5()", onDisconnectF, context, response);
+}
+#else
 void MqttBase_OnConnectSuccess(void *context, MQTTAsync_successData *response) {
 	HandleCallbackSuccess("MqttBase_OnConnectSuccess()", onConnectS, context, response);
 }
 
 void MqttBase_OnConnectFailure(void *context, MQTTAsync_failureData *response) {
 	HandleCallbackFailure("MqttBase_OnConnectFailure()", onConnectF, context, response);
+}
+
+void MqttBase_OnSubscribeSuccess(void *context, MQTTAsync_successData *response) {
+	HandleCallbackSuccess("MqttBase_OnSubscribeSuccess()", onSubscribeS, context, response);
+}
+
+void MqttBase_OnSubscribeFailure(void *context, MQTTAsync_failureData *response) {
+	HandleCallbackFailure("MqttBase_OnSubscribeFailure()", onSubscribeF, context, response);
+}
+
+
+void MqttBase_OnPublishSuccess(void *context, MQTTAsync_successData *response) {
+	HandleCallbackSuccess("MqttBase_OnPublishSuccess()", onPublishS, context, response);
+}
+
+void MqttBase_OnPublishFailure(void *context, MQTTAsync_failureData *response) {
+	HandleCallbackFailure("MqttBase_OnPublishFailure()", onPublishF, context, response);
 }
 
 void MqttBase_OnDisconnectSuccess(void *context, MQTTAsync_successData *response) {
@@ -229,6 +489,9 @@ void MqttBase_OnDisconnectSuccess(void *context, MQTTAsync_successData *response
 void MqttBase_OnDisconnectFailure(void *context, MQTTAsync_failureData *response) {
 	HandleCallbackFailure("MqttBase_OnDisconnectFailure()", onDisconnectF, context, response);
 }
+#endif 
+
+
 
 void MqttBase_OnConnectionLost(void *context, char *cause) {
 	PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_OnConnectionLost() error, cause: %s\n", cause);
@@ -262,26 +525,22 @@ void MqttBase_OnConnectionLost(void *context, char *cause) {
 
 }
 
-void MqttBase_OnSubscribeSuccess(void *context, MQTTAsync_successData *response) {
-	HandleCallbackSuccess("MqttBase_OnSubscribeSuccess()", onSubscribeS, context, response);
+void MQTTBase_Disconnected(void* context, MQTTProperties* props, enum MQTTReasonCodes rc){
+	PrintfLog(EN_LOG_LEVEL_ERROR, "Callback: disconnected, reason code \"%s\"", MQTTReasonCode_toString(rc));
 }
 
-void MqttBase_OnSubscribeFailure(void *context, MQTTAsync_failureData *response) {
-	HandleCallbackFailure("MqttBase_OnSubscribeFailure()", onSubscribeF, context, response);
-}
-
-void MqttBase_OnPublishSuccess(void *context, MQTTAsync_successData *response) {
-	HandleCallbackSuccess("MqttBase_OnPublishSuccess()", onPublishS, context, response);
-}
-
-void MqttBase_OnPublishFailure(void *context, MQTTAsync_failureData *response) {
-	HandleCallbackFailure("MqttBase_OnPublishFailure()", onPublishF, context, response);
-}
 
 int MqttBase_OnMessageArrived(void *context, char *topicName, int topicLen, MQTTAsync_message *message) {
 	PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_OnMessageArrived() -------------> \n");
 	char *temp_topic = NULL;
 	char *temp_payload = NULL;
+	
+#if defined(MQTTV5)
+	if(message->properties.count > 0){
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "Suback properties:\n");
+		logProperties(&message->properties);
+	}
+#endif 
 
 	if (CopyStrValue(&temp_topic, (const char*) topicName, topicLen) < 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_OnMessageArrived() error, there is not enougth memory here.\n");
@@ -314,6 +573,17 @@ int MqttBase_OnMessageArrived(void *context, char *topicName, int topicLen, MQTT
 	MemFree(&temp_payload);
 
 	return 1; //can not return 0 here, otherwise the message won't update or something wrong would happen
+}
+
+void MqttBase_OnDisconnected(void* context, MQTTProperties* props, enum MQTTReasonCodes rc){
+	PrintfLog(EN_LOG_LEVEL_ERROR, "Callback: disconnected, reason code \"%s\"", MQTTReasonCode_toString(rc));
+	#if defined(MQTTV5)
+	int i = 0;
+    for(i = 0; i < topic_alias_len; i++){
+        free(send_mass[i]);
+    }
+    free(send_mass);
+	#endif
 }
 
 int MqttBase_SetCallback(int item, MQTT_BASE_CALLBACK_HANDLER handler) {
@@ -555,8 +825,14 @@ int MqttBase_subscribe(const char *topic, const int qos) {
 	}
 	int ret;
 
-	opts.onSuccess = MqttBase_OnSubscribeSuccess;
-	opts.onFailure = MqttBase_OnSubscribeFailure;
+#if defined(MQTTV5)
+		opts.onSuccess5 = MqttBase_OnSubscribeSuccess5;
+		opts.onFailure5 = MqttBase_OnSubscribeFailure5;
+	#else
+		opts.onSuccess = MqttBase_OnSubscribeSuccess;
+		opts.onFailure = MqttBase_OnSubscribeFailure;	
+	#endif
+
 
 	ret = MQTTAsync_subscribe(client, topic, qos, &opts); //this qos must be 1, otherwise if subscribe failed, the downlink message cannot arrive.
 
@@ -570,9 +846,13 @@ int MqttBase_subscribe(const char *topic, const int qos) {
 	return opts.token;
 }
 
-int MqttBase_publish(const char *topic, void *payload, int len, void* context) {
+int MqttBase_publish(const char *topic, void *payload, int len, void* context, void *properties) {
 #if defined(WIN32) || defined(WIN64)
 	pMQTTAsync_sendMessage MQTTAsync_sendMessage = (pMQTTAsync_sendMessage) GetProcAddress(mqttdll, "MQTTAsync_sendMessage");
+	#if defined(MQTTV5)
+		pMQTTProperties_add MQTTProperties_add = (pMQTTProperties_add)  GetProcAddress(mqttdll, "MQTTProperties_add");
+		pMQTTProperties_free MQTTProperties_free = (pMQTTProperties_free) GetProcAddress(mqttdll, "MQTTProperties_free");
+	#endif
 #endif
 
 	if (client == NULL) {
@@ -581,35 +861,60 @@ int MqttBase_publish(const char *topic, void *payload, int len, void* context) {
 
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-
-	opts.onSuccess = MqttBase_OnPublishSuccess;
-	opts.onFailure = MqttBase_OnPublishFailure;
+	
 	opts.context = context;
 
 	pubmsg.payload = payload;
 	pubmsg.payloadlen = len;
 	pubmsg.qos = gQOS;
 	pubmsg.retained = 0;
+	
+#if defined(MQTTV5)	
+	opts.onSuccess5 = MqttBase_OnPublishSuccess5;
+	opts.onFailure5 = MqttBase_OnPublishFailure5;
+	pubmsg.properties = DataConversion((MQTTV5_DATA *)properties);
 
+	printf("-------------------------->>\n");
+	logProperties(&pubmsg.properties);
+	//PrintfLog(EN_LOG_LEVEL_DEBUG, "topic = %s\n", topic);
+	int ret	 = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts);
+
+#else
+	opts.onSuccess = MqttBase_OnPublishSuccess;
+	opts.onFailure = MqttBase_OnPublishFailure;	
 	int ret = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts);
+#endif
+
 	if (ret != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_publish() error, publish result %d\n", ret);
 		return IOTA_FAILURE;
 	}
-
+	MQTTProperties_free(&pubmsg.properties);
 	return opts.token;
 }
 
+#if defined(MQTTV5)
+MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer5;
+#else
 MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
+#endif
 MQTTAsync_SSLOptions ssl_opts = MQTTAsync_SSLOptions_initializer;
 
 int MqttBase_CreateConnection() {
 #if defined(WIN32) || defined(WIN64)
-	pMQTTAsync_create MQTTAsync_create = (pMQTTAsync_create) GetProcAddress(mqttdll, "MQTTAsync_create");
-	pMQTTAsync_connect MQTTAsync_connect = (pMQTTAsync_connect) GetProcAddress(mqttdll, "MQTTAsync_connect");
-	pMQTTAsync_setCallbacks MQTTAsync_setCallbacks = (pMQTTAsync_setCallbacks) GetProcAddress(mqttdll, "MQTTAsync_setCallbacks");
+	pMQTTAsync_create MQTTAsync_create = (pMQTTAsync_create) GetProcAddress(mqttdll, "MQTTAsync_create");	
+	pMQTTAsync_setCallbacks MQTTAsync_setCallbacks = (pMQTTAsync_setCallbacks) GetProcAddress(mqttdll, "MQTTAsync_setCallbacks");	
+	#if defined(MQTTV5)
+		pMQTTAsync_createWithOptions MQTTAsync_createWithOptions = (pMQTTAsync_createWithOptions) GetProcAddress(mqttdll, "MQTTAsync_createWithOptions");
+		pMQTTProperties_add MQTTProperties_add = (pMQTTProperties_add)  GetProcAddress(mqttdll, "MQTTProperties_add");
+	#endif	
+		pMQTTAsync_connect MQTTAsync_connect = (pMQTTAsync_connect) GetProcAddress(mqttdll, "MQTTAsync_connect");
 #endif
 
+	#if defined(MQTTV5)
+		MQTTProperty proprrty;
+		MQTTAsync_createOptions creatOpts = MQTTAsync_createOptions_initializer;
+	#endif
 	if (workDir == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_CreateConnection() error, workPath can not be NULL.\n");
 		return IOTA_FAILURE;
@@ -639,9 +944,16 @@ int MqttBase_CreateConnection() {
 		conn_opts.keepAliveInterval = keepAliveInterval;
 		conn_opts.connectTimeout = connectTimeout;
 		conn_opts.retryInterval = retryInterval;
+		#if defined(MQTTV5)
+		conn_opts.cleansession = 0;
+		conn_opts.cleanstart = 1;
+		conn_opts.onSuccess5 = MqttBase_OnConnectSuccess5;
+		conn_opts.onFailure5 = MqttBase_OnConnectFailure5;
+		conn_opts.MQTTVersion = MQTTVERSION_5;
+		#else
 		conn_opts.onSuccess = MqttBase_OnConnectSuccess;
 		conn_opts.onFailure = MqttBase_OnConnectFailure;
-
+		#endif
 		char *loginTimestamp = GetClientTimesStamp();
 
 		if (!authMode) {
@@ -699,7 +1011,14 @@ int MqttBase_CreateConnection() {
 		MemFree(&loginTimestamp);
 
 		PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_CreateConnection() create in\n");
-		int createRet = MQTTAsync_create(&client, server_address, clientId, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+		#if defined(MQTTV5)			
+			creatOpts.MQTTVersion = MQTTVERSION_5;
+			creatOpts.struct_version = 1;
+			PrintfLog(EN_LOG_LEVEL_INFO,"server_address = %s\n clientId = %s",  server_address, clientId);
+			int createRet = MQTTAsync_createWithOptions(&client, server_address, clientId, MQTTCLIENT_PERSISTENCE_NONE, NULL, &creatOpts);
+		#else
+			int createRet = MQTTAsync_create(&client, server_address, clientId, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+		#endif
 		MemFree(&server_address);
 		MemFree(&clientId);
 		if (createRet) {
@@ -755,11 +1074,26 @@ int MqttBase_ReleaseConnection() {
 	pMQTTAsync_disconnect MQTTAsync_disconnect = (pMQTTAsync_disconnect) GetProcAddress(mqttdll, "MQTTAsync_disconnect");
 #endif
 
+#if defined(MQTTV5)
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperty proprrty;
+#endif
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
+#if defined(MQTTV5)
+	disc_opts.onSuccess = MqttBase_OnDisconnectSuccess5;
+	disc_opts.onFailure = MqttBase_OnDisconnectFailure5;
+#else
 	disc_opts.onSuccess = MqttBase_OnDisconnectSuccess;
 	disc_opts.onFailure = MqttBase_OnDisconnectFailure;
-
+#endif
 	PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_ReleaseConnection()\n");
+
+#if defined(MQTTV5)
+	proprrty.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
+	proprrty.value.integer2 = 0;
+	MQTTProperties_add(&props, &proprrty);
+	disc_opts.properties = props;
+#endif
 
 	int ret = MQTTAsync_disconnect(client, &disc_opts);
 

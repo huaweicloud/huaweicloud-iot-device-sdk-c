@@ -1,3 +1,4 @@
+
 /*Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
  * All rights reserved.
  * &Redistribution and use in source and binary forms, with or without modification,
@@ -21,23 +22,29 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  *
  * */
+#ifndef INCLUDE_UTIL_MQTTV5_UTIL_H_
+#define INCLUDE_UTIL_MQTTV5_UTIL_H_
 
-#ifndef INCLUDE_DATATRANS_H_
-#define INCLUDE_DATATRANS_H_
-#include "mqttv5_util.h"
+#define MQTTV5 
+#if defined(MQTTV5)
+// ------------------------ Create Connection -------------------------------------
+#define TOPIC_ALIAS_MAX 20 //MQTT v5 Maximum number of subject aliases
 
-int ReportDeviceData(char *payload, char *topicParas, int compressFlag, void *context, void *properties);
-int ReportDeviceProperties(char *payload, int compressFlag, void *context, void *properties);
-int ReportBatchDeviceProperties(char *payload, int compressFlag, void *context , void *properties);
-int ReportData(char *topic, char *payload, void *context, void *properties);
-int ReportCommandReponse(char *requestId, char *pcCommandRespense, void *context, void *properties);
-int ReportPropSetReponse(char *requestId, char *pcCommandRespense, void *context);
-int ReportPropGetReponse(char *requestId, char *pcCommandRespense, void *context);
-int GetPropertiesRequest(char *requestId, char *pcCommandRespense, void *context);
-int ReportSubDeviceInfo(char *payload, void *context);
-int EventUp(char *payload, void* context);
-int ReportDevicePropertiesV3(char *payload, int codecMode, void *context);
-int BinaryReportV3(char *payload);
-int Bootstrap();
+// ------------------------ Mqttv5 Publish ----------------------------------------
+typedef struct{
+	char *key;
+	char *Value;
+	void *nex;
+}MQTTV5_USER_PRO;
 
-#endif /* INCLUDE_DATATRANS_H_ */
+typedef struct {
+	MQTTV5_USER_PRO *properties;
+	char *contnt_type;
+//	unsigned int topic_alias;
+	char *response_topic;
+	char *correlation_data;
+}MQTTV5_DATA;
+
+#define mqttv5_initializer {NULL, NULL, 0,  NULL, NULL }
+#endif
+#endif
