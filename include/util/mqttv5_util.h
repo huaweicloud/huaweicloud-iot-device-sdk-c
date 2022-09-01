@@ -25,7 +25,7 @@
 #ifndef INCLUDE_UTIL_MQTTV5_UTIL_H_
 #define INCLUDE_UTIL_MQTTV5_UTIL_H_
 
-#define MQTTV5 
+//#define MQTTV5  //If not defined, use MQTT3, else MQTT5.0
 #if defined(MQTTV5)
 // ------------------------ Create Connection -------------------------------------
 #define TOPIC_ALIAS_MAX 20 //MQTT v5 Maximum number of subject aliases
@@ -35,13 +35,35 @@ typedef struct{
 	char *key;
 	char *Value;
 	void *nex;
-}MQTTV5_USER_PRO;
+}MQTTV5_USER_PRO; //user propeties
 
 typedef struct {
+	/*
+	 *It consists of a user-defined UTF-8 key/value pair array.
+	 *You can use user attributes to add metadata to mqtt 
+	 *messages and transfer information between publishers,
+	 *mqtt servers and subscribers.
+	*/
 	MQTTV5_USER_PRO *properties;
-	char *contnt_type;
-//	unsigned int topic_alias;
+	/*
+	 *The content type contained in the mqtt5.0 variable header 
+	 *is a UTF-8 encoded string, which is used to describe the 
+	 *contents of a will message or a publish message. 
+	 *A typical application of content type is to store MIME types, 
+	 *such as text/plain for text files and audio/AAC for audio files.
+	*/
+	char *contnt_type; 
+	/*
+	 *The responder will take appropriate actions according to the 
+	 *request message, and then publish the response message to the 
+	 *subject specified by the response subject attribute.
+	*/
 	char *response_topic;
+	/*
+	 *The request response of mqtt is asynchronous. 
+	 *comparison_data can be used to correlate 
+	 *the response message with the request message
+	*/
 	char *correlation_data;
 }MQTTV5_DATA;
 

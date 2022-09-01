@@ -48,9 +48,11 @@
 
 15、增加mqtts不校验平台公钥场景
 
+16、增加MQTT5.0协议
+
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
-*2022/05/25*
+*2022/09/1*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -563,6 +565,9 @@ void SetAuthConfig() {
     
     ![](./doc/doc_cn/so4.png)
 
+- **MQTT5.0协议使用**
+
+  如果想使用MQTT5.0协议（默认为MQTT3.1.1），需要在文件./include/util/mqttv5_util.h 中取消 #define MQTTV5的备注。
 
 ## 开源协议
 
