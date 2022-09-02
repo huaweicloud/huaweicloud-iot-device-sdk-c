@@ -83,7 +83,7 @@ void HandleSubscribesuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandleMessageDown (EN_IOTA_MESSAGE *rsp);
+void HandleMessageDown (EN_IOTA_MESSAGE *rsp, void *mqttv5);
 void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp);
 void HandleCommandRequest(EN_IOTA_COMMAND *command);
 void HandlePropertiesSet (EN_IOTA_PROPERTY_SET *rsp);
@@ -626,14 +626,37 @@ void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 
 //-------------------------------------------handle  message   arrived------------------------------------------------------------------------------
 
-void HandleMessageDown (EN_IOTA_MESSAGE *rsp) {
+void HandleMessageDown (EN_IOTA_MESSAGE *rsp, void *mqttv5) {
 	if (rsp == NULL) {
 		return;
 	}
+	#if defined(MQTTV5)
+	MQTTV5_DATA *mqtt = (MQTTV5_DATA *)mqttv5;
+	MQTTV5_USER_PRO *user_pro = mqtt->properties;
+	if(mqtt->contnt_type != NULL){
+		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),contnt_type = %s\n", mqtt->contnt_type);
+	}
+	if(user_pro != NULL){
+		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),properties is:\n");
+		while(user_pro != NULL){
+			PrintfLog(EN_LOG_LEVEL_INFO,"key = %s ,Value = %s\n", user_pro->key ,user_pro->Value);
+			user_pro =  (MQTTV5_USER_PRO *)user_pro->nex;
+		}
+	}
+	if(mqtt->correlation_data != NULL){
+		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),correlation_data = %s\n", mqtt->correlation_data);
+	}
+	if(mqtt->response_topic != NULL){
+		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),response_topic = %s\n", mqtt->response_topic);
+	}
+	//删除链表、释放内存
+	listFree(mqtt->properties);
+	#endif
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), content %s\n", rsp->content);
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), id %s\n", rsp->id);
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), name %s\n", rsp->name);
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), object_device_id %s\n", rsp->object_device_id);
+
 }
 
 void HandlePropertiesSet (EN_IOTA_PROPERTY_SET *rsp) {

@@ -71,7 +71,7 @@ void OnLoginSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	IOTA_ReportDeviceInfo(&deviceInfo, NULL);
 }
 
-void OnMessageArrived(void *context, int token, int code, const char *topic, char *message) {
+void OnMessageArrived(void *context, int token, int code, const char *topic, char *message, void *mqttv5) {
 
 	if (StringLength(StrInStr(topic, BOOTSTRAP_DOWN)) > 0) {
 		EN_IOTA_MQTT_PROTOCOL_RSP *bootstrap_msg  = (EN_IOTA_MQTT_PROTOCOL_RSP*)malloc(sizeof(EN_IOTA_MQTT_PROTOCOL_RSP));
@@ -135,7 +135,7 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 		msg->content = content;
 
 		if (onMessage) {
-			(onMessage)(msg);
+			(onMessage)(msg, mqttv5);
 		}
 
 		JSON_Delete(root);

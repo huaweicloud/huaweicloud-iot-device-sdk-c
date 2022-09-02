@@ -221,12 +221,53 @@ void HandleCallbackSuccess5(const char *currentFunctionName, MQTT_BASE_CALLBACK_
 	MemFree(&protocolRsp);
 }
 
+MQTTV5_DATA DataConversionArrived(MQTTProperties *props)
+{
+	MQTTV5_DATA mqttv5_por = mqttv5_initializer;
+	if(props->count == 0){
+		return mqttv5_por;
+	}
+	int i = 0;
+	int user_identification = 0;
+	MQTTV5_USER_PRO *user_head;
+	MQTTV5_USER_PRO *p = NULL;
+	
+	for (i = 0; i < props->count; ++i)
+	{
+		int id = props->array[i].identifier;
+
+		if (id == MQTTPROPERTY_CODE_USER_PROPERTY){
+			MQTTV5_USER_PRO *user = (MQTTV5_USER_PRO *)malloc(sizeof(MQTTV5_USER_PRO));
+		  	user->key = props->array[i].value.data.data;
+		   	user->Value = props->array[i].value.value.data;
+			user->nex = NULL;
+
+			if(user_identification == 0){
+				user_identification = 1;
+				user_head = user;
+		  	}else{
+				p->nex = user;
+			}
+			p = user;
+		}
+		else if (id == MQTTPROPERTY_CODE_CONTENT_TYPE){
+			mqttv5_por.contnt_type = props->array[i].value.data.data;
+		}
+		else if (id == MQTTPROPERTY_CODE_RESPONSE_TOPIC){
+			mqttv5_por.response_topic = props->array[i].value.data.data;
+		}
+		else if (id == MQTTPROPERTY_CODE_CORRELATION_DATA){
+			mqttv5_por.correlation_data = props->array[i].value.data.data;
+		}
+	}	
+	mqttv5_por.properties = user_head;
+	return mqttv5_por;
+}
 void logProperties(MQTTProperties *props)
 {
 	int i = 0;
 	#if defined(WIN32) || defined(WIN64)
 		pMQTTProperty_getType MQTTProperty_getType = (pMQTTProperty_getType) GetProcAddress(mqttdll, "MQTTProperty_getType");
-		pMQTTPropertyName MQTTPropertyName = (pMQTTPropertyName) GetProcAddress(mqttdll, "MQTTPropertyName");
 	#endif
 	for (i = 0; i < props->count; ++i)
 	{
@@ -534,8 +575,8 @@ int MqttBase_OnMessageArrived(void *context, char *topicName, int topicLen, MQTT
 	PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_OnMessageArrived() -------------> \n");
 	char *temp_topic = NULL;
 	char *temp_payload = NULL;
-	
 #if defined(MQTTV5)
+	MQTTV5_DATA mqttv5_por = DataConversionArrived(&message->properties);
 	if(message->properties.count > 0){
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "Suback properties:\n");
 		logProperties(&message->properties);
@@ -556,9 +597,13 @@ int MqttBase_OnMessageArrived(void *context, char *topicName, int topicLen, MQTT
 		return -1;
 	}
 	PrintfLog(EN_LOG_LEVEL_DEBUG, "MqttBase: MqttBase_OnMessageArrived() topic: %s, payload %s\n", temp_topic, temp_payload);
-
+	
 	if (onMessageA) {
-		onMessageA(context, message->msgid, 0, temp_topic, temp_payload);
+		#if defined(MQTTV5)
+		onMessageA(context, message->msgid, 0, temp_topic, temp_payload, &mqttv5_por);
+		#else
+		onMessageA(context, message->msgid, 0, temp_topic, temp_payload, NULL);
+		#endif 
 	}
 
 #if defined(WIN32) || defined(WIN64)

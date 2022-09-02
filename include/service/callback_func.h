@@ -35,7 +35,7 @@ typedef void (*LOG_CALLBACK_HANDLER)(int level, char *format, va_list args);
 #define MAX_SERVICE_COUNT 50
 
 void OnLoginSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void OnMessageArrived(void *context, int token, int code, const char *topic, char *message);
+void OnMessageArrived(void *context, int token, int code, const char *topic, char *message, void *mqttv5);
 
 void SetLogCallback(LOG_CALLBACK_HANDLER logCallbackHandler);
 
@@ -51,7 +51,7 @@ int SetCmdCallbackV3(CMD_CALLBACK_HANDLER_V3 pfnCallbackHandler);
 typedef void (*PROTOCOL_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp);
 int SetProtocolCallback(int item, PROTOCOL_CALLBACK_HANDLER pfnCallbackHandler);
 
-typedef void (*MESSAGE_CALLBACK_HANDLER)(EN_IOTA_MESSAGE *protocolRsp);
+typedef void (*MESSAGE_CALLBACK_HANDLER)(EN_IOTA_MESSAGE *protocolRsp, void *mqttv5);
 int SetMessageCallback(MESSAGE_CALLBACK_HANDLER pfnCallbackHandler);
 
 typedef void (*PROP_SET_CALLBACK_HANDLER)(EN_IOTA_PROPERTY_SET *rsp);

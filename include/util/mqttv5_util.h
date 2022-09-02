@@ -25,7 +25,7 @@
 #ifndef INCLUDE_UTIL_MQTTV5_UTIL_H_
 #define INCLUDE_UTIL_MQTTV5_UTIL_H_
 
-//#define MQTTV5  //If not defined, use MQTT3, else MQTT5.0
+#define MQTTV5  //If not defined, use MQTT3, else MQTT5.0
 #if defined(MQTTV5)
 // ------------------------ Create Connection -------------------------------------
 #define TOPIC_ALIAS_MAX 20 //MQTT v5 Maximum number of subject aliases
@@ -67,6 +67,8 @@ typedef struct {
 	char *correlation_data;
 }MQTTV5_DATA;
 
-#define mqttv5_initializer {NULL, NULL, 0,  NULL, NULL }
+int listFree(MQTTV5_USER_PRO *mqtt_data);
+
+#define mqttv5_initializer {NULL, NULL, NULL, NULL }
 #endif
 #endif
