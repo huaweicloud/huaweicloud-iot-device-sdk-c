@@ -25,7 +25,7 @@
 #ifndef INCLUDE_UTIL_MQTTV5_UTIL_H_
 #define INCLUDE_UTIL_MQTTV5_UTIL_H_
 
-#define MQTTV5  //If not defined, use MQTT3, else MQTT5.0
+//#define MQTTV5  //If not defined, use MQTT3, else MQTT5.0
 #if defined(MQTTV5)
 // ------------------------ Create Connection -------------------------------------
 #define TOPIC_ALIAS_MAX 20 //MQTT v5 Maximum number of subject aliases

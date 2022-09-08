@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "mqttv5_util.h"
 
+#if defined(MQTTV5)
 //Linked list deletion
 int listFree(MQTTV5_USER_PRO *mqtt_data){
     if(mqtt_data == NULL){
@@ -19,3 +20,4 @@ int listFree(MQTTV5_USER_PRO *mqtt_data){
     }
     return 0;
 }
+#endif
