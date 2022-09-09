@@ -566,7 +566,21 @@ void SetAuthConfig() {
     ![](./doc/doc_cn/so4.png)
   
 - **异常存储**
-    device_demo.c中存在动态存储样例，取消 #define STORE_DATA_SWITCH 的备注，便可使用Test_StoreData()函数，当前异常消息存储的容器为动态二维数组，用户可根据自己的业务逻辑来自己编写与选择。
+  
+  新增代码实现了异常场景下的属性消息存储，并进行上报、重发的样例。 Test_PropertiesStoreData( )函数是具体实现入口。通过STORE_DATA_SWITCH来标识是否打开该功能，不注释#define STORE_DATA_SWITCH 是打开 ，取消是#define STORE_DATA_SWITCH 关闭，默认是关闭的。
+  该新增代码为样例代码，存储的容器采用的是动态二维数组，用户可以根据自己的业务逻辑来进行选择。建议设备采集到数据后就进行存储，设备链路正常的时候再进行重发。
+  基本逻辑如下：
+  
+
+  - 上报数据前 存储传感器的数据（当前使用的是数组 用户可以自己选择）
+    
+    ![](./doc/doc_cn/存储.png)
+  
+- 如果收到了publish成功的响应 再从容器中删除该条消息
+    ![](./doc/doc_cn/删除+重发.png)
+    
+  - 等网络恢复后，再上报容器中遗留的数据。
+  ![](./doc/doc_cn/重连.png)
 
 ## 开源协议
 
