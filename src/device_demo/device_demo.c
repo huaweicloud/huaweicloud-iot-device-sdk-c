@@ -179,6 +179,66 @@ void Test_CmdRspV3() {
 	MemFree(&rsp);
 }
 
+//如果取消 #define STORE_DATA_SWITCH 的备注，开启离线缓存。
+// 注明：改方式只是样列，仅供参考.
+//当前异常消息存储的容器为动态二维数组，用户可根据自己的业务逻辑来选择
+//#define STORE_DATA_SWITCH
+#if defined(STORE_DATA_SWITCH)
+char **cacheSpace = NULL;
+int cacheSpaceLen = 0;
+int cache_p = 0;
+#define CACHE_SPACE_MAX 100
+
+//开辟一个空间 动态数值
+void Test_StoreData(){
+	int serviceNum = 2;  //reported services' totol count
+	int i = 0;
+	if(cacheSpace == NULL){
+		cacheSpace = (char **)malloc(CACHE_SPACE_MAX * sizeof(char *));
+		if(cacheSpace == NULL){
+			PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_CmdRspV3()  malloc failed! ");
+			return; //申请空间失败
+		}
+	}
+
+	ST_IOTA_SERVICE_DATA_INFO *services = (ST_IOTA_SERVICE_DATA_INFO *)malloc(sizeof(ST_IOTA_SERVICE_DATA_INFO) * serviceNum);
+	//---------------the data of service1-------------------------------
+	char *service1 = "{\"Load\":\"6\",\"ImbA_strVal\":\"7\"}";
+	
+	services->event_time= GetEventTimesStamp(); //if event_time is set to NULL, the time will be the iot-platform's time.
+	services->service_id = "parameter";
+	services->properties = service1;
+
+	//---------------the data of service2-------------------------------
+	char *service2 = "{\"PhV_phsA\":\"9\",\"PhV_phsB\":\"8\"}";
+
+	(services + 1)->event_time= NULL;
+	(services + 1)->service_id = "analog";
+	(services + 1)->properties = service2;
+	if(cacheSpaceLen > CACHE_SPACE_MAX){
+		free(cacheSpace[cache_p]);
+		cacheSpace[cache_p] = services;
+		cache_p++;
+	}else{
+		cache_p = 0;
+		for(i = 0; i < CACHE_SPACE_MAX; i++){
+			if(cacheSpace[i] == NULL){
+				cacheSpace[i] = services;
+				cacheSpaceLen++;
+				printf("cacheSpaceLen++\n");
+				break;
+			}
+		}
+	}
+	
+	int messageId = IOTA_PropertiesReport(services, serviceNum, 0, (void *)services);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
+	}
+
+}
+#endif
+
 void Test_PropertiesReport() {
 	int serviceNum = 2;  //reported services' totol count
 	ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
@@ -408,6 +468,23 @@ void Test_ReportDeviceInfo() {
 void HandleConnectSuccess (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: handleConnectSuccess(), login success\n");
 	disconnected_ = 0;
+#if defined(STORE_DATA_SWITCH)
+	int i = 0;
+	if(cacheSpace == NULL || cacheSpaceLen <= 0){
+		return;
+	}
+	//重新连接 -- 把存储的数据发送
+	for(i = 0; i < CACHE_SPACE_MAX && cacheSpaceLen > 0; i++){
+		if(cacheSpace[i] != NULL){
+			int serviceNum = sizeof(cacheSpace[i])/sizeof(ST_IOTA_SERVICE_DATA_INFO);
+			int messageId = IOTA_PropertiesReport(cacheSpace[i], serviceNum, 0, (void *)cacheSpace[i]);
+			if (messageId != 0) {
+				PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
+			}
+		}
+	}
+	
+#endif
 }
 
 void HandleConnectFailure (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
@@ -471,6 +548,23 @@ void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 
 void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePublishSuccess() messageId %d\n", rsp->mqtt_msg_info->messageId);
+
+#if defined(STORE_DATA_SWITCH)
+	int i = 0;
+	if(rsp->mqtt_msg_info->context == NULL){
+		return;
+	}
+	for(i = 0; i < CACHE_SPACE_MAX; i++){
+		if(cacheSpace[i] == rsp->mqtt_msg_info->context){
+			free(cacheSpace[i]);
+			cacheSpace[i] = NULL;
+			cacheSpaceLen--;
+			printf("[DEBUG] cacheSpaceLen--;\n");
+			break;
+		}
+	}
+	
+#endif	
 }
 
 void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
@@ -579,10 +673,6 @@ void HandleEventsDown(EN_IOTA_EVENT *message){
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), object_device_id %s\n", message->object_device_id);
 	int i = 0;
 	while (message->services_count > 0) {
-		printf("servie_id: %d \n", message->services[i].servie_id);
-		printf("event_time: %s \n", message->services[i].event_time);
-		printf("event_type: %d \n", message->services[i].event_type);
-
 		//sub device manager
 		if (message->services[i].servie_id == EN_IOTA_EVENT_SUB_DEVICE_MANAGER) {
 

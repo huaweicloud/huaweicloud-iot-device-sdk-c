@@ -48,9 +48,11 @@
 
 15、增加mqtts不校验平台公钥场景
 
+16、增加消息存储样例
+
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
-*2022/05/25*
+*2022/09/09*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -562,7 +564,9 @@ void SetAuthConfig() {
   - 修改完毕后执行make即可生成libHWMQTT.so文件  
     
     ![](./doc/doc_cn/so4.png)
-
+  
+- **异常存储**
+    device_demo.c中存在动态存储样例，取消 #define STORE_DATA_SWITCH 的备注，便可使用Test_StoreData()函数，当前异常消息存储的容器为动态二维数组，用户可根据自己的业务逻辑来自己编写与选择。
 
 ## 开源协议
 
