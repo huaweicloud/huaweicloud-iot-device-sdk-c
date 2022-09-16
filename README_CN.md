@@ -48,7 +48,9 @@
 
 15、增加mqtts不校验平台公钥场景
 
-16、增加消息存储样例
+16、TLS版本为V1.2
+
+17、增加消息存储样例
 
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
@@ -126,7 +128,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
    ![](./doc/doc_cn/openssl.png)
 
 <h2 id="3.3">3.3 编译paho库</h2>  
-1. 访问github下载地址https://github.com/eclipse/paho.mqtt.c, 下载paho.mqtt.c源码。
+1. 访问github下载地址https://github.com/eclipse/paho.mqtt.c, 下载paho.mqtt.c源码(建议下载release版本中1.3.9及之前的版本的Source code (tar.gz)文件，如果使用最新的版本，下方适配的文件中的行数可能会有所改变，以及需要拷贝的头文件按照最新版本增加)。
 
 2. 解压后上传到linux编译机。
 
