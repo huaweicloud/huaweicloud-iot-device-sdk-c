@@ -661,6 +661,7 @@ int MqttBase_CreateConnection() {
 			if (verifyCert == 0) {
 				ssl_opts.trustStore = NULL;
 				ssl_opts.enableServerCertAuth = FALSE; // TRUE: enable server certificate authentication, FALSE: disable
+				ssl_opts.enabledCipherSuites = "TLSv1.2";
 			} else{
 				if (access(ca_path, 0)) {
 					PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_CreateConnection() error, ca file is NOT accessible\n");
@@ -670,6 +671,7 @@ int MqttBase_CreateConnection() {
 				}
 				ssl_opts.trustStore = ca_path;
 				ssl_opts.enableServerCertAuth = TRUE; // TRUE: enable server certificate authentication, FALSE: disable
+				ssl_opts.enabledCipherSuites = "TLSv1.2";
 				// ssl_opts.verify = 0; // 0 for no verifying the hostname, 1 for verifying the hostname
 			}
 

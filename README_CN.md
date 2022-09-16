@@ -48,7 +48,9 @@
 
 15、增加mqtts不校验平台公钥场景
 
-16、增加消息存储样例
+16、TLS版本为V1.2
+
+17、增加消息存储样例
 
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
