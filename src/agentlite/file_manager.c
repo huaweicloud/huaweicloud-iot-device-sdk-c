@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
@@ -92,6 +93,9 @@ static HW_LLONG File_Size(char *filePath)
 /* * data processing part * */
 static HW_INT File_UrlHandle(HW_CHAR *url, HW_CHAR *ip, HW_CHAR *uri)
 {
+    if(url == NULL){
+        return FILE_FAILURE;
+    }
     char *tmp = strstr(url, DOUBLE_OBLIQUE_LINE);
     if (tmp == NULL) {
         return FILE_FAILURE;
@@ -102,11 +106,14 @@ static HW_INT File_UrlHandle(HW_CHAR *url, HW_CHAR *ip, HW_CHAR *uri)
         return FILE_FAILURE;
     }
     // the length of ipTmp is enougt to copy
-    strncpy(ip, tmp + strlen(DOUBLE_OBLIQUE_LINE), len - strlen(tmpContainsColon) - strlen(DOUBLE_OBLIQUE_LINE));
-
-    tmp = strstr(tmpContainsColon, SINGLE_SLANT);
-    strncpy(uri, tmp, strlen(tmp));
-
+    if(ip != NULL){
+        strncpy(ip, tmp + strlen(DOUBLE_OBLIQUE_LINE), len - strlen(tmpContainsColon) - strlen(DOUBLE_OBLIQUE_LINE));
+    }
+    if(uri != NULL){
+        tmp = strstr(tmpContainsColon, SINGLE_SLANT);
+        strncpy(uri, tmp, strlen(tmp));
+    }
+ 
     return FILE_SUCCESS;
 }
 
@@ -201,7 +208,7 @@ static HW_INT FILE_HttpsWrite(SSL *ssl, HW_CHAR *url, HW_CHAR *filePath, HW_INT 
             return FILE_FAILURE;
         }
         PrintfLog(EN_LOG_LEVEL_INFO,
-            "----------------------------------------------------------------------------------");
+            "--------------------------------------------------------------------\n");
     } while (x != FILE_END && readOrwrite == 0);
     return FILE_SUCCESS;
 }
@@ -215,8 +222,10 @@ static HW_INT FILE_HttpsReadDataProcessing(char *buf, HW_INT *len)
 
     strncpy(rspStatusCode, buf + strlen(FILE_HTTP_RESPONSE_VERSION), HTTP_STATUS_LENGTH);
     rspStatusCode[HTTP_STATUS_LENGTH] = '\0';
-    PrintfLog(EN_LOG_LEVEL_ERROR, "FILE_datatrans: %s.\n", rspStatusCode);
-
+   if(rspStatusCode != 200){
+        PrintfLog(EN_LOG_LEVEL_ERROR, "FILE_datatrans: %s.\n", rspStatusCode);
+   }
+ 
     sscanf(rspStatusCode, "%d", &result);
     if (strcmp(rspStatusCode, HTTP_OK)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "FILE_datatrans: FILE_HttpsRead() error，the statusCode is %s.\n", rspStatusCode);
@@ -274,7 +283,6 @@ static HW_INT FILE_HttpsRead(SSL *ssl, HW_CHAR *filePath, HW_INT readOrwrite)
                 }
             }
         }
-        PrintfLog(EN_LOG_LEVEL_INFO, "-------------------------------------------------------\n");
     } while (read_length > 0);
 
     return result;
@@ -375,14 +383,29 @@ HW_API_FUNC HW_INT FILE_OBSTransmission(HW_CHAR *url, HW_CHAR *filePath, HW_INT 
         PrintfLog(EN_LOG_LEVEL_ERROR, "the download is invalid.\n");
         return FILE_PARAMETER_ERROR;
     }
+   
+    HW_CHAR ip[FILE_IP_URI_LEN] = {0};
+    char *ip_16 = NULL;
     int result = 0;
+    
+    //域名转换为IP地址
+    result = File_UrlHandle(url, ip, NULL);
+    if(result < 0){
+        return FILE_FAILURE;
+    }
+    struct hostent *name = gethostbyname(ip);
+    if(name == NULL){
+         return FILE_FAILURE;
+    }
+    ip_16 = inet_ntoa(*(struct in_addr*)name->h_addr_list[0]);
+   
     // 设置soket
     int fd = FILE_Socket(timeout);
     if (fd < 0) {
         return FILE_HTTP_CONNECT_EXISTED;
     }
     // TCP连接
-    result = FILE_TcpConn(fd, FILE_IP, FILE_PORT);
+    result = FILE_TcpConn(fd, ip_16, FILE_PORT);
     if (result < 0) {
         return FILE_HTTP_DISCONNECT_FAILED;
     }
@@ -398,8 +421,9 @@ HW_API_FUNC HW_INT FILE_OBSTransmission(HW_CHAR *url, HW_CHAR *filePath, HW_INT 
     // HTTP 数据发送
     result = FILE_HttpsWrite(ssl, url, filePath, readOrwrite);
     if (result != FILE_SUCCESS) {
-        result = FILE_WRITE_FAILED;
+       return FILE_WRITE_FAILED;
     }
+
     // 接收数据
     result = FILE_HttpsRead(ssl, filePath, readOrwrite);
     if (result == 200) {

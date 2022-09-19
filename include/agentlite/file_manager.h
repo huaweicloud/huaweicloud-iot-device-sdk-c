@@ -5,7 +5,6 @@
 #include "cJSON.h"
 #include "hw_type.h"
 
-#define FILE_IP                     "121.36.121.227"
 #define FILE_PORT 					 443
 
 

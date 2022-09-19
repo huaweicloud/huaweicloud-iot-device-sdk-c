@@ -101,8 +101,8 @@ void Test_UpdateSubDeviceStatus(char *deviceId);
 void Test_GtwAddSubDevice();
 void Test_GtwDelSubDevice();
 void Test_ReportDeviceInfo();
-void Test_UploadFile(HW_CHAR * fileName, HW_CHAR *openFile);
-void Test_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo);
+void Test_UploadFile(void);
+void Test_DownloadFile(void);
 
 void TimeSleep(int ms) {
 #if defined(WIN32) || defined(WIN64)
@@ -402,12 +402,12 @@ void Test_ReportDeviceInfo() {
 
 }
 
-void Test_UploadFile(HW_CHAR * fileName, HW_CHAR *openFile){
+void Test_UploadFile(void){
 	ST_FILE_MANA_INFO_REPORT deviceInfo;
 
-	deviceInfo.file_name  = fileName;
+	deviceInfo.file_name  = "file.txt";
 	deviceInfo.file_size = 0;
-	deviceInfo.file_hash_code = openFile;
+	deviceInfo.file_hash_code = "UploadFile.txt";
 	deviceInfo.object_device_id = NULL;
 
 	int messageId = IOTA_UploadFileGetUrl(&deviceInfo, NULL);
@@ -417,12 +417,12 @@ void Test_UploadFile(HW_CHAR * fileName, HW_CHAR *openFile){
 
 }
 
-void Test_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo){
+void Test_DownloadFile(void){
 	ST_FILE_MANA_INFO_REPORT deviceInfo;
 
-	deviceInfo.file_name  = fileName;
+	deviceInfo.file_name  = "file.txt";
 	deviceInfo.file_size = 0;
-	deviceInfo.file_hash_code = DowFileTo;
+	deviceInfo.file_hash_code = "DownloadFile.txt";
 	deviceInfo.object_device_id = NULL;
 
 	int messageId = IOTA_DownloadFileGetUrl(&deviceInfo, NULL);
