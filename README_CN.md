@@ -50,9 +50,11 @@
 
 13、默认校验时间戳
 
+14、增加文件上传、下载功能
+
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
-*2022/03/25*
+*2022/09/20*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -541,10 +543,10 @@ void SetAuthConfig() {
     IOTA_UploadFileGetUrl为文件上传接口，数据流传输方向：设备 -> 华为云OBS。IOTA_DownloadFileGetUrl为文件下载接口，数据流传输方向：华为云OBS ->设备。
 
   - 文件上传实现：
-    demo中的void Test_UploadFile(HW_CHAR *fileName, HW_CHAR *openFile)演示了该接口中文件上传的具体实现。通过Test_ReportFile() 测试接口可以将文件从设备上传到华为云OBS桶中。注意，当fileName名字不变时，OBS桶中文件将被覆盖。
+    demo中的void Test_UploadFile(void)演示了该接口中文件上传的具体实现。通过测试接口可以将文件从设备上传到华为云OBS桶中。注意，当deviceInfo.file_hash_code名字不变时，OBS桶中文件将被覆盖。
 
 ```C
-void Test_UploadFile(HW_CHAR *fileName, HW_CHAR *openFile){
+void Test_UploadFile(void){
 	
     ST_FILE_MANA_INFO_REPORT deviceInfo;
 	deviceInfo.file_name  = fileName; //OBS桶中的文件名
@@ -559,9 +561,9 @@ void Test_UploadFile(HW_CHAR *fileName, HW_CHAR *openFile){
 }
 ```
   - 文件下载实现：
-    demo中的void Test_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo)演示了该接口中文件下载的具体实现。通过该函数可以将华为云OBS桶中的文件下载到设备中。当DowFileTo名字不变时，设备中的文件内容将被覆盖。
+    demo中的void Test_DownloadFile(void)演示了该接口中文件下载的具体实现。通过该函数可以将华为云OBS桶中的文件下载到设备中。当deviceInfo.file_hash_code名字不变时，设备中的文件内容将被覆盖。
 ````C
-void Test_DownloadFile(HW_CHAR * fileName, HW_CHAR *DowFileTo){
+void Test_DownloadFile(void){
 	
     ST_FILE_MANA_INFO_REPORT deviceInfo;
 	deviceInfo.file_name  = fileName; //OBS桶中的文件名
