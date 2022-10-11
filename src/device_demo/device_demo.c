@@ -402,7 +402,7 @@ void Test_ReportDeviceInfo() {
 
 }
 
-void Test_UploadFile(void){
+void Test_UploadFile(void) {
 	ST_FILE_MANA_INFO_REPORT deviceInfo;
 
 	deviceInfo.file_name  = "file.txt";
@@ -417,7 +417,7 @@ void Test_UploadFile(void){
 
 }
 
-void Test_DownloadFile(void){
+void Test_DownloadFile(void) {
 	ST_FILE_MANA_INFO_REPORT deviceInfo;
 
 	deviceInfo.file_name  = "file.txt";
@@ -598,7 +598,7 @@ void HandleCommandRequest(EN_IOTA_COMMAND *command) {
 	Test_CommandResponse(command->request_id); //response command
 }
 
-void HandleEventsDown(EN_IOTA_EVENT *message){
+void HandleEventsDown(EN_IOTA_EVENT *message) {
 
 	if (message == NULL) {
 		return;
@@ -714,12 +714,13 @@ void HandleEventsDown(EN_IOTA_EVENT *message){
 				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), log_switch: %s \n", message->services[i].device_log_paras->log_switch);
 				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), end_time: %s \n", message->services[i].device_log_paras->end_time);
 			}
-		}else if (message->services[i].servie_id == EN_IOTA_EVENT_FILE_MANAGER){
-			if(message->services[i].event_type == EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE){
-				FILE_Upload(message->services[i].file_paras->url, message->services[i].file_paras->openFile, 3000);
+		}else if (message->services[i].servie_id == EN_IOTA_EVENT_FILE_MANAGER) {
+			int timeout = 3000; //timeout
+			if(message->services[i].event_type == EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE) {
+				FILE_Upload(message->services[i].file_paras->url, message->services[i].file_paras->openFile, timeout);
 			}
-			if(message->services[i].event_type == EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE){
-				FiLE_Download(message->services[i].file_paras->url, message->services[i].file_paras->openFile, 3000);
+			if(message->services[i].event_type == EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE) {
+				FiLE_Download(message->services[i].file_paras->url, message->services[i].file_paras->openFile, timeout);
 			}
 		}
 		i++;
