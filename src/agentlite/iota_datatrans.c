@@ -61,7 +61,7 @@
     			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-char * IOTA_MessageReportPayload(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content){
+char * IOTA_MessageReportPayload(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content) {
 	cJSON *root;
 	root = cJSON_CreateObject();
 	
@@ -86,7 +86,7 @@ HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, 
 	char *payload = IOTA_MessageReportPayload(object_device_id, name, id, content);
 	if (payload == NULL) {
 		return IOTA_FAILURE;
-	}else{
+	} else {
 		messageId = ReportDeviceData(payload, topicParas, compressFlag, context, NULL);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_MessageReport() with payload %s By topic %s==>\n", payload, topicParas);
 		free(payload);	
@@ -104,7 +104,7 @@ HW_API_FUNC HW_INT IOTA_MessageReport5(ST_IOTA_MESS_REP_INFO mass, HW_INT compre
 	int messageId = 0;
 	if (payload == NULL) {
 		return IOTA_FAILURE;
-	}else{
+	} else {
 		messageId = ReportDeviceData(payload, mass.topicParas, compressFlag, context, (void *)mqttv5);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_MessageReport5() with payload %s By topic %s==>\n", payload, mass.topicParas);
 		free(payload);	
@@ -121,7 +121,7 @@ HW_API_FUNC HW_INT IOTA_MessageReport5(ST_IOTA_MESS_REP_INFO mass, HW_INT compre
     			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-char *IOTA_PropertiesReportPayload(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum){
+char *IOTA_PropertiesReportPayload(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum) {
 
 	if (serviceNum == 0 || pServiceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
@@ -162,7 +162,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
 	
 	if (payload == NULL) {
 		return IOTA_FAILURE;
-	}else{
+	} else {
 		messageId = ReportDeviceProperties(payload, compressFlag, context, NULL);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReport() with payload %s ==>\n", payload);
 		free(payload);
@@ -171,14 +171,14 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
 }
 
 #if defined(MQTTV5)
-HW_API_FUNC HW_INT IOTA_PropertiesReport5(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5){
+HW_API_FUNC HW_INT IOTA_PropertiesReport5(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5) {
 
 	char *payload = IOTA_PropertiesReportPayload(pServiceData, serviceNum);
 	int messageId = 0;
 
 	if (payload == NULL) {
 		return IOTA_FAILURE;
-	}else{
+	} else {
 		messageId = ReportDeviceProperties(payload, compressFlag, context, (void *)mqttv5);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReport5() with payload %s ==>\n", payload);
 		free(payload);
@@ -196,7 +196,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport5(ST_IOTA_SERVICE_DATA_INFO pServiceData
     			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-char *IOTA_BatchPropertiesReportPayload(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[]){
+char *IOTA_BatchPropertiesReportPayload(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[]) {
 
 	if (deviceNum == 0 || serviceLenList == NULL || pDeviceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
@@ -631,7 +631,7 @@ HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW
     			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_INT deviceNum, void *context){
+HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_INT deviceNum, void *context) {
 	if((delSubDevices == NULL) || (deviceNum < 0) || (deviceNum > MaxDelSubDevCount)) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_DelSubDevice() error, the input is invalid.\n");
 		return IOTA_PARAMETER_ERROR;
