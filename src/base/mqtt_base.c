@@ -209,7 +209,7 @@ void HandleCallbackSuccess5(const char *currentFunctionName, MQTT_BASE_CALLBACK_
 	protocolRsp->mqtt_msg_info->code = IOTA_SUCCESS;
 
 	protocolRsp->message = NULL;
-	if(response->properties.count > 0) {
+	if (response->properties.count > 0) {
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "response properties:\n");
 		logProperties(&response->properties);
 	}
@@ -224,7 +224,7 @@ void HandleCallbackSuccess5(const char *currentFunctionName, MQTT_BASE_CALLBACK_
 MQTTV5_DATA DataConversionArrived(MQTTProperties *props)
 {
 	MQTTV5_DATA mqttv5_por = mqttv5_initializer;
-	if(props->count == 0) {
+	if (props->count == 0) {
 		return mqttv5_por;
 	}
 	int i = 0;
@@ -242,7 +242,7 @@ MQTTV5_DATA DataConversionArrived(MQTTProperties *props)
 		   	user->Value = props->array[i].value.value.data;
 			user->nex = NULL;
 
-			if(user_identification == 0) {
+			if (user_identification == 0) {
 				user_identification = 1;
 				user_head = user;
 		  	} else {
@@ -304,13 +304,13 @@ MQTTProperties DataConversion(MQTTV5_DATA *properties) {
 	MQTTProperties pro = MQTTProperties_initializer;
 	MQTTProperty property;
 
-	if(properties == NULL) {
+	if (properties == NULL) {
 		printf("properties == NULL\n");
 		return pro;
 	}
 	MQTTV5_USER_PRO *user = properties->properties;
 
-	while(user != NULL) {
+	while (user != NULL) {
 
 		property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 		property.value.data.data = user->key;
@@ -321,21 +321,21 @@ MQTTProperties DataConversion(MQTTV5_DATA *properties) {
 		user = (MQTTV5_USER_PRO *)user->nex;
 	}
 
-	if(properties->contnt_type != NULL) {
+	if (properties->contnt_type != NULL) {
 		property.identifier = MQTTPROPERTY_CODE_CONTENT_TYPE;
 		property.value.data.data = properties->contnt_type;
 		property.value.data.len =  (int)strlen(property.value.data.data);
 		MQTTProperties_add(&pro, &property);
 	}
 
-	if(properties->response_topic != NULL) {
+	if (properties->response_topic != NULL) {
 		property.identifier = MQTTPROPERTY_CODE_RESPONSE_TOPIC;
 		property.value.data.data = properties->response_topic;
 		property.value.data.len = (int)strlen(property.value.data.data);
 		MQTTProperties_add(&pro, &property);
 	}
 
-	if(properties->correlation_data != NULL) {
+	if (properties->correlation_data != NULL) {
 		property.identifier = MQTTPROPERTY_CODE_CORRELATION_DATA;
 		property.value.data.data = properties->correlation_data;
 		property.value.data.len = (int)strlen(property.value.data.data);
@@ -345,7 +345,7 @@ MQTTProperties DataConversion(MQTTV5_DATA *properties) {
 }
 int MQTTV5_Topic_Heap(char *sum) {
 
-	if(send_mass == NULL || sum == NULL)
+	if (send_mass == NULL || sum == NULL)
 	{
 		PrintfLog(EN_LOG_LEVEL_DEBUG,"MQTTV5_Topic_Heap() EER\n");
 		return -1;
@@ -354,15 +354,15 @@ int MQTTV5_Topic_Heap(char *sum) {
     int index = 0;
     int i  = 0;
     for(i = 0; i < topic_alias_len ; i++) {
-        if(strcmp(sum, send_mass[i]) == 0) {
+        if (strcmp(sum, send_mass[i]) == 0) {
             index = i;
             break;
         }
     }
-    if(i != topic_alias_len) {
+    if (i != topic_alias_len) {
         return index + 1;
     } else {
-		if(topic_alias_len < TOPIC_ALIAS_MAX) {
+		if (topic_alias_len < TOPIC_ALIAS_MAX) {
 			 send_mass[topic_alias_len] = (char *)malloc(sizeof(char)*strlen(sum) + 1);
         	strcpy(send_mass[topic_alias_len], sum);
 			topic_alias_len++;
@@ -463,7 +463,7 @@ MQTT_BASE_CALLBACK_HANDLER_WITH_TOPIC onMessageA;
 
 #if defined(MQTTV5)
 void MqttBase_OnConnectSuccess5(void *context, MQTTAsync_successData5 *response) {
-	if(topic_alias_len == 0 && send_mass == NULL) {
+	if (topic_alias_len == 0 && send_mass == NULL) {
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "send_mass Init\n");
 		send_mass = (char **)malloc(TOPIC_ALIAS_MAX * sizeof(char *));
 	}		
@@ -577,7 +577,7 @@ int MqttBase_OnMessageArrived(void *context, char *topicName, int topicLen, MQTT
 	char *temp_payload = NULL;
 #if defined(MQTTV5)
 	MQTTV5_DATA mqttv5_por = DataConversionArrived(&message->properties);
-	if(message->properties.count > 0) {
+	if (message->properties.count > 0) {
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "Suback properties:\n");
 		logProperties(&message->properties);
 	}

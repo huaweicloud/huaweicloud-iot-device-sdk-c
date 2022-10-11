@@ -122,7 +122,7 @@ void TimeSleep(int ms) {
 #if defined(MQTTV5)
 
 //V5 correlation data and response topic
-void Test_CorreaytionData(char *response_topicParas){
+void Test_CorreaytionData(char *response_topicParas) {
 	MQTTV5_DATA massv5 = mqttv5_initializer;
 	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
 	char *topic = CombineStrings(4, "$oc/devices/", username_, "/user/", response_topicParas);
@@ -148,7 +148,7 @@ void Test_CorreaytionData(char *response_topicParas){
 }
 
 //v5 contnt type
-void Test_ContentType(){
+void Test_ContentType() {
 	MQTTV5_DATA massv5 = mqttv5_initializer;
 	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
 	
@@ -162,7 +162,7 @@ void Test_ContentType(){
 }
 
 //v5 User Property
-void Test_UserProperty(){
+void Test_UserProperty() {
 	MQTTV5_DATA massv5 = mqttv5_initializer;
 	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
 
@@ -186,7 +186,7 @@ void Test_UserProperty(){
 }
 
 //v5 message report
-void Test_MessageReport5(){
+void Test_MessageReport5() {
 	MQTTV5_DATA massv5 = mqttv5_initializer;
 	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
 
@@ -217,7 +217,7 @@ void Test_MessageReport5(){
 }
 
 //v5 Properties Report
-void Test_PropertiesReport5(){
+void Test_PropertiesReport5() {
 	int serviceNum = 2;  //reported services' totol count
 	ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
 	MQTTV5_DATA massv5 = mqttv5_initializer;	
@@ -633,20 +633,20 @@ void HandleMessageDown (EN_IOTA_MESSAGE *rsp, void *mqttv5) {
 	#if defined(MQTTV5)
 	MQTTV5_DATA *mqtt = (MQTTV5_DATA *)mqttv5;
 	MQTTV5_USER_PRO *user_pro = mqtt->properties;
-	if(mqtt->contnt_type != NULL){
+	if(mqtt->contnt_type != NULL) {
 		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),contnt_type = %s\n", mqtt->contnt_type);
 	}
-	if(user_pro != NULL){
+	if(user_pro != NULL) {
 		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),properties is:\n");
-		while(user_pro != NULL){
+		while (user_pro != NULL) {
 			PrintfLog(EN_LOG_LEVEL_INFO,"key = %s ,Value = %s\n", user_pro->key ,user_pro->Value);
 			user_pro =  (MQTTV5_USER_PRO *)user_pro->nex;
 		}
 	}
-	if(mqtt->correlation_data != NULL){
+	if(mqtt->correlation_data != NULL) {
 		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),correlation_data = %s\n", mqtt->correlation_data);
 	}
-	if(mqtt->response_topic != NULL){
+	if(mqtt->response_topic != NULL) {
 		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),response_topic = %s\n", mqtt->response_topic);
 	}
 	//删除链表、释放内存
@@ -738,7 +738,7 @@ void HandleCommandRequest(EN_IOTA_COMMAND *command) {
 	Test_CommandResponse(command->request_id); //response command
 }
 
-void HandleEventsDown(EN_IOTA_EVENT *message){
+void HandleEventsDown(EN_IOTA_EVENT *message) {
 
 	if (message == NULL) {
 		return;
