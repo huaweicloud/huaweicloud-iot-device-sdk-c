@@ -714,7 +714,7 @@ void HandleEventsDown(EN_IOTA_EVENT *message) {
 				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), log_switch: %s \n", message->services[i].device_log_paras->log_switch);
 				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), end_time: %s \n", message->services[i].device_log_paras->end_time);
 			}
-		}else if (message->services[i].servie_id == EN_IOTA_EVENT_FILE_MANAGER) {
+		} else if (message->services[i].servie_id == EN_IOTA_EVENT_FILE_MANAGER) {
 			int timeout = 3000; //timeout
 			if (message->services[i].event_type == EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE) {
 				FILE_Upload(message->services[i].file_paras->url, message->services[i].file_paras->openFile, timeout);
