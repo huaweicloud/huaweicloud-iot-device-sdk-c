@@ -12,7 +12,7 @@ typedef struct {
 	HW_INT file_size;
 	HW_CHAR *file_hash_code;
 	HW_CHAR *object_device_id;
-}ST_FILE_MANA_INFO_REPORT;
+} ST_FILE_MANA_INFO_REPORT;
 
 typedef struct {
 	HW_CHAR *object_name;
@@ -21,13 +21,13 @@ typedef struct {
 	HW_CHAR *event_type;
     HW_CHAR *status_description;
     HW_CHAR *object_device_id;
-}ST_FILE_MANA_RES_REPORT;
+} ST_FILE_MANA_RES_REPORT;
 
 typedef struct {
 	HW_CHAR *url;
 	HW_CHAR *ip;
 	HW_CHAR *uri;
-}ST_FILE_URL_PAR;
+} ST_FILE_URL_PAR;
 
 typedef struct {
 	HW_LONG flag_start; // Start position flag bit
@@ -35,13 +35,13 @@ typedef struct {
 	HW_LLONG file_size;  
 	HW_INT readOrwrite; 
 	HW_CHAR *filePath;  
-}ST_FILE_WR_PARAMERER; // File read/write parameters
+} ST_FILE_WR_PARAMERER; // File read/write parameters
 
 #define FILE_HTTP_GET				"GET "
 #define FILE_HTTP_PUT				"PUT "
 #define FILE_HEADER_LENGTH			1000
 #define FILE_IP_URI_LEN				1500
-#define FILE_R_MAX					1000 // How much data is transmitted at a breakpoint (read)
+#define FILE_R_MAX					10000 // How much data is transmitted at a breakpoint (read)
 #define OTA_HTTP_HOST				"Host: " 
 #define FILE_CONTENT_TYPE			"Content-Type: text/plain\r\n"
 #define FILE_CONNECTION				"Connection: keep-alive\r\n"
@@ -59,6 +59,8 @@ typedef struct {
 #define HTTP_STATUS_LENGTH			3
 #define HTTP_CONTENT_LEN			10
 #define OTA_TIMEOUT_MIN_LENGTH		300
+#define HTTP_OK_INIT				200
+#define HTTP_OK_206_INIT			206
 #define HTTP_OK						"200"
 #define HTTP_OK_206					"206"
 #define SERVICE_ID					"service_id"

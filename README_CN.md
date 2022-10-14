@@ -581,6 +581,7 @@ void Test_DownloadFile(void){
 	通过设备发放功能，可以将设备发放到不同的region，参考文档：https://support.huaweicloud.com/qs-iotps/iot_03_0006.html  注意：流程可参考“快速入门”中的各种接入示例，SDK已自动实现示例中的“引导设备”。详细的步骤可参考链接中的“用户指南”。
 	SDK中需要将主目录下的Makefile里的OBJS中的device_demo.o，同时将bootstrap_demo.o放开。    
 	![](./doc/doc_cn/bootstrap.png)
+	当前，平台使用了 [DigiCert Global Root CA.](https://global-root-ca.chain-demos.digicert.com/info/index.html) 和 [GlobalSign Root CA - R3](https://valid.r3.roots.globalsign.com/) 两个权威CA签发的证书。conf目录下的证书默认是跟IoTDA的基础版域名绑定的。如果需要切换到其他IoTDA版本，请参考官方文档的 [证书资源](https://support.huaweicloud.com/devg-iothub/iot_02_1004.html#section3) 章节。
 
 - **编译并运行程序**
 1. 将huaweicloud-iot-device-sdk-c-master.zip压缩包拷贝到Linux环境中，通过如下命令解压：

@@ -716,10 +716,10 @@ void HandleEventsDown(EN_IOTA_EVENT *message) {
 			}
 		}else if (message->services[i].servie_id == EN_IOTA_EVENT_FILE_MANAGER) {
 			int timeout = 3000; //timeout
-			if(message->services[i].event_type == EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE) {
+			if (message->services[i].event_type == EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE) {
 				FILE_Upload(message->services[i].file_paras->url, message->services[i].file_paras->openFile, timeout);
 			}
-			if(message->services[i].event_type == EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE) {
+			if (message->services[i].event_type == EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE) {
 				FiLE_Download(message->services[i].file_paras->url, message->services[i].file_paras->openFile, timeout);
 			}
 		}

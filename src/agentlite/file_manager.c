@@ -1,3 +1,27 @@
+/*Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
+ * All rights reserved.
+ * &Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ * conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ * of conditions and the following disclaimer in the documentation and/or other materials
+ * provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used
+ * to endorse or promote products derived from this software without specific prior written permission.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * */
+
 #include <file_manager.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +48,7 @@
 #include "cJSON.h"
 #include "subscribe.h"
 
+#define FILE_SLEEP      1000//File transfer completion interval
 /* * File operation part * */
 static HW_INT File_OpenFileRead(FILE *fp, char *buf, size_t *len)
 {
@@ -36,10 +61,6 @@ static HW_INT File_OpenFileRead(FILE *fp, char *buf, size_t *len)
     *(buf + sum) = '\0';
 
     int i;
-    for (i = 0; i < sum; i++) {
-        printf("%c", *(buf + i));
-    }
-    printf("\n");
 
     if (sum != FILE_HEADER_LENGTH) {
         return FILE_END;
@@ -81,7 +102,7 @@ static HW_LLONG File_Size(char *filePath)
 /* * data processing part * */
 static HW_INT File_UrlHandle(HW_CHAR *url, HW_CHAR *ip, HW_CHAR *uri)
 {
-    if(url == NULL){
+    if (url == NULL) {
         return FILE_FAILURE;
     }
     char *tmp = strstr(url, DOUBLE_OBLIQUE_LINE);
@@ -94,10 +115,10 @@ static HW_INT File_UrlHandle(HW_CHAR *url, HW_CHAR *ip, HW_CHAR *uri)
         return FILE_FAILURE;
     }
     // the length of ipTmp is enougt to copy
-    if(ip != NULL){
+    if (ip != NULL) {
         strncpy(ip, tmp + strlen(DOUBLE_OBLIQUE_LINE), len - strlen(tmpContainsColon) - strlen(DOUBLE_OBLIQUE_LINE));
     }
-    if(uri != NULL){
+    if (uri != NULL) {
         tmp = strstr(tmpContainsColon, SINGLE_SLANT);
         strncpy(uri, tmp, strlen(tmp));
     }
@@ -107,43 +128,42 @@ static HW_INT File_UrlHandle(HW_CHAR *url, HW_CHAR *ip, HW_CHAR *uri)
 
 static HW_INT File_HttpHead(char *str, ST_FILE_URL_PAR url_par, ST_FILE_WR_PARAMERER wr)
 {
-  
     if (wr.readOrwrite == 1) {
-        strcat(str, FILE_HTTP_GET);
+        strncat(str, FILE_HTTP_GET, strlen(FILE_HTTP_GET));
     } else {
-        strcat(str, FILE_HTTP_PUT);
+        strncat(str, FILE_HTTP_PUT, strlen(FILE_HTTP_PUT));
     }
-    strcat(str, url_par.uri);
-    strcat(str, FILE_HTTP_VERSION);
+    strncat(str, url_par.uri, strlen(url_par.uri));
+    strncat(str, FILE_HTTP_VERSION, strlen(FILE_HTTP_VERSION));
 
-    strcat(str, OTA_HTTP_HOST);
-    strcat(str, url_par.ip);
-    strcat(str, FILE_LINEFEED);
+    strncat(str, OTA_HTTP_HOST, strlen(OTA_HTTP_HOST));
+    strncat(str, url_par.ip, strlen(url_par.ip));
+    strncat(str, FILE_LINEFEED, strlen(FILE_LINEFEED));
 
-    strcat(str, FILE_CONNECTION);
-    strcat(str, FILE_CONTENT_TYPE);
+    strncat(str, FILE_CONNECTION, strlen(FILE_CONNECTION));
+    strncat(str, FILE_CONTENT_TYPE, strlen(FILE_CONTENT_TYPE));
 
     if (wr.readOrwrite == 0) {
         char sum[HTTP_CONTENT_LEN] = {0};
         snprintf(sum, HTTP_CONTENT_LEN, "%lld", wr.file_size);
-        strcat(str, FILE_CONTENT_LENGTH);
-        strcat(str, sum);
-        strcat(str, FILE_LINEFEED);
+        strncat(str, FILE_CONTENT_LENGTH, strlen(FILE_CONTENT_LENGTH));
+        strncat(str, sum, strlen(sum));
+        strncat(str, FILE_LINEFEED, strlen(FILE_LINEFEED));
 
-    }else{
+    } else {
         //Breakpoint transmission
         char sum[HTTP_CONTENT_LEN] = {0};
         snprintf(sum, HTTP_CONTENT_LEN, "%ld", wr.flag_start);
-        strcat(str, "RANGE: bytes=");
-        strcat(str, sum);
+        strncat(str, "RANGE: bytes=", strlen("RANGE: bytes="));
+        strncat(str, sum);
 
-        strcat(str,"-");
+        strncat(str, "-", strlen("-"));
         snprintf(sum, HTTP_CONTENT_LEN, "%ld", wr.flag_stop);
-        strcat(str, sum);
-        strcat(str, FILE_LINEFEED);
+        strncat(str, sum, strlen(sum));
+        strncat(str, FILE_LINEFEED, strlen(FILE_LINEFEED));
     }
 
-    strcat(str, FILE_LINEFEED);
+    strncat(str, FILE_LINEFEED, strlen(FILE_LINEFEED));
 
     return FILE_SUCCESS;
 }
@@ -171,7 +191,7 @@ static HW_INT FILE_HttpsWrite(FILE *fp, SSL *ssl, ST_FILE_URL_PAR *url_par, ST_F
         } else {
             x = File_OpenFileRead(fp, str, &dataLen);
             if (x == FILE_END) {
-                strcat(str, FILE_CRLF);
+                strncat(str, FILE_CRLF, strlen(FILE_CRLF));
                 PrintfLog(EN_LOG_LEVEL_INFO, "FILE_END\n");
             }
             if (x < 0) {
@@ -186,8 +206,6 @@ static HW_INT FILE_HttpsWrite(FILE *fp, SSL *ssl, ST_FILE_URL_PAR *url_par, ST_F
                 "FILE_datatrans: FILE_HttpsWrite() send https request failed, response is %d.\n", res);
             return FILE_FAILURE;
         }
-        PrintfLog(EN_LOG_LEVEL_INFO,
-            "--------------------------------------------------------------------\n");
     } while (x != FILE_END && wr->readOrwrite == 0);
     return FILE_SUCCESS;
 }
@@ -208,11 +226,11 @@ static HW_INT FILE_HttpsReadDataProcessing(char *buf, HW_LLONG *lenx)
     }
     sscanf(rspStatusCode, "%d", &result);
 
-    if(strstr(buf, FILE_CONTENT_RANGE) != NULL){
+    if (strstr(buf, FILE_CONTENT_RANGE) != NULL) {
          conLenStart = strstr(buf, FILE_CONTENT_RANGE) + strlen(FILE_CONTENT_RANGE);
          conLenStart = strstr(conLenStart, SINGLE_SLANT) + strlen(SINGLE_SLANT);
 
-    }else{
+    } else {
         conLenStart = strstr(buf, FILE_CONTENT_LENGTH) + strlen(FILE_CONTENT_LENGTH);
     }
    
@@ -245,7 +263,7 @@ static HW_INT FILE_HttpsRead(FILE *fp ,SSL *ssl, ST_FILE_WR_PARAMERER *wr)
          
         if (headerFlag == 0) {
             headerFlag = 1;
-            if(read_length == 0){
+            if (read_length == 0) {
                 return FILE_NO_RESPONSE;
             }
             result = FILE_HttpsReadDataProcessing(buf, &wr->file_size);
@@ -303,7 +321,6 @@ HW_API_FUNC SSL_CTX *FILE_ssl_init()
 {
     PrintfLog(EN_LOG_LEVEL_INFO, "FILE_datatrans: evssl_init1() start to init ssl.\n");
     static SSL_CTX *server_ctx;
-
 
     SSL_load_error_strings();
     SSL_library_init();
@@ -371,11 +388,11 @@ HW_API_FUNC HW_INT FILE_OBSTransmission(HW_CHAR *url, HW_CHAR *filePath, HW_INT 
 
     // Domain name converted to IP address
     result = File_UrlHandle(url, url_par.ip, url_par.uri);
-    if(result < 0){
+    if (result < 0) {
         return FILE_FAILURE;
     }
     struct hostent *name = gethostbyname(ip);
-    if(name == NULL){
+    if (name == NULL) {
          return FILE_FAILURE;
     }
     ip_16 = inet_ntoa(*(struct in_addr*)name->h_addr_list[0]);
@@ -402,11 +419,9 @@ HW_API_FUNC HW_INT FILE_OBSTransmission(HW_CHAR *url, HW_CHAR *filePath, HW_INT 
 
     // Open File
     FILE *file = NULL;
-    if(wr.readOrwrite == 1){
-
+    if (wr.readOrwrite == 1) {
         file = fopen(wr.filePath, "wb");
-    }else{
-
+    } else {
         wr.file_size = File_Size(wr.filePath);
         file = fopen(wr.filePath, "rb");
     }
@@ -428,7 +443,7 @@ HW_API_FUNC HW_INT FILE_OBSTransmission(HW_CHAR *url, HW_CHAR *filePath, HW_INT 
 
         // receive data
         result = FILE_HttpsRead(file, ssl, &wr);
-        if(result != 206 && result != 200){
+        if (result != HTTP_OK_206_INIT && result != HTTP_OK_INIT) {
             PrintfLog(EN_LOG_LEVEL_ERROR, "FILE_datatrans: FILE_OBSTransmission() ERROR.\n");
             break;
         }
@@ -436,16 +451,16 @@ HW_API_FUNC HW_INT FILE_OBSTransmission(HW_CHAR *url, HW_CHAR *filePath, HW_INT 
         wr.flag_stop +=  FILE_R_MAX;
     }while(wr.flag_stop - FILE_R_MAX < wr.file_size && wr.readOrwrite == 1);
     
-    if(result == 200 || (wr.flag_start > wr.file_size  && wr.readOrwrite == 1)){
+    if (result == HTTP_OK_INIT || (wr.flag_start > wr.file_size  && wr.readOrwrite == 1)) {
         PrintfLog(EN_LOG_LEVEL_INFO, "FILE_datatrans: FILE_OBSTransmission() success.\n");
-        result = 200;
+        result = HTTP_OK_INIT;
     }
         
     fclose(file);  
     SSL_shutdown(ssl);
     SSL_free(ssl);
     close(fd);
-    usleep(1000); // wait connection released
+    usleep(FILE_SLEEP); // wait connection released
     return result;
 }
 /**
@@ -639,7 +654,7 @@ static void FILE_FileResponse(int result, HW_CHAR *filePath, HW_INT readOrwrite)
 
     result_code.object_device_id = NULL;
     result_code.object_name = filePath;
-    if (result == 200) {
+    if (result == HTTP_OK_INIT) {
         result_code.result_code = 0;
     } else {
         result_code.result_code = 1;

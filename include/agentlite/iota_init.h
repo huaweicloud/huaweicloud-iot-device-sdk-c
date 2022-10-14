@@ -69,7 +69,7 @@ typedef struct {
 typedef struct {
 	HW_CHAR *url;
 	HW_CHAR *openFile;
-}EN_IOTA_FILE_PARAS;
+} EN_IOTA_FILE_PARAS;
 
 typedef struct {
 	EN_IOTA_DEVICE_INFO *devices;
