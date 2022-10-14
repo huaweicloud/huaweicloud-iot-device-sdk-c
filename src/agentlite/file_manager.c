@@ -155,7 +155,7 @@ static HW_INT File_HttpHead(char *str, ST_FILE_URL_PAR url_par, ST_FILE_WR_PARAM
         char sum[HTTP_CONTENT_LEN] = {0};
         snprintf(sum, HTTP_CONTENT_LEN, "%ld", wr.flag_start);
         strncat(str, "RANGE: bytes=", strlen("RANGE: bytes="));
-        strncat(str, sum);
+        strncat(str, sum, strlen(sum));
 
         strncat(str, "-", strlen("-"));
         snprintf(sum, HTTP_CONTENT_LEN, "%ld", wr.flag_stop);
