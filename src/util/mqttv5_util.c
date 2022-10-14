@@ -4,7 +4,7 @@
 
 #if defined(MQTTV5)
 //Linked list deletion
-int listFree(MQTTV5_USER_PRO *mqtt_data)
+int mqttV5_listFree(MQTTV5_USER_PRO *mqtt_data)
 {
     if (mqtt_data == NULL)
     {

@@ -67,7 +67,7 @@ typedef struct {
 	char *correlation_data;
 }MQTTV5_DATA;
 
-int listFree(MQTTV5_USER_PRO *mqtt_data);
+int mqttV5_listFree(MQTTV5_USER_PRO *mqtt_data);
 
 #define mqttv5_initializer {NULL, NULL, NULL, NULL }
 #endif

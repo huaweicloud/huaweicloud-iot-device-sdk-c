@@ -93,7 +93,7 @@ typedef struct
 	HW_CHAR *id;
 	HW_CHAR *content;
 	HW_CHAR *topicParas; 
-}ST_IOTA_MESS_REP_INFO;
+} ST_IOTA_MESS_REP_INFO;
 
 
 /**
@@ -172,10 +172,10 @@ HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW
 HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_INT deviceNum, void *context);
 HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR *timestamp, void *context);
 #if defined(MQTTV5)
-HW_API_FUNC HW_INT IOTA_CommandResponse5(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse, void *context, MQTTV5_DATA *properties);
-HW_API_FUNC HW_INT IOTA_BatchPropertiesReport5(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[], HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5);
-HW_API_FUNC HW_INT IOTA_PropertiesReport5(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5);
-HW_API_FUNC HW_INT IOTA_MessageReport5(ST_IOTA_MESS_REP_INFO mass, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5);
+HW_API_FUNC HW_INT IOTA_CommandResponseV5(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse, void *context, MQTTV5_DATA *properties);
+HW_API_FUNC HW_INT IOTA_BatchPropertiesReportV5(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[], HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5);
+HW_API_FUNC HW_INT IOTA_PropertiesReportV5(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5);
+HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5);
 #endif
 
 #define SDK_VERSION					 "C_v1.0.0"
