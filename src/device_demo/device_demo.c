@@ -326,8 +326,85 @@ void Test_CmdRspV3() {
 	MemFree(&rsp);
 }
 
-void Test_PropertiesReport() {
-	int serviceNum = 2;  //reported services' totol count
+// If you cancel #define STORE_DATA_SWITCH comments , enable offline caching¡£
+// Note: the change is only a sample, for reference only
+// Currently, the container for storing exception messages is a dynamic two-dimensional array,
+// which can be selected by users according to their business logic
+//#define STORE_DATA_SWITCH
+
+/*
+ *Open a space and store data, and report data at the same time
+ *It is recommended to store the data of the sensor in the container
+ *before reporting the data each time. Only after receiving
+ *the callback of onpublishsuccess can the message be removed
+ *from the container.
+ */
+#if defined(STORE_DATA_SWITCH)
+char **cacheSpace = NULL;
+int cacheSpaceLen = 0;
+int cache_p = 0;
+#define CACHE_SPACE_MAX 100
+
+void Test_PropertiesStoreData()
+{
+	int serviceNum = 2; // reported services' totol count
+	int i = 0;
+	if (cacheSpace == NULL)
+	{
+		cacheSpace = (char **)malloc(CACHE_SPACE_MAX * sizeof(char *));
+		if (cacheSpace == NULL)
+		{
+			PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_CmdRspV3()  malloc failed! ");
+			return; // Failed to apply for space
+		}
+	}
+	ST_IOTA_SERVICE_DATA_INFO *services = (ST_IOTA_SERVICE_DATA_INFO *)malloc(sizeof(ST_IOTA_SERVICE_DATA_INFO) * serviceNum);
+	//---------------the data of service1-------------------------------
+	char *service1 = "{\"Load\":\"6\",\"ImbA_strVal\":\"7\"}";
+
+	services->event_time = GetEventTimesStamp(); // if event_time is set to NULL, the time will be the iot-platform's time.
+	services->service_id = "parameter";
+	services->properties = service1;
+
+	//---------------the data of service2-------------------------------
+	char *service2 = "{\"PhV_phsA\":\"9\",\"PhV_phsB\":\"8\"}";
+
+	(services + 1)->event_time = NULL;
+	(services + 1)->service_id = "analog";
+	(services + 1)->properties = service2;
+
+	// Message store
+	if (cacheSpaceLen > CACHE_SPACE_MAX)
+	{
+		MemFree(cacheSpace[cache_p]);
+		cacheSpace[cache_p] = services;
+		cache_p++;
+	}
+	else
+	{
+		cache_p = 0;
+		for (i = 0; i < CACHE_SPACE_MAX; i++)
+		{
+			if (cacheSpace[i] == NULL)
+			{
+				cacheSpace[i] = services;
+				cacheSpaceLen++;
+				break;
+			}
+		}
+	}
+	// Report data -- Try resending
+	int messageId = IOTA_PropertiesReport(services, serviceNum, 0, (void *)services);
+	if (messageId != 0)
+	{
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
+	}
+}
+#endif
+
+void Test_PropertiesReport()
+{
+	int serviceNum = 2; // reported services' totol count
 	ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
 
 	//---------------the data of service1-------------------------------
@@ -555,6 +632,28 @@ void Test_ReportDeviceInfo() {
 void HandleConnectSuccess (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: handleConnectSuccess(), login success\n");
 	disconnected_ = 0;
+#if defined(STORE_DATA_SWITCH)
+	int i = 0;
+	if (cacheSpace == NULL || cacheSpaceLen <= 0)
+	{
+		return;
+	}
+	//Reconnect -- Send the stored data
+	for (i = 0; i < CACHE_SPACE_MAX && cacheSpaceLen > 0; i++)
+	{
+		if (cacheSpace[i] != NULL)
+		{
+			int serviceNum = sizeof(cacheSpace[i]) / sizeof(ST_IOTA_SERVICE_DATA_INFO);
+			int messageId = IOTA_PropertiesReport(cacheSpace[i], serviceNum, 0, (void *)cacheSpace[i]);
+			if (messageId != 0)
+			{
+				PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
+			}
+			TimeSleep(100);
+		}
+	}
+
+#endif
 }
 
 void HandleConnectFailure (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
@@ -599,9 +698,6 @@ void HandleConnectionLost (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 
 void HandleDisConnectSuccess (EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	disconnected_ = 1;
-
-	printf("device_demo: handleLogoutSuccess, login again\n");
-	printf("device_demo: HandleDisConnectSuccess(), messageId %d, code %d, messsage %s\n", rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
 void HandleDisConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
@@ -618,6 +714,34 @@ void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 
 void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePublishSuccess() messageId %d\n", rsp->mqtt_msg_info->messageId);
+
+#if defined(STORE_DATA_SWITCH)
+	int i = 0;
+	if (rsp->mqtt_msg_info->context == NULL)
+	{
+		return;
+	}
+	for (i = 0; i < CACHE_SPACE_MAX && cacheSpaceLen > 0; i++)
+	{
+		if (cacheSpace[i] == rsp->mqtt_msg_info->context)
+		{
+			MemFree(cacheSpace[i]);
+			cacheSpace[i] = NULL;
+			cacheSpaceLen--;
+			break;
+		}
+		else if(cacheSpace[i] != NULL)//重传
+		{
+			int serviceNum = sizeof(cacheSpace[i]) / sizeof(ST_IOTA_SERVICE_DATA_INFO);
+			int messageId = IOTA_PropertiesReport(cacheSpace[i], serviceNum, 0, (void *)cacheSpace[i]);
+			if (messageId != 0)
+			{
+				PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
+			}
+			TimeSleep(100);
+		}
+	}
+#endif
 }
 
 void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
@@ -749,17 +873,13 @@ void HandleEventsDown(EN_IOTA_EVENT *message) {
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), object_device_id %s\n", message->object_device_id);
 	int i = 0;
 	while (message->services_count > 0) {
-		printf("servie_id: %d \n", message->services[i].servie_id);
-		printf("event_time: %s \n", message->services[i].event_time);
-		printf("event_type: %d \n", message->services[i].event_type);
+
 
 		//sub device manager
 		if (message->services[i].servie_id == EN_IOTA_EVENT_SUB_DEVICE_MANAGER) {
 
 			//if it is the platform inform the gateway to add or delete the sub device
 			if(message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY || message->services[i].event_type == EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY) {
-				printf("version: %lld \n", message->services[i].paras->version);
-
 				int j = 0;
 				while(message->services[i].paras->devices_count > 0) {
 
