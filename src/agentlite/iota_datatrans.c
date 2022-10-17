@@ -48,6 +48,21 @@
 #include "iota_error_type.h"
 #include "subscribe.h"
 
+
+char * IOTA_MessageReportPayload(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content) {
+	cJSON *root;
+	root = cJSON_CreateObject();
+	
+	cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, object_device_id);
+	cJSON_AddStringToObject(root, NAME, name);
+	cJSON_AddStringToObject(root, ID, id);
+	cJSON_AddStringToObject(root, CONTENT, content);
+
+	char *payload = cJSON_Print(root);
+	cJSON_Delete(root);
+
+	return payload;	
+}
 /**
  *@Description: report message to IoT platform
  *@param object_device_id: the target device id, NULL means the target device id is the gateway device id
@@ -66,42 +81,51 @@ HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, 
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the content cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
 	}
+	int messageId = 0;
+	char *payload = IOTA_MessageReportPayload(object_device_id, name, id, content);
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = ReportDeviceData(payload, topicParas, compressFlag, context, NULL);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_MessageReport() with payload %s By topic %s==>\n", payload, topicParas);
+		free(payload);	
+	}
+	return messageId;
+}
 
-	cJSON *root;
-	root = cJSON_CreateObject();
-
-	cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, object_device_id);
-	cJSON_AddStringToObject(root, NAME, name);
-	cJSON_AddStringToObject(root, ID, id);
-	cJSON_AddStringToObject(root, CONTENT, content);
-
-	char *payload = cJSON_Print(root);
-	cJSON_Delete(root);
-
+#if defined(MQTTV5)
+/**
+ *@Description: MQTT5.0 report message to IoT platform
+ *@param mass : the ST_IOTA_MESS_REP_INFO structure
+ *@param compressFlag : 0 for no compression, 1 for compression
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ *@param mqttv5 : the MQTTV5_DATA structure
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5) {
+	if (mass.content == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "the content cannot be null.\n");
+		return IOTA_PARAMETER_EMPTY;
+	}
+	char *payload = IOTA_MessageReportPayload(mass.object_device_id, mass.name, mass.id, mass.content);
 	int messageId = 0;
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportDeviceData(payload, topicParas, compressFlag, context);
-		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_MessageReport() with payload %s By topic %s==>\n", payload, topicParas);
-		free(payload);
-		return messageId;
+		messageId = ReportDeviceData(payload, mass.topicParas, compressFlag, context, (void *)mqttv5);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_MessageReportV5() with payload %s By topic %s==>\n", payload, mass.topicParas);
+		free(payload);	
 	}
+	return messageId;
 }
+#endif
 
-/**
- *@Description: report device properties to IoT platform
- *@param pServiceData[]: the array of ST_IOTA_SERVICE_DATA_INFO structure
- *@param serviceNum: number of reported services
- *@param compressFlag : 0 for no compression, 1 for compression
- *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
-    			   provide access to the context information in the callback.
- *@return: IOTA_SUCCESS represents success, others represent specific failure
- */
-HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT compressFlag, void *context) {
+char *IOTA_PropertiesReportPayload(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum) {
+
 	if (serviceNum == 0 || pServiceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
-		return IOTA_PARAMETER_EMPTY;
+		return NULL;
 	}
 	cJSON *root, *serviceDatas;
 	root = cJSON_CreateObject();
@@ -113,7 +137,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
 			PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
 			cJSON_Delete(serviceDatas);
 			cJSON_Delete(root);
-			return IOTA_PARSE_JSON_FAILED;
+			return NULL;
 		}
 
 		cJSON *tmp;
@@ -126,46 +150,76 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
 	}
 
 	cJSON_AddItemToObject(root, SERVICES, serviceDatas);
-
-	char *payload;
-	payload = cJSON_Print(root);
+	char *payload = cJSON_Print(root);
 	cJSON_Delete(root);
-
-	int messageId = 0;
-	if (payload == NULL) {
-		return IOTA_FAILURE;
-	} else {
-		messageId = ReportDeviceProperties(payload, compressFlag, context);
-		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReport() with payload %s ==>\n", payload);
-		free(payload);
-		return messageId;
-	}
+	return payload;
 }
-
 /**
- *@Description: batch report data of the sub devices to IoT platform
- *@param pDeviceData[]: the array of ST_IOTA_DEVICE_DATA_INFO structure.
- *@param deviceNum: number of reported sub device
- *@param serviceLenList[]: the array of number of services reported by sub equipment
+ *@Description: report device properties to IoT platform
+ *@param pServiceData[]: the array of ST_IOTA_SERVICE_DATA_INFO structure
+ *@param serviceNum: number of reported services
  *@param compressFlag : 0 for no compression, 1 for compression
  *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
     			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[], HW_INT compressFlag, void *context) {
+HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT compressFlag, void *context) {
+	
+	char *payload = IOTA_PropertiesReportPayload(pServiceData, serviceNum);
+	int messageId = 0;
+	
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = ReportDeviceProperties(payload, compressFlag, context, NULL);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReport() with payload %s ==>\n", payload);
+		free(payload);
+	}
+	return messageId;
+}
+
+#if defined(MQTTV5)
+/**
+ *@Description: MQTT5.0 report device properties to IoT platform
+ *@param pServiceData[]: the array of ST_IOTA_SERVICE_DATA_INFO structure
+ *@param serviceNum: number of reported services
+ *@param compressFlag : 0 for no compression, 1 for compression
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ *@param mqttv5 : the MQTTV5_DATA structure
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_PropertiesReportV5(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5) {
+
+	char *payload = IOTA_PropertiesReportPayload(pServiceData, serviceNum);
+	int messageId = 0;
+
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = ReportDeviceProperties(payload, compressFlag, context, (void *)mqttv5);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReportV5() with payload %s ==>\n", payload);
+		free(payload);
+	}
+	return messageId;
+}
+#endif
+
+char *IOTA_BatchPropertiesReportPayload(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[]) {
+
 	if (deviceNum == 0 || serviceLenList == NULL || pDeviceData == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
-		return IOTA_PARAMETER_EMPTY;
+		return NULL;
 	}
 
 	if (deviceNum < 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the deviceNum cannot be minus.\n");
-		return IOTA_PARAMETER_ERROR;
+		return NULL;
 	}
 
 	if (deviceNum > MaxServiceReportNum) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "the deviceNum exceeds maximum.\n");
-		return IOTA_NUMBER_EXCEEDS;
+		return NULL;
 	}
 
 	cJSON *root, *deviceDatas;
@@ -208,18 +262,78 @@ HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceDa
 	char *payload = cJSON_Print(root);
 
 	cJSON_Delete(root);
+	return payload;
+}
 
-	int messageId = 0;
+/**
+ *@Description: batch report data of the sub devices to IoT platform
+ *@param pDeviceData[]: the array of ST_IOTA_DEVICE_DATA_INFO structure.
+ *@param deviceNum: number of reported sub device
+ *@param serviceLenList[]: the array of number of services reported by sub equipment
+ *@param compressFlag : 0 for no compression, 1 for compression
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[], HW_INT compressFlag, void *context) {
+
+	char *payload = IOTA_BatchPropertiesReportPayload(pDeviceData, deviceNum, serviceLenList);
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportBatchDeviceProperties(payload, compressFlag, context);
+		int messageId = ReportBatchDeviceProperties(payload, compressFlag, context, NULL);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BatchPropertiesReport() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
 	}
 }
+#if defined(MQTTV5)
+/**
+ *@Description: MQTT5.0 batch report data of the sub devices to IoT platform
+ *@param pDeviceData[]: the array of ST_IOTA_DEVICE_DATA_INFO structure.
+ *@param deviceNum: number of reported sub device
+ *@param serviceLenList[]: the array of number of services reported by sub equipment
+ *@param compressFlag : 0 for no compression, 1 for compression
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ *@param mqttv5: the MQTTV5_DATA structure	
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_BatchPropertiesReportV5(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[], HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5) {
 
+	char *payload = IOTA_BatchPropertiesReportPayload(pDeviceData, deviceNum, serviceLenList);
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		int messageId = ReportBatchDeviceProperties(payload, compressFlag, context, (void *)mqttv5);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BatchPropertiesReport() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+}
+#endif 
+
+
+char *IOTA_CommandResponsePayload( HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse) {
+
+	cJSON *root;
+	root = cJSON_CreateObject();
+	cJSON_AddNumberToObject(root, RESULT_CODE, result_code);
+	cJSON_AddStringToObject(root, RESPONSE_NAME, response_name);
+	cJSON *commandResponse = cJSON_Parse(pcCommandResponse);
+	if (commandResponse == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
+		cJSON_Delete(root);
+		return NULL;
+	}
+
+	cJSON_AddItemToObject(root, PARAS, commandResponse);
+
+	char *payload;
+	payload = cJSON_Print(root);
+	cJSON_Delete(root);
+	return payload;
+}
 /**
  *@Description: response command
  *@param requestId: unique identification of the request
@@ -231,39 +345,54 @@ HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceDa
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
 HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse, void *context) {
+	
 	if (pcCommandResponse == NULL || requestId == NULL) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_CommandResponse:the requestId or commandResponse cannot be null.\n");
 		return IOTA_PARAMETER_EMPTY;
 	}
 
-	cJSON *root;
-	root = cJSON_CreateObject();
-	cJSON_AddNumberToObject(root, RESULT_CODE, result_code);
-	cJSON_AddStringToObject(root, RESPONSE_NAME, response_name);
-	cJSON *commandResponse = cJSON_Parse(pcCommandResponse);
-	if (commandResponse == NULL) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
-		cJSON_Delete(root);
-		return IOTA_PARSE_JSON_FAILED;
-	}
-
-	cJSON_AddItemToObject(root, PARAS, commandResponse);
-
-	char *payload;
-	payload = cJSON_Print(root);
-	cJSON_Delete(root);
-
 	int messageId = 0;
+	char *payload = IOTA_CommandResponsePayload(result_code, response_name, pcCommandResponse);
 	if (payload == NULL) {
 		return IOTA_FAILURE;
 	} else {
-		messageId = ReportCommandReponse(requestId, payload, context);
+		messageId = ReportCommandReponse(requestId, payload, context, NULL);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CommandResponse() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
 	}
 }
+#if defined(MQTTV5)
+/**
+ *@Description: MQTTV5 response command
+ *@param requestId: unique identification of the request
+ *@param result_code: command execution result, 0 for success, others for failure
+ *@param response_name: name of the command response
+ *@param pcCommandResponse: command response results obtained from the profile can be parsed into JSON
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ *@param properties: the MQTTV5_DATA structure	
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_CommandResponseV5(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse, void *context, MQTTV5_DATA *properties) {
+	
+	if (pcCommandResponse == NULL || requestId == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_CommandResponse:the requestId or commandResponse cannot be null.\n");
+		return IOTA_PARAMETER_EMPTY;
+	}
 
+	int messageId = 0;
+	char *payload = IOTA_CommandResponsePayload(result_code, response_name, pcCommandResponse);
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = ReportCommandReponse(requestId, payload, context, (void *)properties);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CommandResponse() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+}
+#endif 
 /**
  *@Description: response properties setting
  *@param requestId: unique identification of the request
@@ -544,7 +673,7 @@ HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW
     			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_INT deviceNum, void *context){
+HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_INT deviceNum, void *context) {
 	if((delSubDevices == NULL) || (deviceNum < 0) || (deviceNum > MaxDelSubDevCount)) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_DelSubDevice() error, the input is invalid.\n");
 		return IOTA_PARAMETER_ERROR;

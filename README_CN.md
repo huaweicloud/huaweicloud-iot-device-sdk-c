@@ -52,9 +52,13 @@
 
 17、增加消息存储样例
 
+18、增加文件上传/下载功能
+
+19、增加MQTT5.0协议
+
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
-*2022/09/09*
+*2022/10/17*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -572,9 +576,7 @@ void SetAuthConfig() {
   新增代码实现了异常场景下的属性消息存储，并进行上报、重发的样例。 Test_PropertiesStoreData( )函数是具体实现入口。通过STORE_DATA_SWITCH来标识是否打开该功能，不注释#define STORE_DATA_SWITCH 是打开 ，注释时关闭，默认是关闭的。
   该新增代码为样例代码，存储的容器采用的是动态二维数组，用户可以根据自己的业务逻辑来进行选择。建议设备采集到数据后就进行存储，设备链路正常的时候再进行重发。
   基本逻辑如下：
-  
-
-  - 上报数据前 存储传感器的数据（当前使用的是数组 用户可以自己选择）
+- 上报数据前 存储传感器的数据（当前使用的是数组 用户可以自己选择）
     
     ![](./doc/doc_cn/存储.png)
   
@@ -583,6 +585,12 @@ void SetAuthConfig() {
     
   - 等网络恢复后，再上报容器中遗留的数据。
   ![](./doc/doc_cn/重连.png)
+
+
+- **MQTT5.0协议使用**
+
+  如果想使用MQTT5.0协议（默认为MQTT3.1.1），需要在文件./include/util/mqttv5_util.h 中取消 #define MQTTV5的备注。
+
 
 ## 开源协议
 

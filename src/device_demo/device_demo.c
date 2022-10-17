@@ -43,7 +43,7 @@
 #include "string.h"
 #include "cJSON.h"
 #include "iota_error_type.h"
-
+#include "mqttv5_util.h"
 /* if you want to use syslog,you should do this:
  *
  * #include "syslog.h"
@@ -83,7 +83,7 @@ void HandleSubscribesuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandleMessageDown (EN_IOTA_MESSAGE *rsp);
+void HandleMessageDown (EN_IOTA_MESSAGE *rsp, void *mqttv5);
 void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp);
 void HandleCommandRequest(EN_IOTA_COMMAND *command);
 void HandlePropertiesSet (EN_IOTA_PROPERTY_SET *rsp);
@@ -102,7 +102,14 @@ void Test_GtwAddSubDevice();
 void Test_GtwDelSubDevice();
 void Test_ReportDeviceInfo();
 
-
+#if defined(MQTTV5)
+void Test_CorreaytionData(char *response_topic);
+void Test_PayloadFormatIndicator();
+void Test_ContentType();
+void Test_UserProperty();
+void Test_MessageReportV5();
+void Test_PropertiesReportV5();
+#endif
 
 void TimeSleep(int ms) {
 #if defined(WIN32) || defined(WIN64)
@@ -111,7 +118,147 @@ void TimeSleep(int ms) {
     usleep(ms * 1000);
 #endif
 }
+//------------------------------------------------------Test  MQTT5.0 ------------------------------------------------------------------------
+#if defined(MQTTV5)
 
+//V5 correlation data and response topic
+void Test_CorreaytionData(char *response_topicParas) {
+	MQTTV5_DATA massv5 = mqttv5_initializer;
+	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
+	char *topic = CombineStrings(4, "$oc/devices/", username_, "/user/", response_topicParas);
+	char num[5] = "1234";
+
+	//MessageReport one, Topic = A, response_topic = B
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "Test_CorreaytionData()\n");
+	massv5.response_topic = topic;
+	massv5.correlation_data = num;
+	int messageId = IOTA_MessageReportV5(mass, 0, NULL , &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+	}
+
+	//MessageReport two, Topic = B, response_topic = NULL
+	massv5.response_topic = NULL;
+	massv5.correlation_data = num;
+	mass.topicParas = response_topicParas;
+	messageId = IOTA_MessageReportV5(mass, 0, NULL, &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+	}
+}
+
+//v5 contnt type
+void Test_ContentType() {
+	MQTTV5_DATA massv5 = mqttv5_initializer;
+	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
+	
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "Test_ContentType()\n");
+	massv5.contnt_type = "application/json";
+
+	int messageId = IOTA_MessageReportV5(mass, 0, NULL , &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+	}
+}
+
+//v5 User Property
+void Test_UserProperty() {
+	MQTTV5_DATA massv5 = mqttv5_initializer;
+	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
+
+	MQTTV5_USER_PRO user_0;
+	MQTTV5_USER_PRO user_1;
+
+	PrintfLog(EN_LOG_LEVEL_DEBUG, "Test_UserProperty()\n");
+	user_0.key = "region";
+	user_0.Value = "A";
+	user_0.nex = &user_1;
+
+	user_1.key = "type";
+	user_1.Value = "JSON";
+	user_1.nex = NULL;
+
+	massv5.properties = &user_0;
+	int messageId = IOTA_MessageReportV5(mass, 0, NULL , &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+	}
+}
+
+//v5 message report
+void Test_MessageReportV5() {
+	MQTTV5_DATA massv5 = mqttv5_initializer;
+	ST_IOTA_MESS_REP_INFO mass = {NULL, "data123", "123", "hello123123123123", NULL};
+
+	//MQTTV5 publish
+	MQTTV5_USER_PRO user_0;
+	MQTTV5_USER_PRO user_1;
+	user_0.key = "name";
+	user_0.Value = "B";
+	user_0.nex = &user_1;
+
+	user_1.key = "type";
+	user_1.Value = "JSON";
+	user_1.nex = NULL;
+
+	massv5.properties = &user_0;
+	massv5.response_topic = "responseTopic";
+	massv5.correlation_data = "4321";
+	massv5.contnt_type = "application/json";
+
+	//default topic
+	int messageId = IOTA_MessageReportV5(mass, 0, NULL , &massv5);
+	//user topic
+//	mass.topicParas = "devMsg";
+//	int messageId = IOTA_MessageReportV5(mass, 0, NULL , &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+	}
+}
+
+//v5 Properties Report
+void Test_PropertiesReport5() {
+	int serviceNum = 2;  //reported services' totol count
+	ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
+	MQTTV5_DATA massv5 = mqttv5_initializer;	
+	MQTTV5_USER_PRO user_0;
+	MQTTV5_USER_PRO user_1;
+	//---------------the data of service1-------------------------------
+	char *service1 = "{\"Load\":\"6\",\"ImbA_strVal\":\"7\"}";
+
+	services[0].event_time = GetEventTimesStamp(); //if event_time is set to NULL, the time will be the iot-platform's time.
+	services[0].service_id = "parameter";
+	services[0].properties = service1;
+
+	//---------------the data of service2-------------------------------
+	char *service2 = "{\"PhV_phsA\":\"9\",\"PhV_phsB\":\"8\"}";
+
+	services[1].event_time = NULL;
+	services[1].service_id = "analog";
+	services[1].properties = service2;
+
+    //-------------- MQTTV5 publish -----------------------------------
+	user_0.key = "region";
+	user_0.Value = "A";
+	user_0.nex = &user_1;
+
+	user_1.key = "type";
+	user_1.Value = "JSON";
+	user_1.nex = NULL;
+
+	massv5.properties = &user_0;
+	massv5.response_topic = "responseTopic";
+	massv5.correlation_data = "1";
+	massv5.contnt_type = "application/json";
+
+	int messageId = IOTA_PropertiesReportV5(services, serviceNum, 0, NULL, &massv5);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesReport() failed, messageId %d\n", messageId);
+	}
+
+	MemFree(&services[0].event_time);
+}
+#endif
 //------------------------------------------------------Test  data report---------------------------------------------------------------------
 
 void Test_MessageReport() {
@@ -603,14 +750,37 @@ void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 
 //-------------------------------------------handle  message   arrived------------------------------------------------------------------------------
 
-void HandleMessageDown (EN_IOTA_MESSAGE *rsp) {
+void HandleMessageDown (EN_IOTA_MESSAGE *rsp, void *mqttv5) {
 	if (rsp == NULL) {
 		return;
 	}
+	#if defined(MQTTV5)
+	MQTTV5_DATA *mqtt = (MQTTV5_DATA *)mqttv5;
+	MQTTV5_USER_PRO *user_pro = mqtt->properties;
+	if(mqtt->contnt_type != NULL) {
+		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),contnt_type = %s\n", mqtt->contnt_type);
+	}
+	if(user_pro != NULL) {
+		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),properties is:\n");
+		while (user_pro != NULL) {
+			PrintfLog(EN_LOG_LEVEL_INFO,"key = %s ,Value = %s\n", user_pro->key ,user_pro->Value);
+			user_pro =  (MQTTV5_USER_PRO *)user_pro->nex;
+		}
+	}
+	if(mqtt->correlation_data != NULL) {
+		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),correlation_data = %s\n", mqtt->correlation_data);
+	}
+	if(mqtt->response_topic != NULL) {
+		PrintfLog(EN_LOG_LEVEL_INFO,"device_demo: HandleMessageDown(),response_topic = %s\n", mqtt->response_topic);
+	}
+	//删除链表、释放内存
+	listFree(mqtt->properties);
+	#endif
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), content %s\n", rsp->content);
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), id %s\n", rsp->id);
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), name %s\n", rsp->name);
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), object_device_id %s\n", rsp->object_device_id);
+
 }
 
 void HandlePropertiesSet (EN_IOTA_PROPERTY_SET *rsp) {
@@ -692,7 +862,7 @@ void HandleCommandRequest(EN_IOTA_COMMAND *command) {
 	Test_CommandResponse(command->request_id); //response command
 }
 
-void HandleEventsDown(EN_IOTA_EVENT *message){
+void HandleEventsDown(EN_IOTA_EVENT *message) {
 
 	if (message == NULL) {
 		return;

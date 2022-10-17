@@ -24,12 +24,13 @@
 
 #ifndef INCLUDE_DATATRANS_H_
 #define INCLUDE_DATATRANS_H_
+#include "mqttv5_util.h"
 
-int ReportDeviceData(char *payload, char *topicParas, int compressFlag, void *context);
-int ReportDeviceProperties(char *payload, int compressFlag, void *context);
-int ReportBatchDeviceProperties(char *payload, int compressFlag, void *context);
-int ReportData(char *topic, char *payload, void *context);
-int ReportCommandReponse(char *requestId, char *pcCommandRespense, void *context);
+int ReportDeviceData(char *payload, char *topicParas, int compressFlag, void *context, void *properties);
+int ReportDeviceProperties(char *payload, int compressFlag, void *context, void *properties);
+int ReportBatchDeviceProperties(char *payload, int compressFlag, void *context , void *properties);
+int ReportData(char *topic, char *payload, void *context, void *properties);
+int ReportCommandReponse(char *requestId, char *pcCommandRespense, void *context, void *properties);
 int ReportPropSetReponse(char *requestId, char *pcCommandRespense, void *context);
 int ReportPropGetReponse(char *requestId, char *pcCommandRespense, void *context);
 int GetPropertiesRequest(char *requestId, char *pcCommandRespense, void *context);
