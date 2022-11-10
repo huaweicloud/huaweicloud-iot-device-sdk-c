@@ -622,6 +622,10 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 						event->services[i].paras->devices_count = devices_count;
 
 						long long version = getLLongValueFromStr(message, VERSION_JSON);
+						if (version < 0){
+							PrintfLog(EN_LOG_LEVEL_ERROR, "getLLongValueFromStr(), Length out of bounds. Modifiable value LONG_LONG_MAX_LENGTH\n");
+							break;
+						}
 						event->services[i].paras->version = version;
 						int j = 0;
 
@@ -899,6 +903,10 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 						long long device_send_time = getLLongValueFromStr(message, DEVICE_SEND_TIME_JSON);
 						long long server_recv_time = getLLongValueFromStr(message, SERVER_RECV_TIME_JSON);
 						long long server_send_time = getLLongValueFromStr(message, SERVER_SEND_TIME_JSON);
+						if (device_send_time < 0 || server_recv_time < 0 || server_send_time < 0){
+							PrintfLog(EN_LOG_LEVEL_ERROR, "getLLongValueFromStr(), Length out of bounds. Modifiable value LONG_LONG_MAX_LENGTH\n");
+							break;
+						}
 						event->services[i].ntp_paras->device_real_time = (server_recv_time + server_send_time + getTime() - device_send_time) / 2;
 					}
 
