@@ -224,14 +224,15 @@ long long  getLLongValueFromStr (const* str, const *subStr) {
 		if (version_tmp[i] >= '0' && version_tmp[i] <= '9') {
 			buf[j] = version_tmp[i];
 			j++;
+			if (j > LONG_LONG_MAX_LENGTH) {
+				return -1;
+			}
 		} else {
 			if (j > 0) {
 				break;
 			}
 		}
 	}
-
-	buf[i] = '\0';
 
 	char *end = NULL;
 	long long version = strtoll(buf, &end, 10);
