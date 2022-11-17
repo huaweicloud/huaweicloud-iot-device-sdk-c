@@ -171,6 +171,7 @@ HW_API_FUNC HW_INT IOTA_SubscribeBoostrap();
 HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW_INT deviceNum, void *context);
 HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_INT deviceNum, void *context);
 HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR *timestamp, void *context);
+HW_API_FUNC HW_INT IOTA_GetLatestSoftBusInfo(HW_CHAR *bus_id, HW_CHAR *event_id, void *context);
 #if defined(MQTTV5)
 HW_API_FUNC HW_INT IOTA_CommandResponseV5(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse, void *context, MQTTV5_DATA *properties);
 HW_API_FUNC HW_INT IOTA_BatchPropertiesReportV5(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[], HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5);
@@ -307,6 +308,10 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define DEVICE_SDK_VERSION			 "device_sdk_version"
 #define SW_VERSION					 "sw_version"
 #define FW_VERSION					 "fw_version"
+#define SOFT_BUS_EVENT_REQ 			 "soft_bus_config_request"
+#define SOFT_BUS_EVENT_RSP 			 "soft_bus_config_response"
+#define SOFT_BUS_SERVICEID			 "$oh_soft_bus"
+#define BUS_ID						 "bus_id"
 
 /**
  * ----------------------------deprecated below------------------------------------->

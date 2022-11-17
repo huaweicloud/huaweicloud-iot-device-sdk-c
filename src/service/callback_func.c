@@ -930,6 +930,12 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 
 				}
 
+				//soft bus
+				if (!strcmp(service_id, SOFT_BUS_SERVICEID)) {
+					event->services[i].servie_id = EN_IOTA_EVENT_SOFT_BUS;
+					event->services[i].soft_bus_paras = cJSON_Print(paras);				
+				}
+
 			}
 
 			i++;
@@ -966,6 +972,8 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 					MemFree(&event->services[m].ntp_paras);
 				} else if (event->services[m].servie_id == EN_IOTA_EVENT_DEVICE_LOG) {
 					MemFree(&event->services[m].device_log_paras);
+				} else if (event->services[m].servie_id == EN_IOTA_EVENT_SOFT_BUS) {
+					MemFree(&event->services[m].soft_bus_paras);
 				}
 			}
 

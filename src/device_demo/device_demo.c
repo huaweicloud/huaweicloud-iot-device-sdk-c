@@ -974,6 +974,8 @@ void HandleEventsDown(EN_IOTA_EVENT *message) {
 				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), log_switch: %s \n", message->services[i].device_log_paras->log_switch);
 				PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), end_time: %s \n", message->services[i].device_log_paras->end_time);
 			}
+		} else if (message->services[i].servie_id == EN_IOTA_EVENT_SOFT_BUS) {
+			PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), soft_bus_info: %s \n", message->services[i].soft_bus_paras->bus_infos);
 		}
 		i++;
 		message->services_count--;
