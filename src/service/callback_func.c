@@ -933,7 +933,8 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 				//soft bus
 				if (!strcmp(service_id, SOFT_BUS_SERVICEID)) {
 					event->services[i].servie_id = EN_IOTA_EVENT_SOFT_BUS;
-					event->services[i].soft_bus_paras = cJSON_Print(paras);				
+					event->services[i].soft_bus_paras = (EN_IOTA_SOFT_BUS_PARAS*)malloc(sizeof(EN_IOTA_SOFT_BUS_PARAS));
+					event->services[i].soft_bus_paras->bus_infos = cJSON_Print(paras);		
 				}
 
 			}
