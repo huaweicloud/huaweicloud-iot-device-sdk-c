@@ -69,4 +69,7 @@ int SetUserTopicMsgCallback(USER_TOPIC_MSG_CALLBACK_HANDLER pfnCallbackHandler);
 typedef void (*BOOTSTRAP_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 int SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler);
 
+typedef void (*M2M_CALLBACK_HANDLER)(EN_IOTA_M2M_MESSAGE *rsp);
+int SetM2mCallback(M2M_CALLBACK_HANDLER pfnCallbackHandler);
+
 #endif /* INCLUDE_SERVICE_CALLBACK_FUNC_H_ */

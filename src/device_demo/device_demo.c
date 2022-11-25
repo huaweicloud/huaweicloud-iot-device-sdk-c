@@ -84,6 +84,7 @@ void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void HandleMessageDown (EN_IOTA_MESSAGE *rsp, void *mqttv5);
+void HandleM2mMessageDown (EN_IOTA_M2M_MESSAGE *rsp);
 void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp);
 void HandleCommandRequest(EN_IOTA_COMMAND *command);
 void HandlePropertiesSet (EN_IOTA_PROPERTY_SET *rsp);
@@ -623,9 +624,18 @@ void Test_ReportDeviceInfo() {
 	if (messageId != 0) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportDeviceInfo() failed, messageId %d\n", messageId);
 	}
-
 }
 
+void Test_M2MSendMsg() {
+	char *to = "tunnelDeviceB";
+	char *from = username_;
+	char *content = "hello deviceB";
+	char *requestId = "demoIdToDeviceB";
+	int messageId = IOTA_M2MSendMsg(to, from, content, requestId, NULL);
+	if (messageId != 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_M2MSendMsg() failed, messageId %d\n", messageId);
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -781,6 +791,19 @@ void HandleMessageDown (EN_IOTA_MESSAGE *rsp, void *mqttv5) {
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), name %s\n", rsp->name);
 	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), object_device_id %s\n", rsp->object_device_id);
 
+}
+
+void HandleM2mMessageDown (EN_IOTA_M2M_MESSAGE *rsp) {
+	if (rsp == NULL) {
+		return;
+	}
+
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), requestId: %s\n", rsp->request_id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), to: %s\n", rsp->to);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), from: %s\n", rsp->from);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), content: %s\n", rsp->content);
+
+	// do sth
 }
 
 void HandlePropertiesSet (EN_IOTA_PROPERTY_SET *rsp) {
@@ -1018,6 +1041,7 @@ void SetMyCallbacks() {
 	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
 
 	IOTA_SetMessageCallback(HandleMessageDown);
+	IOTA_SetM2mCallback(HandleM2mMessageDown);
 	IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
 	IOTA_SetCmdCallback(HandleCommandRequest);
 	IOTA_SetPropSetCallback(HandlePropertiesSet);
@@ -1111,6 +1135,9 @@ int main(int argc, char **argv) {
 
 		//get device shadow
 		IOTA_GetDeviceShadow("1232", NULL, NULL, NULL);
+
+		//M2M send msg
+		Test_M2MSendMsg();
 
 		count++;
 	}

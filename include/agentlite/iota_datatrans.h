@@ -307,6 +307,10 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define DEVICE_SDK_VERSION			 "device_sdk_version"
 #define SW_VERSION					 "sw_version"
 #define FW_VERSION					 "fw_version"
+#define REQUEST_ID					 "request_id"
+#define TO					         "to"
+#define FROM			             "from"
+#define CONTENT                       "content"
 
 /**
  * ----------------------------deprecated below------------------------------------->

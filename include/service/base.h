@@ -53,6 +53,11 @@
 #define BOOTSTRAP						"/sys/bootstrap/up"
 #define BOOTSTRAP_DOWN					"/sys/bootstrap/down"
 
+#define TOPIC_PREFIX_M2M 				"$oc/m2m/to/"
+#define TOPIC_SUFFIX_M2M				"/request_id="
+#define M2M_FROM						"/from/"
+#define FORWARD_SLASH                   "/"
+
 //see also EN_MQTT_BASE_CALLBACK_SETTING in MqttBase.h
 typedef enum enum_BASE_CONFIG {
 	EN_BASE_CONFIG_USERNAME = 0,

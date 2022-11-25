@@ -79,7 +79,7 @@ int bs_reg_mode = 0;
 char *workDir = NULL;
 char *logDir = NULL;
 
-int verifyCert = 0;
+int verifyCert = 1;
 int initFlag = 0;
 int checkTimestamp = 0; //checking timestamp, 0 is not checking¡ê? others are checking.The default value is 1;
 int mqttClientCreateFlag = 0; //this mqttClientCreateFlag is used to control the invocation of MQTTAsync_create, otherwise, there would be message leak.
