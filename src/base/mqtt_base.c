@@ -81,7 +81,7 @@ char *logDir = NULL;
 
 int verifyCert = 0;
 int initFlag = 0;
-int checkTimestamp = 0; //checking timestamp, 0 is not checking¡ê? others are checking.The default value is 1;
+int checkTimestamp = 0; //checking timestamp, 0 is not checkingï¿½ï¿½? others are checking.The default value is 1;
 int mqttClientCreateFlag = 0; //this mqttClientCreateFlag is used to control the invocation of MQTTAsync_create, otherwise, there would be message leak.
 
 char *ca_path = NULL;

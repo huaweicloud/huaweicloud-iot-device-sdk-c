@@ -44,10 +44,12 @@ PROP_GET_CALLBACK_HANDLER onPropertiesGet;
 SHADOW_GET_CALLBACK_HANDLER onDeviceShadow;
 USER_TOPIC_MSG_CALLBACK_HANDLER onUserTopicMessage;
 BOOTSTRAP_CALLBACK_HANDLER onBootstrap;
+M2M_CALLBACK_HANDLER onM2mMessage;
 
 void OnLoginSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp) {
 	//The platform subscribes to system topic with QoS of 1 by default
 	// SubscribeAll();
+	SubscribeM2m();
 	if (onConnSuccess) {
 		(onConnSuccess)(rsp);
 	}
@@ -102,6 +104,37 @@ void OnMessageArrived(void *context, int token, int code, const char *topic, cha
 		return;
 	}
 
+	if (StringLength(StrInStr(topic, TOPIC_PREFIX_M2M)) > 0) {
+		EN_IOTA_M2M_MESSAGE *m2m_msg  = (EN_IOTA_M2M_MESSAGE*)malloc(sizeof(EN_IOTA_M2M_MESSAGE));
+		if (m2m_msg == NULL) {
+			PrintfLog(EN_LOG_LEVEL_ERROR, "OnMessageArrived(): there is not enough memory here.\n");
+			return;
+		}
+		m2m_msg->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO*)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+		if (m2m_msg->mqtt_msg_info == NULL) {
+			PrintfLog(EN_LOG_LEVEL_ERROR, "OnMessageArrived(): there is not enough memory here.\n");
+			free(m2m_msg);
+			return;
+		}
+		m2m_msg->mqtt_msg_info->context = context;
+		m2m_msg->mqtt_msg_info->messageId = token;
+		m2m_msg->mqtt_msg_info->code = code;
+
+		JSON *root = JSON_Parse(message);
+		m2m_msg->request_id = JSON_GetStringFromObject(root, REQUEST_ID, NULL);
+		m2m_msg->to = JSON_GetStringFromObject(root, TO, NULL);
+		m2m_msg->from = JSON_GetStringFromObject(root, FROM, NULL);
+		m2m_msg->content = JSON_GetStringFromObject(root, CONTENT, NULL);
+		if (onM2mMessage) {
+			(onM2mMessage)(m2m_msg);
+		}
+
+		JSON_Delete(root);
+		MemFree(&m2m_msg->mqtt_msg_info);
+		MemFree(&m2m_msg);
+
+		return;
+	}
 
 
 	if (StringLength(StrInStr(topic, TOPIC_SUFFIX_MESSAGEDOWN)) > 0) {
@@ -1037,3 +1070,7 @@ int SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler) {
 	return MqttBase_SetCallbackWithTopic(EN_CALLBACK_COMMAND_ARRIVED, OnMessageArrived);
 }
 
+int SetM2mCallback(M2M_CALLBACK_HANDLER pfnCallbackHandler) {
+	onM2mMessage = pfnCallbackHandler;
+	return MqttBase_SetCallbackWithTopic(EN_CALLBACK_COMMAND_ARRIVED, OnMessageArrived);
+}

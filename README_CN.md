@@ -262,7 +262,94 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	    - 子设备上报数据
 	      ![](./doc/doc_cn/4_8.png)
 	  
+	
+7. 对接边缘M2M功能
+
+      目前支持使用SDK对接边缘IoTEdge，边缘节点完成消息的中转到目标设备，从而实现M2M的功能。使用步骤如下：
+
+     - 1.搭建边缘节点，创建产品，并添加边缘设备，参考如下最佳实践：
+       https://support.huaweicloud.com/bestpractice-iotedge/iotedge_bestpractice_0050.html
+     - 2.替换相应的证书：
+       https://support.huaweicloud.com/bestpractice-iotedge/iotedge_bestpractice_0052.html
+
+     下载其中的plt-device-ca证书文件，将证书内容拷贝并替换sdk目录当中conf/rootcert.perm文件中的内容。
+
+     此证书用于设备校验边缘节点的身份。
+
+     - 3.替换端口号：
+       将include/base/mqtt_base.h中的：
+
+     #define MQTT_PORT         				"1883"
+
+     #define MQTTS_PORT         				"8883"
+
+     替换为：
+
+     #define MQTT_PORT         				"7882"
+
+     #define MQTTS_PORT         				"7883"
+
+     - 4.测试Demo：
+       将src/device_demo/device_demo.c中边缘节点IP等信息进行替换：
+
+     char *serverIp_ = "xx.xx.xx.xx"; // 边缘节点的IP
+
+     int port_ = 7883; // MQTTS端口号, 目前IoTEdge默认使用此端口号
+
+     char *username_ = "tunnelDeviceA"; // 上述步骤1当中设置
+
+     char *password_ = "xxxx"; // 上述步骤1中设置
+
+     假设源设备A和目标设备B的ID分别：tunnelDeviceA和tunnelDeviceB, 设备A向设备B发送"hello world"消息。
+     在A设备当中调用如下代码（demo可在main函数中调用）:
+
+      void Test_M2MSendMsg()
+      {
+
+        char *to = "deviceB";
+        char *from = username_;
+        char *content = "hello deviceB";
+        char *requestId = "demoIdToDeviceB";
+        int messageId = IOTA_M2MSendMsg(to, from, content, requestId, NULL);
+        ....
+
+     在接收端(即B设备)，会在回调函数HandleM2mMessageDown中打印接收的消息：
+
+   void HandleM2mMessageDown(EN_IOTA_M2M_MESSAGE *rsp)
+     {
+      ...
+
+       PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), requestId: %s\n", rsp->request_id);
+       PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), to: %s\n", rsp->to);
+       PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), from: %s\n", rsp->from);
+       PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), content: %s\n", rsp->content);
+       
+       // 用户可在此处加上业务处理逻辑，比如接收到content的后续处理
+       // do sth
+
+     }
+
+     可以在终端日志中打印出如下信息：
+     设备A:
+
+       DEBUG device_demo: this is m2m demo
+       DEBUG iota_datatrans: IOTA_M2MSendMsg() with payload ==> {
+             "request_id":   "demoIdToDeviceB",
+             "to":   "deviceB",
+             "from": "deviceA",
+             "content":      "hello deviceB"
+       }
+       DEBUG device_demo: Test_M2MSendMsg() ok, messageId 0
+
+     设备B:
+
+       INFO device_demo: HandleM2mMessageDown(), requestId: demoIdToDeviceB
+       INFO device_demo: HandleM2mMessageDown(), to:        deviceB
+       INFO device_demo: HandleM2mMessageDown(), from:      deviceA
+       INFO device_demo: HandleM2mMessageDown(), content:   hello deviceB
+
 <h1 id="5">5.使用步骤</h1>  
+
 以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。  
 
 - **设置日志回调函数**
@@ -577,7 +664,7 @@ void SetAuthConfig() {
   该新增代码为样例代码，存储的容器采用的是动态二维数组，用户可以根据自己的业务逻辑来进行选择。建议设备采集到数据后就进行存储，设备链路正常的时候再进行重发。
   基本逻辑如下：
 - 上报数据前 存储传感器的数据（当前使用的是数组 用户可以自己选择）
-    
+  
     ![](./doc/doc_cn/存储.png)
   
 - 如果收到了publish成功的响应 再从容器中删除该条消息，如果存储中有未发送的数据，再次发送。

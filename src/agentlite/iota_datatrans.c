@@ -985,7 +985,7 @@ HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT time
 			strncpy(rspStatusCode, buf + strlen(OTA_HTTP_RESPONSE_VERSION), HTTP_STATUS_LENGTH);
 			rspStatusCode[HTTP_STATUS_LENGTH] = '\0';
 			if (strcmp(rspStatusCode, HTTP_OK)) {
-				PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() error£¬the statusCode is %s.\n", rspStatusCode);
+				PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() errorï¿½ï¿½the statusCode is %s.\n", rspStatusCode);
 				result = IOTA_FAILURE;
 			}
 
@@ -1357,10 +1357,10 @@ HW_API_FUNC HW_INT IOTA_GetNTPTime(void *context) {
 
 /**
  *@Description: report device log to the iot platform
- *@param type: the type of device log, it can only be as follows£º
+ *@param type: the type of device log, it can only be as followsï¿½ï¿½
  	 	 	   DEVICE_STATUS, DEVICE_PROPERTY, DEVICE_MESSAGE, DEVICE_COMMAND
- *@param content£ºthe log content
- *@param timestamp£ºtime stamp accurated to milliseconds
+ *@param contentï¿½ï¿½the log content
+ *@param timestampï¿½ï¿½time stamp accurated to milliseconds
  *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
     			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
@@ -1404,7 +1404,7 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR
 
 /**
  *@Description: report device info to the iot platform
- *@param timestamp£ºST_IOTA_DEVICE_INFO_REPORT structure
+ *@param timestampï¿½ï¿½ST_IOTA_DEVICE_INFO_REPORT structure
  *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
     			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
@@ -1448,7 +1448,7 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceInfo(ST_IOTA_DEVICE_INFO_REPORT *device_info
 
 
 /**
- * ----------------------------deprecated below£¬do not use it-------------------------------------->
+ * ----------------------------deprecated belowï¿½ï¿½do not use it-------------------------------------->
  */
 
 //Reserved interface for transparent transmission
@@ -1537,6 +1537,46 @@ HW_API_FUNC HW_INT IOTA_SubDeviceScanReport(cJSON *device_list, void *context) {
 	} else {
 		messageId = ReportSubDeviceInfo(payload, context);
 		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_SubDeviceScanReport() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+}
+
+
+/**
+ *@Description: used for m2m send msg
+ *@param to: the target device id
+ *@param from: the source device id
+ *@param content: message content to send
+ *@param requestId: is optional
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+				   provide access to the context information in the callback.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_M2MSendMsg(HW_CHAR *to, HW_CHAR *from, HW_CHAR *content, HW_CHAR *requestId, void *context) {
+
+	if ((to == NULL) || (from == NULL) || (content == NULL)) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "the intput param cannot be null\n");
+		return -1;
+	}
+
+	cJSON *root = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(root, REQUEST_ID, requestId);
+	cJSON_AddStringToObject(root, TO, to);
+	cJSON_AddStringToObject(root, FROM, from);
+	cJSON_AddStringToObject(root, CONTENT, content);
+
+	char *payload;
+	payload = cJSON_Print(root);
+	cJSON_Delete(root);
+
+	int messageId = 0;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = OCM2MSendMsg(to, from, payload, requestId, context);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_M2MSendMsg() with payload %s ==>\n", payload);
 		free(payload);
 		return messageId;
 	}
