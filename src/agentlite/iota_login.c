@@ -1,4 +1,4 @@
-/*Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
+/* Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
  * All rights reserved.
  * &Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -20,7 +20,7 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  *
- * */
+ *  */
 
 #include "base.h"
 #include "login.h"
@@ -28,10 +28,12 @@
 #include "iota_login.h"
 #include "iota_error_type.h"
 
-HW_API_FUNC HW_INT IOTA_Connect() {
-	return CreateConnection();
+HW_API_FUNC HW_INT IOTA_Connect()
+{
+    return CreateConnection();
 }
 
-HW_API_FUNC HW_INT IOTA_DisConnect() {
-	return ReleaseConnection();
+HW_API_FUNC HW_INT IOTA_DisConnect()
+{
+    return ReleaseConnection();
 }

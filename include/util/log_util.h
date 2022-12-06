@@ -31,7 +31,7 @@ typedef void (*PRINTF_LOG_CALLBACK_HANDLER)(int level, char *format, va_list arg
 void SetPrintfLogCallback(PRINTF_LOG_CALLBACK_HANDLER callback);
 void PrintfLog(int logLevel, char *_Format, ...);
 
-//this compiling macro _SYS_LOG can only be used in Linux system
+// this compiling macro _SYS_LOG can only be used in Linux system
 #ifdef _SYS_LOG
 
 #include "syslog.h"

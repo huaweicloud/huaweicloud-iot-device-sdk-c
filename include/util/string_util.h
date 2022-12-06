@@ -43,7 +43,6 @@ typedef unsigned int size_t;
 int StringLength(char *str);
 char* StrInStr(const char *_Str, const char *_SubStr);
 int String2Int(const char *value);
-void* StrMemSet(void *_Dst, int _Val, size_t _Size);
 void MemFree(char **str);
 char* CombineStrings(int strAmount, char *str1, ...);
 void StringMalloc(char **str, int length);

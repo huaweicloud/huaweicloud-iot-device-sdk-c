@@ -1,5 +1,6 @@
 
-/*Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
+/*
+ * Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
  * All rights reserved.
  * &Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -25,17 +26,17 @@
 #ifndef INCLUDE_UTIL_MQTTV5_UTIL_H_
 #define INCLUDE_UTIL_MQTTV5_UTIL_H_
 
-//#define MQTTV5  //If not defined, use MQTT3, else MQTT5.0
+//#define MQTTV5  // If not defined, use MQTT3, else MQTT5.0
 #if defined(MQTTV5)
 // ------------------------ Create Connection -------------------------------------
-#define TOPIC_ALIAS_MAX 20 //MQTT v5 Maximum number of subject aliases
+#define TOPIC_ALIAS_MAX 20 // MQTT v5 Maximum number of subject aliases
 
 // ------------------------ Mqttv5 Publish ----------------------------------------
 typedef struct{
 	char *key;
 	char *Value;
 	void *nex;
-}MQTTV5_USER_PRO; //user propeties
+}MQTTV5_USER_PRO; // user propeties
 
 typedef struct {
 	/*

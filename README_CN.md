@@ -56,6 +56,8 @@
 
 19、增加MQTT5.0协议
 
+20、增加端侧规则引擎
+
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
 *2022/10/17*
@@ -235,7 +237,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 	- 执行如下命令：
 	
-	  ./MQTT_Demo.o
+	  ./MQTT_Demo
 	
 	  在控制台上可以看到很多打印的日志：
 	  “login success”表示设备鉴权成功   
@@ -261,7 +263,17 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	      ![](./doc/doc_cn/4_7.png)
 	    - 子设备上报数据
 	      ![](./doc/doc_cn/4_8.png)
-	  
+        
+7. 下发端侧规则
+  进入IoTDA控制台，在规则、设备联动页面上点击`创建规则`按钮,
+  ![](./doc/doc_cn/4_create_rule.png)
+  填写规则名称，选中端侧执行然后选中设备：
+  ![](./doc/doc_cn/4_select_device_rule.png)
+  配置端侧规则
+  ![](./doc/doc_cn/4_config_device_rule.png)
+  在控制台中可以观察到当属性上报、`PhV_phsA`为"9"时，端侧规则触发执行, 从而调用`HandleCommandRequest`：
+	      ![](./doc/doc_cn/4_observe_output.png)
+
 <h1 id="5">5.使用步骤</h1>  
 以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。  
 
@@ -444,7 +456,35 @@ services[1].properties = service2;
 	  设备收到消息后可以通过回调函数进行命令处理，可以参考demo中HandleMessageDown函数（需在回调函数配置中提前设置，下行消息的处理均需要提前设置回调函数）。
   
   - 设备接收命令下发（profile中定义的命令）：
-  ![](./doc/doc_cn/cmdDown.png)
+
+    `HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandler)`
+    通过该接口设置命令回调函数，当云端下发命令或端侧规则触发执行命令时，`pfnCallbackHandler`会被调用。
+    ```c
+    void HandleCommandRequest(EN_IOTA_COMMAND *command)
+    {
+        if (command == NULL) {
+            return;
+        }
+
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), messageId %d\n",
+            command->mqtt_msg_info->messageId);
+
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), object_device_id %s\n",
+            command->object_device_id);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), service_id %s\n", command->service_id);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), command_name %s\n", command->command_name);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), paras %s\n", command->paras);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), request_id %s\n", command->request_id);
+        // 可以在此处实现具体命令处理
+        Test_CommandResponse(command->request_id); // response command
+    }
+    ```
+    注册回调函数:
+    ```c
+    IOTA_SetCmdCallback(HandleCommandRequest);
+    ```
+
+    ![](./doc/doc_cn/cmdDown.png)
     
   - 设备接收平台属性设置
 	![](./doc/doc_cn/setDown.png)
@@ -555,7 +595,7 @@ void SetAuthConfig() {
 	
 4. 运行SDK Demo
 	
-	./MQTT_Demo.o
+	./MQTT_Demo
 	
 - **生成SDK库文件**
   
@@ -565,7 +605,7 @@ void SetAuthConfig() {
     ![](./doc/doc_cn/so1.png)
   - 把OBJS中的device_demo.o删除掉
     ![](./doc/doc_cn/so2.png)
-  - 把编译后的TARGET文件由MQTT_Demo.o修改为libHWMQTT.so（名称可以自定义）
+  - 把编译后的TARGET文件由MQTT_Demo修改为libHWMQTT.so（名称可以自定义）
     ![](./doc/doc_cn/so3.png)
   - 修改完毕后执行make即可生成libHWMQTT.so文件  
     

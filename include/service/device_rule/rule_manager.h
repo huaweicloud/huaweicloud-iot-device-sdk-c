@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2022-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,38 +28,22 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _HW_TYPE_H_
-#define _HW_TYPE_H_
+#ifndef _RULE_MANAGER_H_
+#define _RULE_MANAGER_H_
 
-#if defined(WIN32) || defined(WIN64) && defined(EXPORT_AGENTLITE)
-#define HW_API_FUNC __declspec(dllexport)
-#else
-#define HW_API_FUNC
-#endif
+#include "iota_init.h"
+#include "iota_datatrans.h"
+#include "rule_info.h"
 
-#define HW_TRUE      1 /**< Indicates true */
-#define HW_FALSE     0 /**< Indicates false */
+#define DEVIC_ERULE_ENALBE // use this macro to enable device rule
 
-#define HW_SUCCESS   0 /**< Indicates success */
-#define HW_FAILED    1 /**< Indicates failed */
-#define HW_NULL     ((void *)0) /**< Indicates null ptr */  
-
-typedef int 			HW_INT; /**< Indicates type of int. */
-typedef unsigned int 	HW_UINT; /**< Indicates type of unsigned int. */
-typedef char 			HW_CHAR; /**< Indicates type of char. */
-typedef unsigned char 	HW_UCHAR;/**< Indicates type of unsigned char. */
-typedef int 			HW_BOOL; /**< Indicates type of bool. */
-typedef void 			HW_VOID; /**< Indicates type of void. */
-typedef long 			HW_LONG; /**< Indicates type of bool. */
-typedef double 			HW_DOUBLE; /**< Indicates type of bool. */
-typedef long long 		HW_LLONG; /**< Indicates type of bool. */
-
-#define _HSTR(_conststr)        ((HW_CHAR *)_conststr)
-
-/**< Indicates type of byte array. */
-typedef struct {
-	HW_UINT uiLen; /**< Indicates length of byte array */
-	HW_CHAR *pcByte; /**< Indicates byte value of byte array */
-} HW_BYTES;
+HW_BOOL RuleMgr_Init(void);
+void RuleMgr_Destroy(void);
+void RuleMgr_Parse(const char *payload);
+void RuleMgr_CheckAndExecuteNoTimers(void);
+void RuleMgr_SetCommandCallbackHandler(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandler);
+void RuleMgr_CachePropertiesValue(const ST_IOTA_SERVICE_DATA_INFO  pServiceData[], const int serviceNum);
+HW_BOOL RuleMgr_GetList(const cJSON *properties, RuleInfoList *delList, RuleInfoList *addList);
+void RuleMgr_DelRule(RuleInfoList *delList);
 
 #endif
