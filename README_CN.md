@@ -195,7 +195,24 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 5. 拷贝so库文件
 	将源码目录下生成的libz.so、libz.so.1、libz.so.1.2.11拷贝到sdk的lib文件夹下。
 
-<h2 id="3.5">3.5 上传profile及注册设备</h2>     
+
+
+<h2 id="3.5">3.5 编译安全函数库</h2>     
+
+​1.下载安全函数库源码https://gitee.com/openeuler/libboundscheck.git  
+
+​2.进入源码makefile同级目录，执行makefile文件
+
+​  make
+
+​3.拷贝so库文件
+
+​  将源码目录下生成的lib文件夹下的libboundscheck.so拷贝到sdk的lib文件夹下。
+
+
+
+<h2 id="3.6">3.6 上传profile及注册设备</h2>
+
 1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。
    
 	![](./doc/doc_cn/profile1.png)
@@ -263,15 +280,15 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	      ![](./doc/doc_cn/4_7.png)
 	    - 子设备上报数据
 	      ![](./doc/doc_cn/4_8.png)
-        
+   
 7. 下发端侧规则
-  进入IoTDA控制台，在规则、设备联动页面上点击`创建规则`按钮,
-  ![](./doc/doc_cn/4_create_rule.png)
-  填写规则名称，选中端侧执行然后选中设备：
-  ![](./doc/doc_cn/4_select_device_rule.png)
-  配置端侧规则
-  ![](./doc/doc_cn/4_config_device_rule.png)
-  在控制台中可以观察到当属性上报、`PhV_phsA`为"9"时，端侧规则触发执行, 从而调用`HandleCommandRequest`：
+    进入IoTDA控制台，在规则、设备联动页面上点击`创建规则`按钮,
+    ![](./doc/doc_cn/4_create_rule.png)
+    填写规则名称，选中端侧执行然后选中设备：
+    ![](./doc/doc_cn/4_select_device_rule.png)
+    配置端侧规则
+    ![](./doc/doc_cn/4_config_device_rule.png)
+    在控制台中可以观察到当属性上报、`PhV_phsA`为"9"时，端侧规则触发执行, 从而调用`HandleCommandRequest`：
 	      ![](./doc/doc_cn/4_observe_output.png)
 
 <h1 id="5">5.使用步骤</h1>  
@@ -617,7 +634,7 @@ void SetAuthConfig() {
   该新增代码为样例代码，存储的容器采用的是动态二维数组，用户可以根据自己的业务逻辑来进行选择。建议设备采集到数据后就进行存储，设备链路正常的时候再进行重发。
   基本逻辑如下：
 - 上报数据前 存储传感器的数据（当前使用的是数组 用户可以自己选择）
-    
+  
     ![](./doc/doc_cn/存储.png)
   
 - 如果收到了publish成功的响应 再从容器中删除该条消息，如果存储中有未发送的数据，再次发送。

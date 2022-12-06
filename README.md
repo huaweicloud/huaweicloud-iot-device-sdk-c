@@ -136,13 +136,17 @@ The SDK depends on the OpenSSL, Paho, and zlib libraries. If you have your own c
 1. Download the [zlib source code package](https://github.com/madler/zlib/archive/v1.2.11.zip).
 2. Run the **unzip zlib-1.2.11.zip** command to decompress the package.
 3. Run the **cd zlib-1.2.11** command to access the source code directory.
-
 4. Run the **./configure** command to generate a **Makefile**.
-
 5. Run the **Makefile**.
-
 6. Copy .so library files.
    Copy the **libz.so**, **libz.so.1**, and **libz.so.1.2.11** files generated in the source code directory to the **lib** folder of the SDK.
+
+- **Compiling the secure_c Library**
+
+1. Download the [secure_c source code package](https://gitee.com/openeuler/libboundscheck.git).
+2. Access the source code directory. and run the **Makefile**.
+3. Copy .so library files.
+   Copy the **libboundscheck.so**files generated in the source code of lib directory to the **lib** folder of the SDK.
 
 <h2 id="2">4.3 Uploading a Product Model and Registering a Device</h2>
 Upload the developed product model to the console and register a new device.
