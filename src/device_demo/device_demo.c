@@ -1042,6 +1042,8 @@ void HandleEventsDown(EN_IOTA_EVENT *message)
 
         } else if (message->services[i].servie_id == EN_IOTA_EVENT_DEVICE_LOG) {
             HandleDeviceLog(message, i);
+        } else if (message->services[i].servie_id == EN_IOTA_EVENT_SOFT_BUS) {
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), soft_bus_info: %s \n", message->services[i].soft_bus_paras->bus_infos);
         }
         i++;
         message->services_count--;

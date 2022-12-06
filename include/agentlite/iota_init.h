@@ -119,6 +119,10 @@ typedef struct {
 } EN_IOTA_DEVICE_LOG_PARAS;
 
 typedef struct {
+	HW_CHAR *bus_infos;
+} EN_IOTA_SOFT_BUS_PARAS;
+
+typedef struct {
 	HW_INT servie_id;  // see the enum EN_IOTA_EVENT_SERVICE_ID
 	HW_INT event_type;  // see the enum EN_IOTA_EVENT_TYPE
 	HW_CHAR *event_time;
@@ -129,6 +133,7 @@ typedef struct {
 	EN_IOTA_GTW_ADD_DEVICE_PARAS *gtw_add_device_paras;
 	EN_IOTA_GTW_DEL_DEVICE_PARAS *gtw_del_device_paras;
 	EN_IOTA_DEVICE_LOG_PARAS *device_log_paras;
+	EN_IOTA_SOFT_BUS_PARAS *soft_bus_paras;
 	EN_IOTA_DEVICE_RULE_PARAS *device_rule_paras;
 } EN_IOTA_SERVICE_EVENT;
 
@@ -276,7 +281,8 @@ typedef enum {
 	EN_IOTA_EVENT_DEVICE_LOG = 3,
 //	EN_IOTA_EVENT_FILE_MANAGER = 4,
 //	EN_IOTA_EVENT_SDK_INFO = 5,
-	EN_IOTA_EVENT_DEVICE_RULE = 6,
+	EN_IOTA_EVENT_SOFT_BUS = 6,
+	EN_IOTA_EVENT_DEVICE_RULE = 7,
 	EN_IOTA_EVENT_ERROR = -1
 } EN_IOTA_EVENT_SERVICE_ID;
 

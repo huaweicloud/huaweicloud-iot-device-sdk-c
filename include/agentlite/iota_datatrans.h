@@ -397,6 +397,7 @@ HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_I
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
 HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR *timestamp, void *context);
+HW_API_FUNC HW_INT IOTA_GetLatestSoftBusInfo(HW_CHAR *bus_id, HW_CHAR *event_id, void *context);
 #if defined(MQTTV5)
 /**
  *@Description: MQTTV5 response command
@@ -577,6 +578,10 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define DEVICE_SDK_VERSION			 "device_sdk_version"
 #define SW_VERSION					 "sw_version"
 #define FW_VERSION					 "fw_version"
+#define SOFT_BUS_EVENT_REQ 			 "soft_bus_config_request"
+#define SOFT_BUS_EVENT_RSP 			 "soft_bus_config_response"
+#define SOFT_BUS_SERVICEID			 "$oh_soft_bus"
+#define BUS_ID						 "bus_id"
 
 #define DEVICE_RULE                 "$device_rule"
 #define CONFIG_REQUEST              "device_rule_config_request"
