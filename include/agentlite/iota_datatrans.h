@@ -179,7 +179,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV5(ST_IOTA_SERVICE_DATA_INFO pServiceDat
 HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5);
 #endif
 
-#define SDK_VERSION					 "C_v1.0.0"
+#define SDK_VERSION					 "C_v1.1.2"
 #define OTA_PORT 					 8943
 #define BUFSIZE 					 4096
 #define PKGNAME_MAX 				 20  //the max length of the package name
@@ -321,12 +321,12 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define IOTA_TOPIC_DATATRANS_REPORT_RSP       "IOTA_TOPIC_DATATRANS_REPORT_RSP"
 
 typedef enum enum_EN_IOTA_DATATRANS_IE_TYPE {
-	EN_IOTA_DATATRANS_IE_RESULT = 0,   //nsigned int  命令执行返回结果
-	EN_IOTA_DATATRANS_IE_DEVICEID = 1,   //String        设备ID
-	EN_IOTA_DATATRANS_IE_REQUESTID = 2,   //String        请求ID
-	EN_IOTA_DATATRANS_IE_SERVICEID = 3,   //String        服务ID
-	EN_IOTA_DATATRANS_IE_METHOD = 4,   //String        服务方法
-	EN_IOTA_DATATRANS_IE_CMDCONTENT = 5,   //String        命令内容
+	EN_IOTA_DATATRANS_IE_RESULT = 0,   //nsigned int  鍛戒护鎵ц杩斿洖缁撴灉
+	EN_IOTA_DATATRANS_IE_DEVICEID = 1,   //String        璁惧ID
+	EN_IOTA_DATATRANS_IE_REQUESTID = 2,   //String        璇锋眰ID
+	EN_IOTA_DATATRANS_IE_SERVICEID = 3,   //String        鏈嶅姟ID
+	EN_IOTA_DATATRANS_IE_METHOD = 4,   //String        鏈嶅姟鏂规硶
+	EN_IOTA_DATATRANS_IE_CMDCONTENT = 5,   //String        鍛戒护鍐呭
 } EN_IOTA_DATATRANS_IE_TYPE;
 
 #endif
