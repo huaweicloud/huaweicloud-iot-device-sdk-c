@@ -34,6 +34,7 @@
 #include "iota_init.h"
 #include "iota_datatrans.h"
 #include "rule_info.h"
+#include "mqtt_base.h"
 
 #define DEVIC_ERULE_ENALBE // use this macro to enable device rule
 

@@ -408,7 +408,7 @@ static void ExecuteActionList(const ActionList *list, const ExecuteCommandCallBa
             continue;
         }
         if (strcmp(one->type, "DEVICE_CMD") == 0) {
-            commandCallback(one->command.commandName, one->command.serviceId, one->command.commandBody);
+            commandCallback(one->deviceId, &one->command);
         } else {
             DEVICE_RULE_WARN("unknown action type \"%s\"", one->type);
         }

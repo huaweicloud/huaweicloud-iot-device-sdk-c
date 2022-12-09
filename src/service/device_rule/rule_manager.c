@@ -64,8 +64,12 @@ DECL_DYARRY_FUNC_UTIL_IMPL(CacheDeviceDataList, CacheDeviceData, elements, Cache
 
 static CacheDeviceDataList g_cacheDeviceDataList;
 
-static void executeCommandCallback(const char *serviceId, const char *commandName, const cJSON *commandBody)
+static void executeCommandCallback(const char *deviceId, const Command * commandIn)
 {
+    char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
+    const char *serviceId =    commandIn ->serviceId;
+    const char *commandName =  commandIn ->commandName;
+    const cJSON *commandBody = commandIn ->commandBody;
     EN_IOTA_COMMAND command;
     EN_IOTA_MQTT_MSG_INFO dummyMsg;
     (void)memset_s(&command, sizeof(command), 0, sizeof(command));
@@ -94,7 +98,20 @@ static void executeCommandCallback(const char *serviceId, const char *commandNam
         DEVICE_RULE_ERROR("command callback can't be NULL, need to set it");
         return;
     }
-    g_commandCallbackHandler(&command);
+    if (strcmp(deviceId, username) != 0) {
+        DEVICE_RULE_DEBUG("send message from  this device : %s to device : %s", username, deviceId);
+        cJSON *cmdRoot;
+        cmdRoot = cJSON_CreateObject();
+        cJSON_AddStringToObject(cmdRoot, SERVICE_ID_V3, serviceId);
+        cJSON_AddStringToObject(cmdRoot, COMMAND_NAME, commandName);
+        cJSON_AddItemReferenceToObject(cmdRoot, PARAS, commandBody);
+        char *cmd = cJSON_Print(cmdRoot);
+        // SendMessage(deviceId, cmd);
+        cJSON_Delete(cmdRoot);
+        MemFree(&cmd);
+    } else {
+        g_commandCallbackHandler(&command);
+    }
     MemFree(&command.service_id);
     MemFree(&command.command_name);
     MemFree(&paras);

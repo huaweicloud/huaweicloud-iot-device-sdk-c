@@ -52,7 +52,7 @@ typedef struct {
 } PropertyValue;
 
 typedef HW_BOOL (*GetPropertyValueCallBack)(const char *serviceId, const char *property, PropertyValue *value);
-typedef void (*ExecuteCommandCallBack)(const char *serviceId, const char *commandName, const cJSON *commandBody);
+typedef void (*ExecuteCommandCallBack)(const char *deviceId, const Command * command);
 void PropertyValueSetInt(PropertyValue *dest, int val);
 void PropertyValueSetDouble(PropertyValue *dest, double val);
 void PropertyValueSetCStr(PropertyValue *dest, const char *val);

@@ -112,7 +112,7 @@ bootstrap_demo.o: $(SRC_PATH)/bootstrap_demo/bootstrap_demo.c
 
 ##-----------device rule-------------##
 DEVICE_RULE_HEADER_PATH = ./include/service/device_rule/
-DEVICE_RULE_INC = -I$(DEVICE_RULE_HEADER_PATH)  $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/third_party/libboundscheck/ $(HEADER_PATH)/agentlite $(HEADER_PATH)/util/ $(HEADER_PATH)/service/
+DEVICE_RULE_INC = -I$(DEVICE_RULE_HEADER_PATH)  $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/third_party/libboundscheck/ $(HEADER_PATH)/agentlite $(HEADER_PATH)/util/ $(HEADER_PATH)/service/ $(HEADER_PATH)/base/
 DEVICE_RULE_SRC = $(SRC_PATH)/service/device_rule/
 
 $(OUT_DIR)device_rule/print_rule_info_list.o : $(DEVICE_RULE_SRC)print_rule_info_list.c $(DEVICE_RULE_HEADER_PATH)rule_parse.h
