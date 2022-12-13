@@ -1224,3 +1224,8 @@ int SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler)
     onBootstrap = pfnCallbackHandler;
     return MqttBase_SetCallbackWithTopic(EN_CALLBACK_COMMAND_ARRIVED, OnMessageArrived);
 }
+
+void SetDeviceRuleSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler)
+{
+    RuleMgr_SetSendMsgCallback(pfnCallbackHandler);
+}

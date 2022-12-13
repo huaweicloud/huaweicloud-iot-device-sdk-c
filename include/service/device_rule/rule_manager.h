@@ -35,6 +35,7 @@
 #include "iota_datatrans.h"
 #include "rule_info.h"
 #include "mqtt_base.h"
+#include "callback_func.h"
 
 #define DEVIC_ERULE_ENALBE // use this macro to enable device rule
 
@@ -46,5 +47,5 @@ void RuleMgr_SetCommandCallbackHandler(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandl
 void RuleMgr_CachePropertiesValue(const ST_IOTA_SERVICE_DATA_INFO  pServiceData[], const int serviceNum);
 HW_BOOL RuleMgr_GetList(const cJSON *properties, RuleInfoList *delList, RuleInfoList *addList);
 void RuleMgr_DelRule(RuleInfoList *delList);
-
+void RuleMgr_SetSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler);
 #endif

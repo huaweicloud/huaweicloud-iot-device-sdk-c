@@ -113,3 +113,8 @@ HW_API_FUNC HW_VOID IOTA_SetBootstrapCallback(PFN_BOOTSTRAP_CALLBACK_HANDLER pfn
 {
     SetBootstrapCallback(pfnCallbackHandler);
 }
+
+HW_API_FUNC HW_VOID IOTA_SetDeviceRuleSendMsgCallback(PFN_DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler)
+{
+    SetDeviceRuleSendMsgCallback(pfnCallbackHandler);
+}

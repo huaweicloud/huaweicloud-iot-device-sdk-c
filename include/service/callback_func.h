@@ -69,4 +69,7 @@ int SetUserTopicMsgCallback(USER_TOPIC_MSG_CALLBACK_HANDLER pfnCallbackHandler);
 typedef void (*BOOTSTRAP_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 int SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler);
 
+typedef void (*DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER)(char *deviceId, char *cmd);
+void SetDeviceRuleSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler);
+
 #endif /* INCLUDE_SERVICE_CALLBACK_FUNC_H_ */

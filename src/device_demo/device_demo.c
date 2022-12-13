@@ -1050,6 +1050,13 @@ void HandleEventsDown(EN_IOTA_EVENT *message)
     }
 }
 
+int HandleDeviceRuleSendMsg(char *deviceId, char *message)
+{
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceRuleSendMsg(), deviceId is %s, the message is %s",
+        deviceId, message);
+    return 0;
+}
+
 // -------------------------------------------------------------------------
 
 void SetAuthConfig()
@@ -1096,6 +1103,7 @@ void SetMyCallbacks()
     IOTA_SetPropGetCallback(HandlePropertiesGet);
     IOTA_SetEventCallback(HandleEventsDown);
     IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
+    IOTA_SetDeviceRuleSendMsgCallback(HandleDeviceRuleSendMsg);
 }
 
 void MyPrintLog(int level, char *format, va_list args)

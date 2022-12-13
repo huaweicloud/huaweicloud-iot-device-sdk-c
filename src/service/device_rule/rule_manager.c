@@ -42,6 +42,12 @@ static RuleInfoList g_ruleInfosList;
 static pthread_mutex_t g_ruleMutex;
 PFN_CMD_CALLBACK_HANDLER g_commandCallbackHandler;
 static pthread_t g_deviceRuleThreadId;
+static DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER g_deviceRuleSendMsgCallBack;
+
+void RuleMgr_SetSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler)
+{
+    g_deviceRuleSendMsgCallBack = pfnCallbackHandler;
+}
 
 typedef struct {
     char *serviceId;
@@ -105,8 +111,9 @@ static void executeCommandCallback(const char *deviceId, const Command * command
         cJSON_AddStringToObject(cmdRoot, SERVICE_ID_V3, serviceId);
         cJSON_AddStringToObject(cmdRoot, COMMAND_NAME, commandName);
         cJSON_AddItemReferenceToObject(cmdRoot, PARAS, commandBody);
+
         char *cmd = cJSON_Print(cmdRoot);
-        // SendMessage(deviceId, cmd);
+        g_deviceRuleSendMsgCallBack(deviceId, cmd);
         cJSON_Delete(cmdRoot);
         MemFree(&cmd);
     } else {
