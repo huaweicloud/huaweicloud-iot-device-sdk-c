@@ -1541,3 +1541,43 @@ HW_API_FUNC HW_INT IOTA_SubDeviceScanReport(cJSON *device_list, void *context) {
 		return messageId;
 	}
 }
+
+
+/**
+ *@Description: used for m2m send msg
+ *@param to: the target device id
+ *@param from: the source device id
+ *@param content: message content to send
+ *@param requestId: is optional
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+				   provide access to the context information in the callback.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_M2MSendMsg(HW_CHAR *to, HW_CHAR *from, HW_CHAR *content, HW_CHAR requestId, void *context) {
+
+	if ((to == NULL) || (from == NULL) || (content == NULL)) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "the intput param cannot be null\n");
+		return -1;
+	}
+
+	cJSON *root = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(root, REQUEST_ID, requestId);
+	cJSON_AddStringToObject(root, TO, to);
+	cJSON_AddStringToObject(root, FROM, from);
+	cJSON_AddStringToObject(root, CONTENT, content);
+
+	char *payload;
+	payload = cJSON_Print(root);
+	cJSON_Delete(root);
+
+	int messageId = 0;
+	if (payload == NULL) {
+		return IOTA_FAILURE;
+	} else {
+		messageId = OCM2MSendMsg(to, from, payload, requestId, context);
+		PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_M2MSendMsg() with payload %s ==>\n", payload);
+		free(payload);
+		return messageId;
+	}
+}

@@ -160,6 +160,14 @@ typedef struct {
 } EN_IOTA_MESSAGE;
 
 typedef struct {
+	EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info;
+	HW_CHAR *request_id;
+	HW_CHAR *to;
+	HW_CHAR *from;
+	HW_CHAR *content;
+} EN_IOTA_M2M_MESSAGE;
+
+typedef struct {
 	HW_CHAR *service_id;
 	HW_CHAR *properties;
 } EN_IOTA_SERVICE_PROPERTY;
@@ -238,6 +246,9 @@ HW_API_FUNC HW_VOID IOTA_SetUserTopicMsgCallback(PFN_USER_TOPIC_MSG_CALLBACK_HAN
 
 typedef HW_VOID (*PFN_BOOTSTRAP_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *message);
 HW_API_FUNC HW_VOID IOTA_SetBootstrapCallback(PFN_BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler);
+
+typedef HW_VOID (*PFN_M2M_CALLBACK_HANDLER)(EN_IOTA_M2M_MESSAGE *message);
+HW_API_FUNC HW_VOID IOTA_SetM2mCallback(PFN_M2M_CALLBACK_HANDLER pfnCallbackHandler);
 
 typedef enum {
 	EN_IOTA_CALLBACK_CONNECT_SUCCESS = 0,

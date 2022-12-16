@@ -148,6 +148,17 @@ int SubscribeBootstrap() {
 	return SubsribeTopic(topic, 0);
 }
 
+
+int SubscribeM2m() {
+	char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
+	if (userName == NULL) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() getUserName failed.\n");
+		return IOTA_FAILURE;
+	}
+	char *topic = CombineStrings(4, TOPIC_PREFIX_M2M, userName, FORWARD_SLASH, WILDCARD);
+	return SubsribeTopic(topic, 0);
+}
+
 void SubscribeAll() {
 	if (SubscribeMessageDown() < IOTA_SUCCESS) {
 		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeMessageDown failed.\n");

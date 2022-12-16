@@ -90,3 +90,7 @@ HW_API_FUNC HW_VOID IOTA_SetUserTopicMsgCallback(PFN_USER_TOPIC_MSG_CALLBACK_HAN
 HW_API_FUNC HW_VOID IOTA_SetBootstrapCallback(PFN_BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler) {
 	SetBootstrapCallback(pfnCallbackHandler);
 }
+
+HW_API_FUNC HW_VOID IOTA_SetM2mCallback(PFN_M2M_CALLBACK_HANDLER pfnCallbackHandler) {
+	SetM2mCallback(pfnCallbackHandler);
+}

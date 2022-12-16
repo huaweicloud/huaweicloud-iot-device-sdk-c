@@ -248,3 +248,16 @@ int Bootstrap() {
 }
 
 
+int OCM2MSendMsg(char *to ,char *from, char *payload, char *requestId, char *context ) {
+	char *topic = NULL;
+	topic = CombineStrings(6, TOPIC_PREFIX_M2M, to, M2M_FROM, from, TOPIC_SUFFIX_M2M, requestId);
+	int ret = MqttBase_publish((const char*) topic, payload, (int)strlen(payload), context, NULL);
+	MemFree(&topic);
+
+	if (ret < 0) {
+		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: OCM2MSendMsg() error, publish failed, result %d\n", ret);
+		return IOTA_FAILURE;
+	}
+
+	return IOTA_SUCCESS;
+}
