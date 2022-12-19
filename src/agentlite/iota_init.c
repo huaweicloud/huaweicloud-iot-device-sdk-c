@@ -46,6 +46,11 @@ HW_API_FUNC HW_INT IOTA_Destroy()
     return destory();
 }
 
+HW_API_FUNC HW_VOID IOTA_EnableDeviceRuleStorage(const char *filepath)
+{
+    RuleMgr_EnableDeviceRuleStorage(filepath);
+}
+
 HW_API_FUNC HW_INT IOTA_ConfigSetStr(HW_INT iItem, HW_CHAR *pValue)
 {
     return SetConfig(iItem, pValue);

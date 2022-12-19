@@ -258,6 +258,12 @@ HW_API_FUNC HW_VOID IOTA_SetBootstrapCallback(PFN_BOOTSTRAP_CALLBACK_HANDLER pfn
 typedef HW_INT (*PFN_DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER)(char *deviceId, char *message);
 HW_API_FUNC HW_VOID IOTA_SetDeviceRuleSendMsgCallback(PFN_DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler);
 
+/**
+ * @Description: load rule from filepath
+ * @param filepath: the path of file to read the rule, also be saved for reading rule later
+ */
+HW_API_FUNC HW_VOID IOTA_EnableDeviceRuleStorage(const char *filepath);
+
 typedef enum {
 	EN_IOTA_CALLBACK_CONNECT_SUCCESS = 0,
 	EN_IOTA_CALLBACK_CONNECT_FAILURE = 1,

@@ -1132,6 +1132,9 @@ int main(int argc, char **argv)
     SetAuthConfig();
     SetMyCallbacks();
 
+    // add your fileName to store device rule
+    IOTA_EnableDeviceRuleStorage("testdata.txt");
+
     // see handleLoginSuccess and handleLoginFailure for login result
     int ret = IOTA_Connect();
     if (ret != 0) {

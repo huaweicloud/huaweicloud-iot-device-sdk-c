@@ -39,10 +39,12 @@
 #ifdef DEVIC_ERULE_ENALBE
 
 static RuleInfoList g_ruleInfosList;
+static cJSON *g_ruleInfosListJSON;
 static pthread_mutex_t g_ruleMutex;
 PFN_CMD_CALLBACK_HANDLER g_commandCallbackHandler;
 static pthread_t g_deviceRuleThreadId;
 static DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER g_deviceRuleSendMsgCallBack;
+char *g_ruleFilePath;
 
 void RuleMgr_SetSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler)
 {
@@ -184,6 +186,8 @@ static void *RuleMgr_CheckAndExecute(void *args);
 HW_BOOL RuleMgr_Init(void)
 {
 #ifdef DEVIC_ERULE_ENALBE
+    g_ruleInfosListJSON = cJSON_CreateArray();
+    g_ruleFilePath = NULL;
     g_commandCallbackHandler = NULL;
     if (pthread_mutex_init(&g_ruleMutex, NULL) != 0) {
         DEVICE_RULE_ERROR("initialize mutext failed!");
@@ -213,16 +217,75 @@ void RuleMgr_SetCommandCallbackHandler(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandl
 void RuleMgr_Destroy()
 {
 #ifdef DEVIC_ERULE_ENALBE
+    cJSON_Delete(g_ruleInfosListJSON);
     pthread_mutex_destroy(&g_ruleMutex);
     RuleInfoListDtor(&g_ruleInfosList);
 #endif
+}
+
+static void RuleJSONObjSaveToFile(const char * filepath)
+{
+    if (filepath == NULL) {
+        DEVICE_RULE_WARN("file path is none");
+        return;
+    }
+    DEVICE_RULE_INFO("save rule to file %s", filepath);
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddItemToObject(root, "rulesInfos", g_ruleInfosListJSON);
+    char *content = cJSON_Print(root);
+    cJSON_DetachItemViaPointer(root, g_ruleInfosListJSON);
+    cJSON_Delete(root);
+
+    if (content == NULL) {
+        DEVICE_RULE_WARN("can't convert rule to data to save");
+        return;
+    }
+    DEVICE_RULE_DEBUG("%s", content);
+    FILE *fp = fopen(filepath, "wb");
+    if (fp == NULL) {
+        DEVICE_RULE_ERROR("can't open file to save rule");
+        free(content);
+        return;
+    }
+
+    (void)fputs(content, fp);
+    (void)fclose(fp);
+    free(content);
+}
+
+static void RuleJSONObjDelById(const char *ruleId)
+{
+    if (ruleId == NULL) {
+        return;
+    }
+    cJSON *searchRule;
+    cJSON_ArrayForEach(searchRule, g_ruleInfosListJSON) {
+        const char *searchRuleId = cJSON_GetStringValue(cJSON_GetObjectItem(searchRule, "ruleId"));
+        if (strcmp(searchRuleId, ruleId) == 0) {
+            cJSON_DetachItemViaPointer(g_ruleInfosListJSON, searchRule);
+            cJSON_Delete(searchRule);
+            break;
+        }
+    }
+}
+
+static void UpdateRuleJSONObj(void *target, HW_BOOL isRemove, const cJSON * rule)
+{
+    if (isRemove) {
+        const char *ruleId = cJSON_GetStringValue(cJSON_GetObjectItem(rule, "ruleId"));
+        RuleJSONObjDelById(ruleId);
+    } else {
+        cJSON_AddItemReferenceToArray(g_ruleInfosListJSON, rule);
+    }
 }
 
 void RuleMgr_Parse(const char *payload)
 {
 #ifdef DEVIC_ERULE_ENALBE
     pthread_mutex_lock(&g_ruleMutex);
-    ParseDeviceRule(&g_ruleInfosList, payload);
+    ParseDeviceRuleWithHook(&g_ruleInfosList, payload, g_ruleInfosListJSON, UpdateRuleJSONObj);
+    RuleJSONObjSaveToFile(g_ruleFilePath);
     pthread_mutex_unlock(&g_ruleMutex);
 #endif
 }
@@ -285,7 +348,56 @@ void RuleMgr_DelRule(RuleInfoList *delList)
 #ifdef DEVIC_ERULE_ENALBE
     // del rules from list
     pthread_mutex_lock(&g_ruleMutex);
+    RuleInfo *listItem;
+    DyListFor (listItem, delList) {
+        // find the rule and delete it
+        RuleJSONObjDelById(listItem->ruleId);
+    }
     DeletRulesFromList(&g_ruleInfosList, delList);
+    RuleJSONObjSaveToFile(g_ruleFilePath);
     pthread_mutex_unlock(&g_ruleMutex);
 #endif
 }
+
+void RuleMgr_EnableDeviceRuleStorage(const char *filepath)
+{
+    MemFree(&g_ruleFilePath);
+    if (CStrDuplicate(&g_ruleFilePath, filepath)) {
+        DEVICE_RULE_WARN("can't save file path");
+    }
+    FILE *fp = fopen(filepath, "rb");
+    if (fp == NULL) {
+        DEVICE_RULE_WARN("can't load rule from file, proceed with none of rules");
+        return;
+    }
+    
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        DEVICE_RULE_ERROR("error when operating file");
+        fclose(fp);
+        return;
+    }
+    long fileLength = ftell(fp);
+
+    if (fseek(fp, 0L, SEEK_SET) != 0) {
+        DEVICE_RULE_ERROR("error when operating file");
+        fclose(fp);
+        return;
+    }
+
+    char *buffer = malloc(fileLength + 1);
+    if (buffer == NULL) {
+        DEVICE_RULE_ERROR("can't allocate memory for loading rule from file");
+        fclose(fp);
+        return;
+    }
+
+    (void)fread(buffer, fileLength, 1, fp);
+    (void)fclose(fp);
+
+    buffer[fileLength] = '\0';
+    RuleMgr_Parse(buffer);
+    free(buffer);
+
+    DEVICE_RULE_INFO("load rule succeed");
+}
+

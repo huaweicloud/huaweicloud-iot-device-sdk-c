@@ -33,6 +33,8 @@
 
 #include "rule_info.h"
 
+typedef void (*ParseDeviceRuleHook)(void *target, HW_BOOL isRemove, const cJSON *rule);
+void ParseDeviceRuleWithHook(RuleInfoList *rules, const char *payload, void *hookTarget, ParseDeviceRuleHook hook);
 void ParseDeviceRule(RuleInfoList *rules, const char *payload);
 HW_BOOL GetRuleInfoList(RuleInfoList *list, const cJSON * const propertiesCJSON, RuleInfoList *delList,
     RuleInfoList *addList);

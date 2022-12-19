@@ -70,6 +70,11 @@ static RuleInfo *RuleListCheckExistence(RuleInfoList *list, const char *ruleId)
 
 void ParseDeviceRule(RuleInfoList *ruleInfos, const char *payload)
 {
+    ParseDeviceRuleWithHook(ruleInfos, payload, NULL, NULL);
+}
+
+void ParseDeviceRuleWithHook(RuleInfoList *ruleInfos, const char *payload, void *hookTarget, ParseDeviceRuleHook hook)
+{
     cJSON *paras = cJSON_Parse(payload);
     CHECK_NULL_RETURN_VOID(paras);
 
@@ -94,6 +99,9 @@ void ParseDeviceRule(RuleInfoList *ruleInfos, const char *payload)
         if (toBeOperatedInfo != NULL) {
             if (version > toBeOperatedInfo->ruleVersionInShadow) {
                 RuleInfoListRemoveItem(ruleInfos, toBeOperatedInfo);
+                if(hookTarget != NULL && hook != NULL) {
+                    hook(hookTarget, HW_TRUE, rule);
+                }
             } else {
                 DEVICE_RULE_WARN("the version %d isn\'t supposed to be smaller than existing rules %d",
                     version, toBeOperatedInfo->ruleVersionInShadow);
@@ -102,6 +110,10 @@ void ParseDeviceRule(RuleInfoList *ruleInfos, const char *payload)
         }
 
         // insert new rule
+        if(hookTarget != NULL && hook != NULL) {
+            hook(hookTarget, HW_FALSE, rule);
+        }
+
         toBeOperatedInfo = RuleInfoListPush(ruleInfos);
         if (toBeOperatedInfo == NULL) {
             DEVICE_RULE_ERROR("RuleInfoListPush failed");

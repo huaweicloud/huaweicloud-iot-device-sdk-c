@@ -48,4 +48,5 @@ void RuleMgr_CachePropertiesValue(const ST_IOTA_SERVICE_DATA_INFO  pServiceData[
 HW_BOOL RuleMgr_GetList(const cJSON *properties, RuleInfoList *delList, RuleInfoList *addList);
 void RuleMgr_DelRule(RuleInfoList *delList);
 void RuleMgr_SetSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler);
+void RuleMgr_EnableDeviceRuleStorage(const char *filepath);
 #endif
