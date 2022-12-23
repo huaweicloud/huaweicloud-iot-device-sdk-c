@@ -144,35 +144,6 @@ The SDK depends on the OpenSSL, Paho, and zlib libraries. If you have your own c
 6. Copy .so library files.
    Copy the **libz.so**, **libz.so.1**, and **libz.so.1.2.11** files generated in the source code directory to the **lib** folder of the SDK.
 
-- **Compiling the huawei_secure_c Library**
-
-1. Download the [secure_c source code package](https://gitee.com/openeuler/libboundscheck.git).
-2. Access the source code directory. and run the **Makefile**.
-3. Copy .so library files. Copy the **libboundscheck.so**files generated in the source code of lib directory to the **lib** folder of the SDK.
-
-- **Compiling the libssh Library**
-1. Download the [libssh source code package](https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz).
-2. Run the **tar xvf libssh-0.10.4.tar.xz** command to decompress the package.
-3. Run the **cd libssh-0.10.4** command to access the source code directory.
-
-4. Run the **mkdir build**, **cd build**, **cmake ..**, **make** command to compile the library files.
-
-5. Run the **sudo make install** command to install the lib.
-
-6. Copy .so library files and header files.
-   Copy the **libssh.so**, **libssh.so.4**, **libssh.so.4.9.4** files generated in the source code directory to the lib folder of the SDK
-   Copy the **libssh** folder in the **usr/local/include** directory to the **include** folder of the SDK.
-
-- **Compiling the libnopoll Library**
-1. Download the [libnopoll source code package](http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz)
-2. Run the **tar xzvf nopoll-0.4.8.b429.tar.gz** command to decompress the package.
-3. Run the **cd nopoll-0.4.8.b429** command to access the source code directory.
-4. Run the **./configure**, **make**, **make install** command to compile and install the library files.
-
-5. Run the **pkg-config nopoll --cflags** and **pkg-config nopoll --libs** to find the header files and lib files of nopoll.
-    Copy the libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0 files generated in the source code directory to the lib folder of the SDK
-    Copy the libnopoll folder in the usr/local/include directory to the include folder of the SDK.
-
 <h2 id="2">4.3 Uploading a Product Model and Registering a Device</h2>
 Upload the developed product model to the console and register a new device.
 
@@ -235,7 +206,7 @@ Directly connected devices are allowed to access the platform using a device ID/
   
   7. Run the **export LD_LIBRARY_PATH=./lib/** command to load the library files.
   
-  8. Run the **./MQTT_Demo** command. The following logs are displayed on the console: **login success** indicates that a device is authenticated. **MqttBase_onSubscribeSuccess** indicates that a topic is subscribed, **MqttBase_onPublishSuccess** indicates that device data is published.
+  8. Run the **./MQTT_Demo.o** command. The following logs are displayed on the console: **login success** indicates that a device is authenticated. **MqttBase_onSubscribeSuccess** indicates that a topic is subscribed, **MqttBase_onPublishSuccess** indicates that device data is published.
      ![](./doc/doc_en/4_2.png)
      
     9. Check the running state of the device.
@@ -289,18 +260,6 @@ Directly connected devices are allowed to access the platform using a device ID/
    ```
   
    ```
-- **SSH Remote Login**
-
-  Before using the SSH remote login function, you need to compile the libssh and libnopoll libraries and ensure that the device is online.
-
-  Enter the IoTDA console as shown in the figure below, and select "OM - Remote Login - {Your Online Device} - Enter User Name and Password - OK"
-
-  ![](./doc/doc_en/ssh_1.png)
-
-  The ssh remote login can be realized after the operations as shown in the above figure. The effect is shown in the figure below. Now you can enter commands for interactive operation.
-
-  ![](./doc/doc_en/ssh_2.png)
-
 <h2 id="4">5.2 Generic Protocol</h2>
 Currently, the platform supports only standard protocols such as MQTT, HTTP, and LwM2M. For devices complying with other (third-party) protocols to access the platform, use a gateway to convert these protocols to an MQTT protocol. Click <a href=" https://support.huaweicloud.com/en-us/bestpractice-iothub/iot_bp_0009.html " target="_blank">here</a> to see the working principle.
 
@@ -325,7 +284,7 @@ Currently, the platform supports only standard protocols such as MQTT, HTTP, and
 
  5. Run the **make** command to perform compilation.
  6. After the compilation is complete, run the **export LD_LIBRARY_PATH=./lib/ ** command to import the library files to the **lib** folder.
- 7. Run the **./MQTT_Demo** command to run a gateway.
+ 7. Run the **./MQTT_Demo.o** command to run a gateway.
  8. Run the **gcc -o client.o gateway_client_demo.c** command to access the **src/gateway_demo** directory and compile the client.
   9. Run the **./client.o** command to run the client.
    10. Report data.
@@ -339,9 +298,9 @@ Currently, the platform supports only standard protocols such as MQTT, HTTP, and
   
 
 <h2 id="5">5.3 Bootstrap</h2>
-You can provision devices to different regions. For details, see the access examples in <a href="https://support.huaweicloud.com/en-us/qs-iotps/iot_03_0006.html " target="_blank">Getting Started</a>
+You can provision devices to different regions. For details, see the access examples in <a href="https://support.huaweicloud.com/en-us/qs-iotps/iot_03_0006.html " target="_blank">Getting Started</a.
 
-**Note**: The SDK has automatically implemented the bootstrap device in the example. For details, see the <a href=" https://support.huaweicloud.com/en-us/usermanual-iotps/iot_01_0007.html " target="_blank">User Guide</a>
+**Note**: The SDK has automatically implemented the bootstrap device in the example. For details, see the <a href=" https://support.huaweicloud.com/en-us/usermanual-iotps/iot_01_0007.html " target="_blank">User Guide</a.
 
 Comment out **device_demo.o** from OBJS in **Makefile** and uncomment **bootstrap_demo.o**.
 ![](./doc/doc_en/bootstrap.png)
@@ -354,7 +313,7 @@ Comment out **device_demo.o** from OBJS in **Makefile** and uncomment **bootstra
 
 3. Run the **make** command to perform compilation.
 
-4. Run the **./MQTT_Demo** command to run the SDK demo.
+4. Run the **./MQTT_Demo.o** command to run the SDK demo.
 
 <h1 id="5">6 SDK APIs</h1>
 <h2 id="6">6.1 Setting Callback Functions for Printing Logs</h2>
@@ -518,35 +477,7 @@ After a device is authenticated and the callback function is set, it can receive
   ![](./doc/doc_en/messageDown.png)
   After receiving a message, the device processes it via a callback function. For details, see the **HandleMessageDown** function in the demo. (Set the callback function in advance for processing the platform's messages.)
 - A device receives the platform's command as defined in the product model.
-
-    `HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandler)`
-    By setting up the command callback by this API，when the paltform sending the command or device rule engine triggering the command, the parameter passed into pfnCallbackHandler will be called.
-    ```c
-    void HandleCommandRequest(EN_IOTA_COMMAND *command)
-    {
-        if (command == NULL) {
-            return;
-        }
-
-        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), messageId %d\n",
-            command->mqtt_msg_info->messageId);
-
-        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), object_device_id %s\n",
-            command->object_device_id);
-        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), service_id %s\n", command->service_id);
-        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), command_name %s\n", command->command_name);
-        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), paras %s\n", command->paras);
-        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), request_id %s\n", command->request_id);
-        // user can implement detailed command process here 
-        Test_CommandResponse(command->request_id); // response command
-    }
-    ```
-    register the callback:
-    ```c
-    IOTA_SetCmdCallback(HandleCommandRequest);
-    ```
-
-    ![](./doc/doc_cn/cmdDown.png)
+![](./doc/doc_en/cmdDown.png)
 - A device receives the platform's request for setting device properties.
 ![](./doc/doc_en/setDown.png)
  After receiving the platform's request for setting device properties, call the **IOTA_PropertiesSetResponse** function to report the response. For details, see the **HandlePropertiesSet** function in the demo. (Set the callback function in advance.)
@@ -614,7 +545,7 @@ void Test_BatchPropertiesReport() {
        ![](./doc/doc_en/so1.png)
     2. Delete **device_demo.o** from OBJS.
        ![](./doc/doc_en/so2.png)
-    3. Change the compiled TARGET file from **MQTT_Demo** to **libHWMQTT.so** (the file name can be customized).
+    3. Change the compiled TARGET file from **MQTT_Demo.o** to **libHWMQTT.so** (the file name can be customized).
        ![](./doc/doc_en/so3.png)
     4. Run the **make** command to generate the **libHWMQTT.so** file.
        ![](./doc/doc_en/so4.png)
