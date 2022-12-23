@@ -9,10 +9,12 @@
 - [1 前言](#1)
 - [2 SDK简介](#2)
 - [3 准备工作](#3)
-	-  [3.1 环境信息](#3.1)
-	-  [3.2 编译openssl库](#3.2)
-	-  [3.3 编译paho库](#3.3)
-	-  [3.4 上传profile及注册设备](#3.4)
+  -  [3.1 环境信息](#3.1)
+  -  [3.2 编译openssl库](#3.2)
+  -  [3.3 编译paho库](#3.3)
+  -  [3.4 上传profile及注册设备](#3.4)
+  -  [3.5 编译libssh库](#3.5)
+  -  [3.6 编译libnopoll库](#3.6)
 - [4 快速体验](#4)
 - **[5 使用步骤](#5)
 <!-- /TOC -->
@@ -52,11 +54,19 @@
 
 17、增加消息存储样例
 
-18、增加MQTT5.0协议
+18、增加文件上传/下载功能
 
-如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
+19、增加MQTT5.0协议
 
-*2022/10/17*
+20、增加端侧规则引擎
+
+21、增加SSH远程登录功能
+
+22、增加M2M功能
+
+23、增加gn编译文件
+
+*2022/12/22*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -78,7 +88,11 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 
 - 支持自定义日志收集能力
 
-  
+- 支持端侧规则引擎
+
+- 支持SSH远程登录
+
+- 支持对接边缘M2M
 
 **SDK目录结构**
 
@@ -191,7 +205,66 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 5. 拷贝so库文件
 	将源码目录下生成的libz.so、libz.so.1、libz.so.1.2.11拷贝到sdk的lib文件夹下。
 
-<h2 id="3.5">3.5 上传profile及注册设备</h2>     
+## 3.5 编译华为安全函数库
+
+1. 下载安全函数库源码https://gitee.com/openeuler/libboundscheck.git
+
+2. 进入源码makefile同级目录，执行makefile文件
+
+   make
+
+3. 拷贝so库文件
+    将源码目录下生成的lib文件夹下的libboundscheck.so拷贝到sdk的lib文件夹下。
+
+<h2 id="3.6">3.6 编译libssh库</h2>
+
+1. 下载libssh源码https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz
+	通过如下命令解压缩：
+   
+   	tar xvf libssh-0.10.4.tar.xz
+   
+2. 进入源码目录下：
+
+	cd libssh-0.10.4
+	
+3. 编译库文件：
+
+    mkdir build
+    cd build
+    cmake ..
+    make
+	
+4. 安装库：
+
+	sudo make install
+	
+5. 拷贝so库文件和头文件
+	将源码目录下生成的libssh.so、libssh.so.4、libssh.so.4.9.4拷贝到sdk的lib文件夹下。
+    将/usr/local/include下的libssh的整个头文件目录拷贝到sdk的include文件夹下。
+
+<h2 id="3.7">3.7 编译libnopoll库</h2>
+1. 下载nopoll源码http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz
+	通过如下命令解压缩：
+   
+   	tar xzvf nopoll-0.4.8.b429.tar.gz
+   
+2. 进入源码目录下：
+
+	cd nopoll-0.4.8.b429
+	
+3. 编译与安装
+
+	./configure
+    make
+    make install
+    pkg-config nopoll --cflags
+    pkg-config nopoll --libs
+	
+4. 拷贝so库文件
+	通过上一步获取到的路径，将源码目录下生成的libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0拷贝到sdk的lib文件夹下。
+    将/usr/local/include下的libnopoll的整个头文件目录拷贝到sdk的include文件夹下。
+
+<h2 id="3.8">3.8 上传profile及注册设备</h2>     
 1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。
    
 	![](./doc/doc_cn/profile1.png)
@@ -222,9 +295,16 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	password_：设备密钥，设备注册时返回的值。
 	![](./doc/doc_cn/4_1.png)
 
-4. 执行make命令进行编译（如果是32位的操作系统，请删除掉Makefile中的"-m64"）：
+4. 执行命令进行编译：
 
-	make
+	4.1 用Makefile进行编译：
+   
+        make（如果是32位的操作系统，请删除掉Makefile中的"-m64"）
+
+   4.2 用gn进行编译：
+
+        gn gen -C out
+        ninja -C out
 	
 5. 运行：	
 	- 加载库文件
@@ -233,7 +313,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 	- 执行如下命令：
 	
-	  ./MQTT_Demo.o
+	  ./MQTT_Demo
 	
 	  在控制台上可以看到很多打印的日志：
 	  “login success”表示设备鉴权成功   
@@ -245,7 +325,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	  ![](./doc/doc_cn/4_2.png)
 
 6. 查看设备运行情况：
-	- 网关设备在线：
+  - 网关设备在线：
 	  ![](./doc/doc_cn/4_3.png)
 	- 网关上报数据
 	  ![](./doc/doc_cn/4_4.png)
@@ -259,7 +339,112 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	      ![](./doc/doc_cn/4_7.png)
 	    - 子设备上报数据
 	      ![](./doc/doc_cn/4_8.png)
-	  
+        
+7. 下发端侧规则
+  进入IoTDA控制台，在规则、设备联动页面上点击`创建规则`按钮,
+  ![](./doc/doc_cn/4_create_rule.png)
+  填写规则名称，选中端侧执行然后选中设备：
+  ![](./doc/doc_cn/4_select_device_rule.png)
+  配置端侧规则
+  ![](./doc/doc_cn/4_config_device_rule.png)
+  在控制台中可以观察到当属性上报、`PhV_phsA`为"9"时，端侧规则触发执行, 从而调用`HandleCommandRequest`：
+	      ![](./doc/doc_cn/4_observe_output.png)
+	如果是跨设备执行命令时，需要调用回调函数IOTA_SetDeviceRuleSendMsgCallback，用户需要自行实现以下功能：HandleDeviceRuleSendMsg，从中解析出命令并执行。
+
+	![](./doc/doc_cn/4_send_msg_to _other_device_rule.png)
+
+8.支持SSH远程登录
+
+  使用SSH远程登录功能前，需参考[3.5 编译libssh库](#3.5)和[3.6 编译libnopoll库](#3.6)实现libssh和libnopoll库的编译，并且设备必须在线。
+
+  如下图进入IoTDA控制台, 选择"监控运维——远程登录——{自己的在线设备}——输入用户名密码——确认"
+
+   ![](./doc/doc_cn/ssh_1.png)
+
+   如上图操作操作之后即可实现ssh远程登录。实现效果如下，可输入命令进行交互
+
+   ![](./doc/doc_cn/ssh_2.png)
+
+9.对接边缘M2M功能
+
+   目前支持使用SDK对接边缘IoTEdge，边缘节点完成消息的中转到目标设备，从而实现M2M的功能。使用步骤如下：
+  - 1.搭建边缘节点，创建产品，并添加边缘设备，参考如下最佳实践：
+  https://support.huaweicloud.com/bestpractice-iotedge/iotedge_bestpractice_0050.html
+  - 2.替换相应的证书：
+  https://support.huaweicloud.com/bestpractice-iotedge/iotedge_bestpractice_0052.html
+
+  下载其中的plt-device-ca证书文件，将证书内容拷贝并替换sdk目录当中conf/rootcert.perm文件中的内容。
+
+  此证书用于设备校验边缘节点的身份。
+  - 3.替换端口号：
+  将include/base/mqtt_base.h中的：
+
+  #define MQTT_PORT         				"1883"
+
+  #define MQTTS_PORT         				"8883"
+
+  替换为：
+
+  #define MQTT_PORT         				"7882"
+
+  #define MQTTS_PORT         				"7883"
+
+  - 4.测试Demo：
+  将src/device_demo/device_demo.c中边缘节点IP等信息进行替换：
+
+  char *serverIp_ = "xx.xx.xx.xx"; // 边缘节点的IP
+
+  int port_ = 7883; // MQTTS端口号, 目前IoTEdge默认使用此端口号
+
+  char *username_ = "tunnelDeviceA"; // 上述步骤1当中设置
+
+  char *password_ = "xxxx"; // 上述步骤1中设置
+
+  假设源设备A和目标设备B的ID分别：tunnelDeviceA和tunnelDeviceB, 设备A向设备B发送"hello world"消息。
+  在A设备当中调用如下代码（demo可在main函数中调用）:
+
+   void Test_M2MSendMsg()
+   {
+
+     char *to = "deviceB";
+     char *from = username_;
+     char *content = "hello deviceB";
+     char *requestId = "demoIdToDeviceB";
+     int messageId = IOTA_M2MSendMsg(to, from, content, requestId, NULL);
+     ....
+  在接收端(即B设备)，会在回调函数HandleM2mMessageDown中打印接收的消息：
+
+  void HandleM2mMessageDown(EN_IOTA_M2M_MESSAGE *rsp)
+  {
+   ...
+
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), requestId: %s\n", rsp->request_id);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), to: %s\n", rsp->to);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), from: %s\n", rsp->from);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), content: %s\n", rsp->content);
+
+    // 用户可在此处加上业务处理逻辑，比如接收到content的后续处理
+    // do sth
+  }
+
+  可以在终端日志中打印出如下信息：
+  设备A:
+
+    DEBUG device_demo: this is m2m demo
+    DEBUG iota_datatrans: IOTA_M2MSendMsg() with payload ==> {
+          "request_id":   "demoIdToDeviceB",
+          "to":   "deviceB",
+          "from": "deviceA",
+          "content":      "hello deviceB"
+    }
+    DEBUG device_demo: Test_M2MSendMsg() ok, messageId 0
+  设备B:
+
+    INFO device_demo: HandleM2mMessageDown(), requestId: demoIdToDeviceB
+    INFO device_demo: HandleM2mMessageDown(), to:        deviceB
+    INFO device_demo: HandleM2mMessageDown(), from:      deviceA
+    INFO device_demo: HandleM2mMessageDown(), content:   hello deviceB
+
 <h1 id="5">5.使用步骤</h1>  
 以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。  
 
@@ -442,7 +627,35 @@ services[1].properties = service2;
 	  设备收到消息后可以通过回调函数进行命令处理，可以参考demo中HandleMessageDown函数（需在回调函数配置中提前设置，下行消息的处理均需要提前设置回调函数）。
   
   - 设备接收命令下发（profile中定义的命令）：
-  ![](./doc/doc_cn/cmdDown.png)
+
+    `HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandler)`
+    通过该接口设置命令回调函数，当云端下发命令或端侧规则触发执行命令时，`pfnCallbackHandler`会被调用。
+    ```c
+    void HandleCommandRequest(EN_IOTA_COMMAND *command)
+    {
+        if (command == NULL) {
+            return;
+        }
+
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), messageId %d\n",
+            command->mqtt_msg_info->messageId);
+
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), object_device_id %s\n",
+            command->object_device_id);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), service_id %s\n", command->service_id);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), command_name %s\n", command->command_name);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), paras %s\n", command->paras);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), request_id %s\n", command->request_id);
+        // 可以在此处实现具体命令处理
+        Test_CommandResponse(command->request_id); // response command
+    }
+    ```
+    注册回调函数:
+    ```c
+    IOTA_SetCmdCallback(HandleCommandRequest);
+    ```
+
+    ![](./doc/doc_cn/cmdDown.png)
     
   - 设备接收平台属性设置
 	![](./doc/doc_cn/setDown.png)
@@ -553,7 +766,7 @@ void SetAuthConfig() {
 	
 4. 运行SDK Demo
 	
-	./MQTT_Demo.o
+	./MQTT_Demo
 	
 - **生成SDK库文件**
   
@@ -563,7 +776,7 @@ void SetAuthConfig() {
     ![](./doc/doc_cn/so1.png)
   - 把OBJS中的device_demo.o删除掉
     ![](./doc/doc_cn/so2.png)
-  - 把编译后的TARGET文件由MQTT_Demo.o修改为libHWMQTT.so（名称可以自定义）
+  - 把编译后的TARGET文件由MQTT_Demo修改为libHWMQTT.so（名称可以自定义）
     ![](./doc/doc_cn/so3.png)
   - 修改完毕后执行make即可生成libHWMQTT.so文件  
     
@@ -575,7 +788,7 @@ void SetAuthConfig() {
   该新增代码为样例代码，存储的容器采用的是动态二维数组，用户可以根据自己的业务逻辑来进行选择。建议设备采集到数据后就进行存储，设备链路正常的时候再进行重发。
   基本逻辑如下：
 - 上报数据前 存储传感器的数据（当前使用的是数组 用户可以自己选择）
-  
+    
     ![](./doc/doc_cn/存储.png)
   
 - 如果收到了publish成功的响应 再从容器中删除该条消息，如果存储中有未发送的数据，再次发送。
