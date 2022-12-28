@@ -991,7 +991,7 @@ void HandleEventsDown(EN_IOTA_EVENT *message)
             if (message->services[i].event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE ||
                 message->services[i].event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE) {
                 // check md5
-                char pkg_md5 = "yourMd5"; // the md5 value of your ota package
+                char *pkg_md5 = "yourMd5"; // the md5 value of your ota package
                 if (strcmp(pkg_md5, message->services[i].ota_paras->sign)) {
                     // report failed status
                     Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version);
