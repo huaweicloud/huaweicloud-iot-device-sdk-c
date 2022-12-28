@@ -190,8 +190,19 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	
 5. 拷贝so库文件
 	将源码目录下生成的libz.so、libz.so.1、libz.so.1.2.11拷贝到sdk的lib文件夹下。
+	
+## 3.5 编译华为安全函数库
 
-<h2 id="3.5">3.5 上传profile及注册设备</h2>     
+1. 下载安全函数库源码https://gitee.com/openeuler/libboundscheck.git
+	
+2. 进入源码makefile同级目录，执行makefile文件
+	
+	 make
+	
+3. 拷贝so库文件
+	将源码目录下生成的lib文件夹下的libboundscheck.so拷贝到sdk的lib文件夹下。
+
+<h2 id="3.5">3.6 上传profile及注册设备</h2>     
 1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。
    
 	![](./doc/doc_cn/profile1.png)
