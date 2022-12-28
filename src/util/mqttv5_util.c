@@ -3,22 +3,19 @@
 #include "mqttv5_util.h"
 
 #if defined(MQTTV5)
-//Linked list deletion
+// Linked list deletion
 int mqttV5_listFree(MQTTV5_USER_PRO *mqtt_data)
 {
-    if (mqtt_data == NULL)
-    {
+    if (mqtt_data == NULL) {
         return 0;
     }
     MQTTV5_USER_PRO *propertiesA = mqtt_data;
     MQTTV5_USER_PRO *propertiesB = mqtt_data->nex;
 
-    while (propertiesA != NULL)
-    {
+    while (propertiesA != NULL) {
         free(propertiesA);
         propertiesA = propertiesB;
-        if (propertiesA != NULL)
-        {
+        if (propertiesA != NULL) {
             propertiesB = propertiesA->nex;
         }
     }

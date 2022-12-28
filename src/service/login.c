@@ -1,4 +1,4 @@
-/*Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
+/* Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
  * All rights reserved.
  * &Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -20,18 +20,19 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  *
- * */
+ *  */
 
 #include "base.h"
 #include "login.h"
 #include "mqtt_base.h"
 #include "iota_error_type.h"
 
-int CreateConnection() {
+int CreateConnection()
+{
     return MqttBase_CreateConnection();
 }
 
-int ReleaseConnection() {
+int ReleaseConnection()
+{
     return MqttBase_ReleaseConnection();
 }
-

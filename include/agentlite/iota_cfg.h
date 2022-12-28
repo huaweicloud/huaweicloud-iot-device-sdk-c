@@ -29,21 +29,21 @@
  * enumeration values for item in IOTA_ConfigSetStr(HW_INT iItem, HW_CHAR *pValue)
  */
 typedef enum {
-	EN_IOTA_CFG_DEVICEID = 0,  //the value for this item is deviceId
+	EN_IOTA_CFG_DEVICEID = 0,  // the value for this item is deviceId
 	EN_IOTA_CFG_DEVICESECRET = 1,
 	EN_IOTA_CFG_MQTT_ADDR = 2,
 	EN_IOTA_CFG_MQTT_PORT = 3,
-	EN_IOTA_CFG_AUTH_MODE = 4, //secret or cert mode;0 is secret mode, 1 is cert mode.
-	EN_IOTA_CFG_LOG_LOCAL_NUMBER = 5, //take effect only when syslog is available
-	EN_IOTA_CFG_LOG_LEVEL = 6, //take effect only when syslog is available
+	EN_IOTA_CFG_AUTH_MODE = 4, // secret or cert mode;0 is secret mode, 1 is cert mode.
+	EN_IOTA_CFG_LOG_LOCAL_NUMBER = 5, // take effect only when syslog is available
+	EN_IOTA_CFG_LOG_LEVEL = 6, // take effect only when syslog is available
 	EN_IOTA_CFG_KEEP_ALIVE_TIME = 7,
 	EN_IOTA_CFG_CONNECT_TIMEOUT = 8,
 	EN_IOTA_CFG_RETRY_INTERVAL = 9,
 	EN_IOTA_CFG_RESET_SECRET_IN_PROGRESS = 10,
 	EN_IOTA_CFG_QOS = 11,
-	EN_IOTA_CFG_PRIVATE_KEY_PASSWORD = 12, //private key password in cert mode device
+	EN_IOTA_CFG_PRIVATE_KEY_PASSWORD = 12, // private key password in cert mode device
 	EN_IOTA_CFG_BS_SCOPE_ID = 13,
-	EN_IOTA_CFG_BS_MODE = 14  // see the ENUM_IOTA_CFG_BS
+	EN_IOTA_CFG_BS_MODE = 14  //  see the ENUM_IOTA_CFG_BS
 } EN_IOTA_CFG_TYPE;
 
 typedef enum enum_IOTA_CFG_AUTH_MODE {

@@ -109,8 +109,8 @@ typedef struct {
 } EN_IOTA_DEVICE_LOG_PARAS;
 
 typedef struct {
-	HW_INT servie_id;  //see the enum EN_IOTA_EVENT_SERVICE_ID
-	HW_INT event_type;  //see the enum EN_IOTA_EVENT_TYPE
+	HW_INT servie_id;  // see the enum EN_IOTA_EVENT_SERVICE_ID
+	HW_INT event_type;  // see the enum EN_IOTA_EVENT_TYPE
 	HW_CHAR *event_time;
 	HW_CHAR *event_id;
 	EN_IOTA_DEVICE_PARAS *paras;

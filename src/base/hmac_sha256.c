@@ -1,4 +1,4 @@
-/*Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
+/* Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
  * All rights reserved.
  * &Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -20,60 +20,62 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  *
- * */
+ *   */
 
 #include "hmac_sha256.h"
 #include "log_util.h"
+#include "securec.h"
 #include "string_util.h"
 #include "string.h"
 #include <openssl/ossl_typ.h>
 #include <openssl/hmac.h>
 #include "iota_error_type.h"
 
-int EncryWithHMacSha256(const char *inputData, char **inputKey, int inEncryDataLen, char *outData) {
+int EncryWithHMacSha256(const char *inputData, char **inputKey, int inEncryDataLen, char *outData)
+{
+    if (inputData == NULL || (*inputKey) == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "encryWithHMacSha256(): the input is invalid.\n");
+        return IOTA_FAILURE;
+    }
 
-	if (inputData == NULL || (*inputKey) == NULL) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "encryWithHMacSha256(): the input is invalid.\n");
-		return IOTA_FAILURE;
-	}
+    if (TIME_STAMP_LENGTH != strlen(*inputKey)) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "encryWithHMacSha256(): the length of inputKey is invalid.\n");
+        return IOTA_FAILURE;
+    }
 
-	if (TIME_STAMP_LENGTH != strlen(*inputKey)) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "encryWithHMacSha256(): the length of inputKey is invalid.\n");
-		return IOTA_FAILURE;
-	}
+    char *end = NULL;
+    unsigned int mac_length = 0;
+    unsigned int tryTime = 1;
+    size_t lenData = strlen(inputData);
+    long timeTmp = strtol(*inputKey, &end, 10);
+    unsigned char *temp =
+        HMAC(EVP_sha256(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char *)inputData, lenData, NULL, &mac_length);
 
-	char *end = NULL;
-	unsigned int mac_length = 0;
-	unsigned int tryTime = 1;
-	int lenData = strlen(inputData);
-	long timeTmp = strtol(*inputKey, &end, 10);
-	unsigned char *temp = HMAC(EVP_sha256(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char*) inputData, lenData, NULL, &mac_length);
+    while (strlen(temp) != SHA256_ENCRYPTION_LENGRH) {
+        tryTime++;
+        if (tryTime > TRY_MAX_TIME) {
+            PrintfLog(EN_LOG_LEVEL_ERROR, "encryWithHMacSha256(): Encryption failed after max times attempts.\n");
+            return IOTA_FAILURE;
+        }
 
-	while (strlen(temp) != SHA256_ENCRYPTION_LENGRH) {
-		tryTime++;
-		if (tryTime > TRY_MAX_TIME) {
-			PrintfLog(EN_LOG_LEVEL_ERROR, "encryWithHMacSha256(): Encryption failed after max times attempts.\n");
-			return IOTA_FAILURE;
-		}
+        timeTmp++;
+        snprintf_s(*inputKey, TIME_STAMP_LENGTH + 1, TIME_STAMP_LENGTH, "%ld", timeTmp);
+        temp = HMAC(EVP_sha256(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char *)inputData, lenData, NULL,
+            &mac_length);
+    }
 
-		timeTmp++;
-		snprintf(*inputKey, TIME_STAMP_LENGTH + 1, "%ld", timeTmp);
-		temp = HMAC(EVP_sha256(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char*) inputData, lenData, NULL, &mac_length);
-	}
+    int uiIndex, uiLoop;
+    char ucHex;
 
-	int uiIndex, uiLoop;
-	char ucHex;
+    for (uiIndex = 0, uiLoop = 0; uiLoop < inEncryDataLen; uiLoop++) {
+        ucHex = (temp[uiLoop] >> 4) & 0x0F;
+        outData[uiIndex++] = (ucHex <= 9) ? (ucHex + '0') : (ucHex + 'a' - 10);
 
-	for (uiIndex = 0, uiLoop = 0; uiLoop < inEncryDataLen; uiLoop++) {
-		ucHex = (temp[uiLoop] >> 4) & 0x0F;
-		outData[uiIndex++] = (ucHex <= 9) ? (ucHex + '0') : (ucHex + 'a' - 10);
+        ucHex = temp[uiLoop] & 0x0F;
+        outData[uiIndex++] = (ucHex <= 9) ? (ucHex + '0') : (ucHex + 'a' - 10);
+    }
 
-		ucHex = temp[uiLoop] & 0x0F;
-		outData[uiIndex++] = (ucHex <= 9) ? (ucHex + '0') : (ucHex + 'a' - 10);
-	}
+    outData[uiIndex] = '\0';
 
-	outData[uiIndex] = '\0';
-
-	return IOTA_SUCCESS;
+    return IOTA_SUCCESS;
 }
-
