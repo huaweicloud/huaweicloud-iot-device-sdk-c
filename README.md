@@ -144,6 +144,35 @@ The SDK depends on the OpenSSL, Paho, and zlib libraries. If you have your own c
 6. Copy .so library files.
    Copy the **libz.so**, **libz.so.1**, and **libz.so.1.2.11** files generated in the source code directory to the **lib** folder of the SDK.
 
+- **Compiling the huawei_secure_c Library**
+
+1. Download the [secure_c source code package](https://gitee.com/openeuler/libboundscheck.git).
+2. Access the source code directory. and run the **Makefile**.
+3. Copy .so library files. Copy the **libboundscheck.so**files generated in the source code of lib directory to the **lib** folder of the SDK.
+
+- **Compiling the libssh Library**
+1. Download the [libssh source code package](https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz).
+2. Run the **tar xvf libssh-0.10.4.tar.xz** command to decompress the package.
+3. Run the **cd libssh-0.10.4** command to access the source code directory.
+
+4. Run the **mkdir build**, **cd build**, **cmake ..**, **make** command to compile the library files.
+
+5. Run the **sudo make install** command to install the lib.
+
+6. Copy .so library files and header files.
+   Copy the **libssh.so**, **libssh.so.4**, **libssh.so.4.9.4** files generated in the source code directory to the lib folder of the SDK
+   Copy the **libssh** folder in the **usr/local/include** directory to the **include** folder of the SDK.
+
+- **Compiling the libnopoll Library**
+1. Download the [libnopoll source code package](http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz)
+2. Run the **tar xzvf nopoll-0.4.8.b429.tar.gz** command to decompress the package.
+3. Run the **cd nopoll-0.4.8.b429** command to access the source code directory.
+4. Run the **./configure**, **make**, **make install** command to compile and install the library files.
+
+5. Run the **pkg-config nopoll --cflags** and **pkg-config nopoll --libs** to find the header files and lib files of nopoll.
+    Copy the libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0 files generated in the source code directory to the lib folder of the SDK
+    Copy the libnopoll folder in the usr/local/include directory to the include folder of the SDK.
+
 <h2 id="2">4.3 Uploading a Product Model and Registering a Device</h2>
 Upload the developed product model to the console and register a new device.
 
@@ -260,6 +289,18 @@ Directly connected devices are allowed to access the platform using a device ID/
    ```
   
    ```
+- **SSH Remote Login**
+
+  Before using the SSH remote login function, you need to compile the libssh and libnopoll libraries and ensure that the device is online.
+
+  Enter the IoTDA console as shown in the figure below, and select "OM - Remote Login - {Your Online Device} - Enter User Name and Password - OK"
+
+  ![](./doc/doc_en/ssh_1.png)
+
+  The ssh remote login can be realized after the operations as shown in the above figure. The effect is shown in the figure below. Now you can enter commands for interactive operation.
+
+  ![](./doc/doc_en/ssh_2.png)
+
 <h2 id="4">5.2 Generic Protocol</h2>
 Currently, the platform supports only standard protocols such as MQTT, HTTP, and LwM2M. For devices complying with other (third-party) protocols to access the platform, use a gateway to convert these protocols to an MQTT protocol. Click <a href=" https://support.huaweicloud.com/en-us/bestpractice-iothub/iot_bp_0009.html " target="_blank">here</a> to see the working principle.
 
