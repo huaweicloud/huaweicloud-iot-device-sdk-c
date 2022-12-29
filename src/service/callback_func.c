@@ -1,26 +1,32 @@
-/* Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
- * All rights reserved.
- * &Redistribution and use in source and binary forms, with or without modification,
+/*
+ * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- * conditions and the following disclaimer.
+ *    conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- * of conditions and the following disclaimer in the documentation and/or other materials
- * provided with the distribution.
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific prior written permission.
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
- * THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  */
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #include "string_util.h"
 #include "log_util.h"
@@ -912,6 +918,26 @@ int OnEventsDownLOG(EN_IOTA_SERVICE_EVENT *services, char *event_type, JSON *par
     return 1;
 }
 
+int OnEventsDownTunnelArrived(EN_IOTA_SERVICE_EVENT *services, const char *event_type, JSON *paras)
+{
+    services->tunnel_mgr_paras = (EN_IOTA_TUNNEL_MGR_PARAS *)malloc(sizeof(EN_IOTA_TUNNEL_MGR_PARAS));
+    if (services->tunnel_mgr_paras == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsDownTunnelArrived(): is not enough memory here.\n");
+        return -1;
+    }
+
+    if (!strcmp(event_type, TUNNEL_NTF)) {
+        services->event_type = EN_IOTA_EVENT_TUNNEL_NOTIFY;
+
+        char *tunnel_url = JSON_GetStringFromObject(paras, TUNNEL_URL, NULL);
+        services->tunnel_mgr_paras->tunnel_url = tunnel_url;
+
+        char *tunnel_access_token = JSON_GetStringFromObject(paras, TUNNEL_ACCESS_TOKEN, NULL);
+        services->tunnel_mgr_paras->tunnel_access_token = tunnel_access_token;
+    }
+    return 1;
+}
+
 void OnEventsDownMemFree(EN_IOTA_EVENT *event, int services_count)
 {
     int m;
@@ -936,6 +962,8 @@ void OnEventsDownMemFree(EN_IOTA_EVENT *event, int services_count)
             MemFree(&event->services[m].ntp_paras);
         } else if (event->services[m].servie_id == EN_IOTA_EVENT_DEVICE_LOG) {
             MemFree(&event->services[m].device_log_paras);
+        } else if (event->services[m].servie_id == EN_IOTA_EVENT_TUNNEL_MANAGER) {
+            MemFree(&event->services[m].tunnel_mgr_paras);
         }
     }
 
@@ -980,9 +1008,8 @@ void OnEventsDown(void *context, int token, int code, char *message)
     services_count = JSON_GetArraySize(services); // get size of services
 
     if (services_count > MAX_EVENT_COUNT) {
-        PrintfLog(EN_LOG_LEVEL_ERROR,
-            "messageArrivaled: services_count is too large.\n"); // you can increase the MAX_EVENT_COUNT in
-                                                                 // iota_init.h
+        // you can increase the MAX_EVENT_COUNT in iota_init.h
+        PrintfLog(EN_LOG_LEVEL_ERROR, "messageArrivaled: services_count is too large.\n"); 
         JSON_Delete(root);
         MemFree(&event);
         return;
@@ -1058,6 +1085,17 @@ void OnEventsDown(void *context, int token, int code, char *message)
             if (!strcmp(service_id, LOG)) {
                 event->services[i].servie_id = EN_IOTA_EVENT_DEVICE_LOG;
                 int ret = OnEventsDownLOG(&event->services[i], event_type, paras);
+                if (ret < 0) {
+                    MemFree(&event->services);
+                    MemFree(&event->mqtt_msg_info);
+                    MemFree(&event);
+                    return;
+                }
+            }
+			// tunnel manager
+            if (!strcmp(service_id, TUNNEL_MGR)) {
+                event->services[i].servie_id = EN_IOTA_EVENT_TUNNEL_MANAGER;
+                int ret = OnEventsDownTunnelArrived(&event->services[i], event_type, paras);
                 if (ret < 0) {
                     MemFree(&event->services);
                     MemFree(&event->mqtt_msg_info);

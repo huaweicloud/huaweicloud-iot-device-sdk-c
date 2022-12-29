@@ -1,27 +1,32 @@
 /*
- * Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
- * All rights reserved.
- * &Redistribution and use in source and binary forms, with or without modification,
+ * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- * conditions and the following disclaimer.
+ *    conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- * of conditions and the following disclaimer in the documentation and/or other materials
- * provided with the distribution.
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific prior written permission.
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
- * THE POSSIBILITY OF SUCH DAMAGE.
- *
- *   */
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #include <stdio.h>
 #include <signal.h>
@@ -45,6 +50,8 @@
 #include "cJSON.h"
 #include "iota_error_type.h"
 #include "mqttv5_util.h"
+#include "wss_client.h"
+
 /*
  * if you want to use syslog,you should do this:
  * #include "syslog.h"
@@ -58,8 +65,9 @@ char *gatewayId = NULL;
 char *serverIp_ = "iot-mqtts.cn-north-4.myhuaweicloud.com";
 int port_ = 8883;
 
-char *username_ =
-    "XXXXX"; // deviceId, The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username
+ // deviceId, The mqtt protocol requires the user name to be filled in.
+ // Here we use deviceId as the username
+char *username_ = "XXXXX";
 char *password_ = "XXXXX";
 
 int disconnected_ = 0;
@@ -584,7 +592,7 @@ void Test_GtwAddSubDevice()
     subDeviceInfos.deviceInfo[0].name = "sub_device111";
     subDeviceInfos.deviceInfo[0].node_id = "node_id123";
     subDeviceInfos.deviceInfo[0].parent_device_id = NULL;
-    subDeviceInfos.deviceInfo[0].product_id = "your_product_id";
+    subDeviceInfos.deviceInfo[0].product_id = "your_product_id"; // Please change the product ID of the sub device
 
     subDeviceInfos.deviceInfo[1].description = "description";
     subDeviceInfos.deviceInfo[1].device_id = "device_id1234";
@@ -890,6 +898,25 @@ void HandleCommandRequest(EN_IOTA_COMMAND *command)
     Test_CommandResponse(command->request_id); // response command
 }
 
+void HandleTunnelMgr(EN_IOTA_EVENT *message, int i)
+{
+    URL_INFO info = {NULL, NULL, NULL, NULL};
+    int ret = 0;
+
+    if (message->services[i].event_type != EN_IOTA_EVENT_TUNNEL_NOTIFY)
+        return;
+
+    ret = WssClientSplitUrl(&info, message->services[i].tunnel_mgr_paras->tunnel_url, message->services[i].tunnel_mgr_paras->tunnel_access_token);
+    if (ret != IOTA_SUCCESS) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "HandleTunnelMgr: Url parse failed.%d\n", ret);
+        return;
+    }
+    WssClientCreate(&info);
+    MemFree(&info.path);
+    MemFree(&info.port);
+    MemFree(&info.site);
+    MemFree(&info.token);
+}
 void HandleEventsDown(EN_IOTA_EVENT *message)
 {
     if (message == NULL) {
@@ -1020,7 +1047,9 @@ void HandleEventsDown(EN_IOTA_EVENT *message)
                 PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), end_time: %s \n",
                     message->services[i].device_log_paras->end_time);
             }
-        }
+        } else if (message->services[i].servie_id == EN_IOTA_EVENT_TUNNEL_MANAGER) {
+            HandleTunnelMgr(message, i);
+		}
         i++;
         message->services_count--;
     }

@@ -9,10 +9,14 @@
 - [1 前言](#1)
 - [2 SDK简介](#2)
 - [3 准备工作](#3)
-	-  [3.1 环境信息](#3.1)
-	-  [3.2 编译openssl库](#3.2)
-	-  [3.3 编译paho库](#3.3)
-	-  [3.4 上传profile及注册设备](#3.4)
+    -  [3.1 环境信息](#3.1)
+    -  [3.2 编译openssl库](#3.2)
+    -  [3.3 编译paho库](#3.3)
+    -  [3.4 编译zlib库](#3.4)
+    -  [3.5 编译华为安全函数库](#3.5)
+    -  [3.6 编译libssh库](#3.6)
+    -  [3.7 编译libnopoll库](#3.7)
+    -  [3.8 上传profile及注册设备](#3.8)
 - [4 快速体验](#4)
 - **[5 使用步骤](#5)
 <!-- /TOC -->
@@ -54,9 +58,11 @@
 
 18、增加MQTT5.0协议
 
+19、增加SSH远程登录功能
+
 如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
 
-*2022/11/15*
+*2022/12/22*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -78,7 +84,7 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 
 - 支持自定义日志收集能力
 
-  
+- 支持SSH远程登录
 
 **SDK目录结构**
 
@@ -190,8 +196,8 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	
 5. 拷贝so库文件
 	将源码目录下生成的libz.so、libz.so.1、libz.so.1.2.11拷贝到sdk的lib文件夹下。
-	
-## 3.5 编译华为安全函数库
+
+<h2 id="3.5">3.5 编译华为安全函数库</h2>  
 
 1. 下载安全函数库源码https://gitee.com/openeuler/libboundscheck.git
 	
@@ -202,7 +208,55 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 3. 拷贝so库文件
 	将源码目录下生成的lib文件夹下的libboundscheck.so拷贝到sdk的lib文件夹下。
 
-<h2 id="3.5">3.6 上传profile及注册设备</h2>     
+<h2 id="3.6">3.6 编译libssh库</h2>
+
+1. 下载libssh源码https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz
+	通过如下命令解压缩：
+   
+   	tar xvf libssh-0.10.4.tar.xz
+   
+2. 进入源码目录下：
+
+	cd libssh-0.10.4
+	
+3. 编译库文件：
+
+    mkdir build
+    cd build
+    cmake ..
+    make
+	
+4. 安装库：
+
+	sudo make install
+	
+5. 拷贝so库文件和头文件
+	将源码目录下生成的libssh.so、libssh.so.4、libssh.so.4.9.4拷贝到sdk的lib文件夹下。
+    将/usr/local/include下的libssh的整个头文件目录拷贝到sdk的include文件夹下。
+
+<h2 id="3.7">3.7 编译libnopoll库</h2>
+1. 下载nopoll源码http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz
+	通过如下命令解压缩：
+   
+   	tar xzvf nopoll-0.4.8.b429.tar.gz
+   
+2. 进入源码目录下：
+
+	cd nopoll-0.4.8.b429
+	
+3. 编译与安装
+
+	./configure
+    make
+    make install
+    pkg-config nopoll --cflags
+    pkg-config nopoll --libs
+	
+4. 拷贝so库文件
+	通过上一步获取到的路径，将源码目录下生成的libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0拷贝到sdk的lib文件夹下。
+    将/usr/local/include下的libnopoll的整个头文件目录拷贝到sdk的include文件夹下。
+
+<h2 id="3.8">3.8 上传profile及注册设备</h2>     
 1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。
    
 	![](./doc/doc_cn/profile1.png)
@@ -270,6 +324,18 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	      ![](./doc/doc_cn/4_7.png)
 	    - 子设备上报数据
 	      ![](./doc/doc_cn/4_8.png)
+
+7. 支持SSH远程登录
+
+   使用SSH远程登录功能前，需参考[3.6 编译libssh库](#3.6)和[3.7 编译libnopoll库](#3.7)实现libssh和libnopoll库的编译，并且设备必须在线。
+
+   如下图进入IoTDA控制台, 选择"监控运维——远程登录——{自己的在线设备}——输入用户名密码——确认"
+
+   ![](./doc/doc_cn/ssh_1.png)
+
+   如上图操作操作之后即可实现ssh远程登录。实现效果如下，可输入命令进行交互
+
+   ![](./doc/doc_cn/ssh_2.png)
 	  
 <h1 id="5">5.使用步骤</h1>  
 以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。  
