@@ -12,7 +12,7 @@ OBJS = hmac_sha256.o mqtt_base.o log_util.o string_util.o cJSON.o json_util.o ba
 
 SSH_OBJS = wss_client.o ssh_client.o
 
-OBJS += $(SHH_OBJS)
+OBJS += $(SSH_OBJS)
 
 HEADER_PATH = -I./include
 LIB_PATH = -L./lib
