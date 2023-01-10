@@ -221,10 +221,13 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	
 3. 编译库文件：
 
-    mkdir build
-    cd build
-    cmake ..
-    make
+        mkdir build
+        
+	cd build
+        
+	cmake ..
+        
+	make
 	
 4. 安装库：
 
@@ -247,10 +250,14 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 3. 编译与安装
 
 	./configure
-    make
-    make install
-    pkg-config nopoll --cflags
-    pkg-config nopoll --libs
+
+        make
+	
+        make install
+	
+        pkg-config nopoll --cflags
+	
+        pkg-config nopoll --libs
 	
 4. 拷贝so库文件
 	通过上一步获取到的路径，将源码目录下生成的libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0拷贝到sdk的lib文件夹下。
