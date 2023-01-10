@@ -222,11 +222,8 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 3. 编译库文件：
 
         mkdir build
-        
 	cd build
-        
 	cmake ..
-        
 	make
 	
 4. 安装库：
@@ -250,13 +247,9 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 3. 编译与安装
 
 	./configure
-
         make
-	
         make install
-	
         pkg-config nopoll --cflags
-	
         pkg-config nopoll --libs
 	
 4. 拷贝so库文件
