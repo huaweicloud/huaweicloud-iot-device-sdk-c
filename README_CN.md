@@ -210,7 +210,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 <h2 id="3.6">3.6 编译libssh库</h2>
 
-*远程登陆维测功能当前未上线，可不编译该库，不影响主体功能的使用*
+*远程登陆维测功能当前未上线，可不编译该库，不影响主体功能的使用，不编译该库时请注释Makefile的 SSH_SWITCH :=1 这行代码*
 
 1. 下载libssh源码https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz
 	通过如下命令解压缩：
@@ -241,7 +241,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 <h2 id="3.7">3.7 编译libnopoll库</h2>
 
-*远程登陆维测功能当前未上线，可不编译该库，不影响主体功能的使用*
+*远程登陆维测功能当前未上线，可不编译该库，不影响主体功能的使用，不编译该库时请注释Makefile的 SSH_SWITCH :=1 这行代码*
 
 1. 下载nopoll源码http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz
 	通过如下命令解压缩：

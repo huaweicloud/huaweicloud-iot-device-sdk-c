@@ -10,7 +10,7 @@ OBJS = hmac_sha256.o mqtt_base.o log_util.o string_util.o cJSON.o json_util.o ba
 #$(warning "OS $(OS)")
 #$(warning "OSTYPE $(OSTYPE)")
 
-#SSH_SWITCH :=1
+SSH_SWITCH :=1
 ifdef SSH_SWITCH
 CFLAGS += -DSSH_SWITCH=1
 SSH_OBJS = wss_client.o ssh_client.o
