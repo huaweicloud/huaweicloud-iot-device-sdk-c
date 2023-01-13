@@ -10,15 +10,21 @@ OBJS = hmac_sha256.o mqtt_base.o log_util.o string_util.o cJSON.o json_util.o ba
 #$(warning "OS $(OS)")
 #$(warning "OSTYPE $(OSTYPE)")
 
+SSH_SWITCH :=1
+ifdef SSH_SWITCH
+CFLAGS += -DSSH_SWITCH=1
 SSH_OBJS = wss_client.o ssh_client.o
-
 OBJS += $(SSH_OBJS)
+endif
 
 HEADER_PATH = -I./include
 LIB_PATH = -L./lib
 SRC_PATH = ./src
 
-LIBS = $(LIB_PATH) -lpaho-mqtt3as -lssl -lcrypto -lz -lboundscheck -lpthread -lnopoll -lssh
+LIBS = $(LIB_PATH) -lpaho-mqtt3as -lssl -lcrypto -lz -lboundscheck -lpthread
+ifdef SSH_SWITCH
+LIBS += -lnopoll -lssh
+endif
 #$(LIB_PATH) -lHWMQTT
 #$(LIB_PATH) -lpaho-mqtt3cs $(LIB_PATH)
 
