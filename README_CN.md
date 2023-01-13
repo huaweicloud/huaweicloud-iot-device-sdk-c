@@ -210,6 +210,8 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 <h2 id="3.6">3.6 编译libssh库</h2>
 
+*远程登陆维测功能当前未上线，可不编译该库，不影响主体功能的使用*
+
 1. 下载libssh源码https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz
 	通过如下命令解压缩：
    
@@ -234,10 +236,13 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	sudo make install
 	
 5. 拷贝so库文件和头文件
-	将源码目录下生成的libssh.so、libssh.so.4、libssh.so.4.9.4拷贝到sdk的lib文件夹下。
+	将源码生成的libssh.so、libssh.so.4、libssh.so.4.9.4拷贝到sdk的lib文件夹下。
     将/usr/local/include下的libssh的整个头文件目录拷贝到sdk的include文件夹下。
 
 <h2 id="3.7">3.7 编译libnopoll库</h2>
+
+*远程登陆维测功能当前未上线，可不编译该库，不影响主体功能的使用*
+
 1. 下载nopoll源码http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz
 	通过如下命令解压缩：
    
@@ -253,14 +258,14 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	
         make
 	
-        make install
+        sudo make install
 	
         pkg-config nopoll --cflags
 	
         pkg-config nopoll --libs
 	
 4. 拷贝so库文件
-	通过上一步获取到的路径，将源码目录下生成的libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0拷贝到sdk的lib文件夹下。
+	通过上一步获取到的路径，将源码生成的libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0拷贝到sdk的lib文件夹下。
     将/usr/local/include下的libnopoll的整个头文件目录拷贝到sdk的include文件夹下。
 
 <h2 id="3.8">3.8 上传profile及注册设备</h2>     

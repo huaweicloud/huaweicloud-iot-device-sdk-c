@@ -50,8 +50,9 @@
 #include "cJSON.h"
 #include "iota_error_type.h"
 #include "mqttv5_util.h"
+#ifdef SSH_SWITCH
 #include "wss_client.h"
-
+#endif
 /*
  * if you want to use syslog,you should do this:
  * #include "syslog.h"
@@ -898,6 +899,7 @@ void HandleCommandRequest(EN_IOTA_COMMAND *command)
     Test_CommandResponse(command->request_id); // response command
 }
 
+#ifdef SSH_SWITCH
 void HandleTunnelMgr(EN_IOTA_EVENT *message, int i)
 {
     URL_INFO info = {NULL, NULL, NULL, NULL};
@@ -917,6 +919,8 @@ void HandleTunnelMgr(EN_IOTA_EVENT *message, int i)
     MemFree(&info.site);
     MemFree(&info.token);
 }
+#endif
+
 void HandleEventsDown(EN_IOTA_EVENT *message)
 {
     if (message == NULL) {
@@ -1048,7 +1052,9 @@ void HandleEventsDown(EN_IOTA_EVENT *message)
                     message->services[i].device_log_paras->end_time);
             }
         } else if (message->services[i].servie_id == EN_IOTA_EVENT_TUNNEL_MANAGER) {
+#ifdef SSH_SWITCH            
             HandleTunnelMgr(message, i);
+#endif
 		}
         i++;
         message->services_count--;
