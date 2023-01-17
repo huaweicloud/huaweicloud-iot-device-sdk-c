@@ -120,7 +120,6 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
    *其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）,--cross-compile-prefix是交叉编译工具链的位置。 （图片以交叉工具链路径在/usr/longshijing/gcc-linaro-7.5.0-arm-linux-gnueabi为例）*
 
      ![1673944253162](./doc/doc_cn/openssl交叉编译.png)
-     
    
 3. 编译出库。
    在openssl源码目录下，运行make depend命令添加依赖：
@@ -166,6 +165,8 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	  LDFLAGS += -L/home/test/openssl/lib -lrt  
 	  
 	  ![](./doc/doc_cn/paho_makefile1.png)
+	  
+	  *ps:该openssl产物必须与paho的交叉编译工具为同一个，否则可能出现校验证书失败问题。*
 	  
 	- 在CCFLAGS_SO中添加openssl的头文件引用、LDFLAGS_CS、LDFLAGS_AS以及FLAGS_EXES中添加库文件引用（随着paho版本的更新，有的版本会默认添加该引用，此时可不需要再修改）
 	  ![](./doc/doc_cn/paho_makefile2.png)
