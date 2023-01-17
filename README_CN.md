@@ -109,18 +109,17 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
      
      ./config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl
      ![](./doc/doc_cn/no_asm.png)
-     
-        
+   
+   ***交叉编译运行如下配置命令：***
    
 
-   ***交叉编译运行如下配置命令：***
+*./config no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl --cross-compile-prefix=xxx/arm-linux-gnueabi-* 
 
-   *./config no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl --cross-compile-prefix=xxx/arm-linux-gnueabi-* 
-
-   *其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）,--cross-compile-prefix是交叉编译工具链的位置。 （图片以交叉工具链路径在/usr/longshijing/gcc-linaro-7.5.0-arm-linux-gnueabi为例）*
+*其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）,--cross-compile-prefix是交叉编译工具链的位置。 （图片以交叉工具链路径在/usr/longshijing/gcc-linaro-7.5.0-arm-linux-gnueabi为例）*
 
      ![1673944253162](./doc/doc_cn/openssl交叉编译.png)
-   
+
+
 3. 编译出库。
    在openssl源码目录下，运行make depend命令添加依赖：
 
@@ -259,7 +258,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	password_：设备密钥，设备注册时返回的值。
 	![](./doc/doc_cn/4_1.png)
 
-4. 执行make命令进行编译（如果是32位的操作系统，请删除掉Makefile中的"-m64"，如果是交叉编译，请把CC = gcc 改为对应的工具链地址）：
+4. 执行make命令进行编译（如果是32位的操作系统，请删除掉Makefile中的"-m64"，如果是交叉编译，请把gcc 改为对应的工具链地址）：
 
 	make
 	
@@ -379,10 +378,6 @@ void setMyCallbacks(){
 	IOTA_SetEventCallback(HandleEventsDown);
 	IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
 }
-
-
-
-
 
 ```
 
