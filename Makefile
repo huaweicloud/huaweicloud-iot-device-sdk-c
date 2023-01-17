@@ -10,11 +10,21 @@ OBJS = hmac_sha256.o mqtt_base.o log_util.o string_util.o cJSON.o json_util.o ba
 #$(warning "OS $(OS)")
 #$(warning "OSTYPE $(OSTYPE)")
 
+SSH_SWITCH :=1
+ifdef SSH_SWITCH
+CFLAGS += -DSSH_SWITCH=1
+SSH_OBJS = wss_client.o ssh_client.o
+OBJS += $(SSH_OBJS)
+endif
+
 HEADER_PATH = -I./include
 LIB_PATH = -L./lib
 SRC_PATH = ./src
 
-LIBS = $(LIB_PATH) -lpaho-mqtt3as -lssl -lcrypto -lz -lboundscheck
+LIBS = $(LIB_PATH) -lpaho-mqtt3as -lssl -lcrypto -lz -lboundscheck -lpthread
+ifdef SSH_SWITCH
+LIBS += -lnopoll -lssh
+endif
 #$(LIB_PATH) -lHWMQTT
 #$(LIB_PATH) -lpaho-mqtt3cs $(LIB_PATH)
 
@@ -85,11 +95,16 @@ gateway_server_demo.o: $(SRC_PATH)/gateway_demo/gateway_server_demo.c
 	$(CC) $(CFLAGS) -c $(SRC_PATH)/gateway_demo/gateway_server_demo.c -o gateway_server_demo.o $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/protocol/ $(HEADER_PATH)
 
 device_demo.o: $(SRC_PATH)/device_demo/device_demo.c
-	$(CC) $(CFLAGS) -c $(SRC_PATH)/device_demo/device_demo.c -o device_demo.o $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH) 
+	$(CC) $(CFLAGS) -c $(SRC_PATH)/device_demo/device_demo.c -o device_demo.o $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH) $(HEADER_PATH) $(HEADER_PATH)/tunnel/ $(HEADER_PATH)/nopoll
 	
 bootstrap_demo.o: $(SRC_PATH)/bootstrap_demo/bootstrap_demo.c
 	$(CC) $(CFLAGS) -c $(SRC_PATH)/bootstrap_demo/bootstrap_demo.c -o bootstrap_demo.o $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH) 
 		
+##--------------tunnel--------------##
+wss_client.o: $(SRC_PATH)/tunnel/wss_client.c
+	$(CC) $(CFLAGS) -c $(SRC_PATH)/tunnel/wss_client.c -o wss_client.o $(HEADER_PATH)/nopoll/ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/util/ $(HEADER_PATH)/tunnel/ $(HEADER_PATH)/third_party/cjson/
+ssh_client.o: $(SRC_PATH)/tunnel/ssh_client.c
+	$(CC) $(CFLAGS) -c $(SRC_PATH)/tunnel/ssh_client.c -o ssh_client.o $(HEADER_PATH)/nopoll/ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/util/ $(HEADER_PATH)/tunnel/ $(HEADER_PATH)/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/libssh/
 all:	$(TARGET)
 
 clean:

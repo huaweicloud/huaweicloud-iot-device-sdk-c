@@ -1,26 +1,32 @@
-/*Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
- * All rights reserved.
- * &Redistribution and use in source and binary forms, with or without modification,
+/*
+ * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- * conditions and the following disclaimer.
+ *    conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- * of conditions and the following disclaimer in the documentation and/or other materials
- * provided with the distribution.
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific prior written permission.
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
- * THE POSSIBILITY OF SUCH DAMAGE.
- *
- * */
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #ifndef _IOTA_DATATRANS_H_
 #define _IOTA_DATATRANS_H_
@@ -30,7 +36,7 @@
 #include "hw_type.h"
 #include "mqttv5_util.h"
 
-#define MaxServiceReportNum 10  //  set the max count of reported services
+#define MaxServiceReportNum 10  // set the max count of reported services
 #define MaxSubDeviceCount 100
 #define MaxAddedSubDevCount 50
 #define MaxDelSubDevCount 50
@@ -443,7 +449,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV5(ST_IOTA_SERVICE_DATA_INFO pServiceDat
 HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5);
 #endif
 
-#define SDK_VERSION					 "C_v1.0.0"
+#define SDK_VERSION					 "C_v1.1.1"
 #define OTA_PORT 					 8943
 #define BUFSIZE 					 4096
 #define PKGNAME_MAX 				 20  // the max length of the package name
@@ -573,6 +579,24 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define SW_VERSION					 "sw_version"
 #define FW_VERSION					 "fw_version"
 
+#define TUNNEL_MGR                   "$tunnel_manager"
+#define TUNNEL_NTF                   "tunnel_notify"
+#define TUNNEL_URL                   "tunnel_uri"
+#define TUNNEL_ACCESS_TOKEN          "tunnel_access_token"
+#define TUNNEL_SSH_DATA              "data"
+#define TUNNEL_SSH_DATA_USERNAME     "username"
+#define TUNNEL_SSH_DATA_PASSWORD     "password"
+#define TUNNEL_SSH_OPTYPE_CONNRSP    "connect_response"
+#define TUNNEL_SSH_OPTYPE_CMDRSP     "command_response"
+#define TUNNEL_SSH_REQID             "request_id"
+#define TUNNEL_SSH_SERTYPE           "tunnel_service_type"
+#define TUNNEL_SSH_SERTYPE_SSH       "ssh"
+#define TUNNEL_SSH_OPTYPE            "operation_type"
+#define TUNNEL_SSH_OPTYPE_DISCONN    "disconnect"
+#define TUNNEL_SSH_OPTYPE_CONN       "connect"
+#define TUNNEL_SSH_OPTYPE_CMD        "command"
+#define TUNNEL_SSH_STATUS_CODE       "status_code"
+#define TUNNEL_SSH_STATUS_MSG        "status_msg"
 /**
  * ----------------------------deprecated below------------------------------------->
  */
@@ -581,12 +605,12 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define IOTA_TOPIC_DATATRANS_REPORT_RSP       "IOTA_TOPIC_DATATRANS_REPORT_RSP"
 
 typedef enum enum_EN_IOTA_DATATRANS_IE_TYPE {
-	EN_IOTA_DATATRANS_IE_RESULT = 0,   // nsigned int  命令执行返回结果
-	EN_IOTA_DATATRANS_IE_DEVICEID = 1,   // String        设备ID
-	EN_IOTA_DATATRANS_IE_REQUESTID = 2,   // String        请求ID
-	EN_IOTA_DATATRANS_IE_SERVICEID = 3,   // String        服务ID
-	EN_IOTA_DATATRANS_IE_METHOD = 4,   // String        服务方法
-	EN_IOTA_DATATRANS_IE_CMDCONTENT = 5,   // String        命令内容
+	EN_IOTA_DATATRANS_IE_RESULT = 0,   // unsigned int  鍛戒护鎵ц杩斿洖缁撴灉
+	EN_IOTA_DATATRANS_IE_DEVICEID = 1,   // String        璁惧ID
+	EN_IOTA_DATATRANS_IE_REQUESTID = 2,   // String        璇锋眰ID
+	EN_IOTA_DATATRANS_IE_SERVICEID = 3,   // String        鏈嶅姟ID
+	EN_IOTA_DATATRANS_IE_METHOD = 4,   // String        鏈嶅姟鏂规硶
+	EN_IOTA_DATATRANS_IE_CMDCONTENT = 5,   // String        鍛戒护鍐呭
 } EN_IOTA_DATATRANS_IE_TYPE;
 
 #endif

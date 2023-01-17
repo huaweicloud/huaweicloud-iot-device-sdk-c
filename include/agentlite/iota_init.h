@@ -1,26 +1,32 @@
-/*Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
- * All rights reserved.
- * &Redistribution and use in source and binary forms, with or without modification,
+/*
+ * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- * conditions and the following disclaimer.
+ *    conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- * of conditions and the following disclaimer in the documentation and/or other materials
- * provided with the distribution.
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific prior written permission.
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
- * THE POSSIBILITY OF SUCH DAMAGE.
- *
- * */
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #ifndef _IOTA_INIT_H_
 #define _IOTA_INIT_H_
@@ -109,6 +115,11 @@ typedef struct {
 } EN_IOTA_DEVICE_LOG_PARAS;
 
 typedef struct {
+	HW_CHAR *tunnel_url;
+	HW_CHAR *tunnel_access_token;
+} EN_IOTA_TUNNEL_MGR_PARAS;
+
+typedef struct {
 	HW_INT servie_id;  // see the enum EN_IOTA_EVENT_SERVICE_ID
 	HW_INT event_type;  // see the enum EN_IOTA_EVENT_TYPE
 	HW_CHAR *event_time;
@@ -119,6 +130,7 @@ typedef struct {
 	EN_IOTA_GTW_ADD_DEVICE_PARAS *gtw_add_device_paras;
 	EN_IOTA_GTW_DEL_DEVICE_PARAS *gtw_del_device_paras;
 	EN_IOTA_DEVICE_LOG_PARAS *device_log_paras;
+	EN_IOTA_TUNNEL_MGR_PARAS *tunnel_mgr_paras;
 } EN_IOTA_SERVICE_EVENT;
 
 typedef struct {
@@ -265,6 +277,7 @@ typedef enum {
 	EN_IOTA_EVENT_DEVICE_LOG = 3,
 //	EN_IOTA_EVENT_FILE_MANAGER = 4,
 //	EN_IOTA_EVENT_SDK_INFO = 5,
+	EN_IOTA_EVENT_TUNNEL_MANAGER = 7,
 	EN_IOTA_EVENT_ERROR = -1
 } EN_IOTA_EVENT_SERVICE_ID;
 
@@ -280,6 +293,7 @@ typedef enum {
 	EN_IOTA_EVENT_LOG_CONFIG = 8,
 //	EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE = 9,
 //	EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE = 10,
+	EN_IOTA_EVENT_TUNNEL_NOTIFY = 11,
 	EN_IOTA_EVENT_TYPE_ERROR = -1
 } EN_IOTA_EVENT_TYPE;
 
