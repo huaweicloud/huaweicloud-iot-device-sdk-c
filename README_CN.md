@@ -18,7 +18,7 @@
     -  [3.7 编译libnopoll库](#3.7)
     -  [3.8 上传profile及注册设备](#3.8)
 - [4 快速体验](#4)
-- **[5 使用步骤](#5)
+- [5 使用步骤](#5)
 <!-- /TOC -->
 
 <h1 id="0">0.版本更新说明</h1>
@@ -116,16 +116,13 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
      ./config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl
      ![](./doc/doc_cn/no_asm.png)
    
-   ***交叉编译运行如下配置命令：***
+   **交叉编译运行如下配置命令：**
    
-
-*./config no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl --cross-compile-prefix=xxx/arm-linux-gnueabi-* 
-
-*其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）,--cross-compile-prefix是交叉编译工具链的位置。 （图片以交叉工具链路径在/usr/longshijing/gcc-linaro-7.5.0-arm-linux-gnueabi为例）*
-
-     ![1673944253162](./doc/doc_cn/openssl交叉编译.png)
-
-
+  ./config no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl --cross-compile-prefix=xxx/arm-linux-gnueabi-
+   
+其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）,--cross-compile-prefix是交叉编译工具链的位置。 （图片以交叉工具链路径在/usr/longshijing/gcc-linaro-7.5.0-arm-linux-gnueabi为例）
+   ![](./doc/doc_cn/openssl交叉编译.png)
+   
 3. 编译出库。
    在openssl源码目录下，运行make depend命令添加依赖：
 
@@ -223,7 +220,6 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 
 <h2 id="3.5">3.5 编译华为安全函数库</h2>  
-
 1. 下载安全函数库源码https://gitee.com/openeuler/libboundscheck.git
 	
 2. 进入源码makefile同级目录，执行makefile文件
@@ -236,7 +232,6 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	将源码目录下生成的lib文件夹下的libboundscheck.so拷贝到sdk的lib文件夹下。
 
 <h2 id="3.6">3.6 编译libssh库</h2>
-
 *远程登陆维测功能当前未上线，可不编译该库，不影响主体功能的使用，不编译该库时请注释Makefile的 SSH_SWITCH :=1 这行代码*
 
 1. 下载libssh源码https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz
@@ -251,11 +246,11 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 3. 编译库文件：
 
         mkdir build
-	
+	    
         cd build
-	
+	    
         cmake ..
-	
+	    
         make
 	
 4. 安装库：
@@ -267,7 +262,6 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
     将/usr/local/include下的libssh的整个头文件目录拷贝到sdk的include文件夹下。
 
 <h2 id="3.7">3.7 编译libnopoll库</h2>
-
 *远程登陆维测功能当前未上线，可不编译该库，不影响主体功能的使用，不编译该库时请注释Makefile的 SSH_SWITCH :=1 这行代码*
 
 1. 下载nopoll源码http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz
@@ -282,13 +276,13 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 3. 编译与安装
 
         ./configure
-	
+	    
         make
-	
+	    
         sudo make install
-	
+	    
         pkg-config nopoll --cflags
-	
+	    
         pkg-config nopoll --libs
 	
 4. 拷贝so库文件
@@ -375,7 +369,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
    如上图操作操作之后即可实现ssh远程登录。实现效果如下，可输入命令进行交互
 
    ![](./doc/doc_cn/ssh_2.png)
-	  
+	
 <h1 id="5">5.使用步骤</h1>  
 以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。  
 
