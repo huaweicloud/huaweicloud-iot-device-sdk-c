@@ -99,17 +99,29 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
    cd openssl-1.1.1d        
    
-   运行如下配置命令：  
+   **非交叉编译运行如下配置命令：**  
 
    ./config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl  
    
-   其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）。
+   其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）。 
 
    - 如果编译有问题配置命令加上no-asm（表示不使用汇编代码）
      
      ./config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl
      ![](./doc/doc_cn/no_asm.png)
+     
+        
+   
 
+   ***交叉编译运行如下配置命令：***
+
+   *./config no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl --cross-compile-prefix=xxx/arm-linux-gnueabi-* 
+
+   *其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）,--cross-compile-prefix是交叉编译工具链的位置。 （图片以交叉工具链路径在/usr/longshijing/gcc-linaro-7.5.0-arm-linux-gnueabi为例）*
+
+     ![1673944253162](./doc/doc_cn/openssl交叉编译.png)
+     
+   
 3. 编译出库。
    在openssl源码目录下，运行make depend命令添加依赖：
 
@@ -143,6 +155,10 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	  
 	  :set nu
 	
+	- *若为交叉编译，把CC ?= gcc修改为CC := xxx/arm-linux-gnueabi-gcc,其中xxx为交叉编译工具链地址。*
+	  
+	   ![img](./doc/doc_cn/paho交叉编译.png) 
+	  
 	- 在"DOXYGEN_COMMAND"之后添加下面两行（[3.2](#3.2)中自定义的openssl的头文件和库文件位置）
 	  
 	  CFLAGS += -I/home/test/openssl/include  
@@ -184,13 +200,20 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 	./configure
 	
+	*如果为交叉编译，需要把makefile文件中 CC=gcc 改成 CC = 交叉工具链路径。*
+	
+	*vim Makefile*
+	
+	*修改 CC=gcc* 
+	
+	![1673945193303](./doc/doc_cn/zlib交叉编译.png)
+	
 4. 执行makefile文件
 
 	make
 	
 5. 拷贝so库文件
 	将源码目录下生成的libz.so、libz.so.1、libz.so.1.2.11拷贝到sdk的lib文件夹下。
-	
 ## 3.5 编译华为安全函数库
 
 1. 下载安全函数库源码https://gitee.com/openeuler/libboundscheck.git
@@ -198,6 +221,8 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 2. 进入源码makefile同级目录，执行makefile文件
 	
 	 make
+	
+	*ps:若为交叉编译，需要把Makefile中的 CC?=gcc 改为 CC=交叉编译链路径。*
 	
 3. 拷贝so库文件
 	将源码目录下生成的lib文件夹下的libboundscheck.so拷贝到sdk的lib文件夹下。
