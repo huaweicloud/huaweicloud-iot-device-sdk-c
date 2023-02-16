@@ -121,16 +121,16 @@ void RuleTrans_DeviceRuleUpdate(char *ruleIds)
 
     if (!RuleInfoListCtor(&delList)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "initialize delList failed!\n");
-        return;
+        goto RELEASE_JSON;
     }
 
     if (!RuleInfoListCtor(&addList)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "initialize addList failed!\n");
-        return;
+        goto RELEASE_DEL_LIST;
     }
     if (!RuleMgr_GetList(properties, &delList, &addList)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "can't get add/deletion list\n");
-        return;
+        goto RELEASE_ALL;
     }
 
     // report list to cloud platform
@@ -147,6 +147,10 @@ void RuleTrans_DeviceRuleUpdate(char *ruleIds)
     }
 
     // del resources
-    RuleInfoListDtor(&delList);
+RELEASE_ALL:
     RuleInfoListDtor(&addList);
+RELEASE_DEL_LIST:
+    RuleInfoListDtor(&delList);
+RELEASE_JSON:
+    cJSON_Delete(properties);
 }

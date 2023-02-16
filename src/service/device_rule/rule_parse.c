@@ -76,16 +76,15 @@ void ParseDeviceRule(RuleInfoList *ruleInfos, const char *payload)
 void ParseDeviceRuleWithHook(RuleInfoList *ruleInfos, const char *payload, void *hookTarget, ParseDeviceRuleHook hook)
 {
     cJSON *paras = cJSON_Parse(payload);
-    CHECK_NULL_RETURN_VOID(paras);
-
     // parse rules
     cJSON *rules = cJSON_GetObjectItem(paras, "rulesInfos");
-    CHECK_NULL_RETURN_VOID(rules);
 
     cJSON *rule;
     cJSON_ArrayForEach(rule, rules) {
         const char *ruleId = cJSON_GetStringValue(cJSON_GetObjectItem(rule, "ruleId"));
-        CHECK_NULL_RETURN_VOID(ruleId);
+        if(ruleId == NULL) {
+            break;
+        }
 
         cJSON *versionObj = cJSON_GetObjectItem(rule, "ruleVersionInShadow");
         if (!cJSON_IsNumber(versionObj)) {
@@ -125,6 +124,7 @@ void ParseDeviceRuleWithHook(RuleInfoList *ruleInfos, const char *payload, void 
             break;
         }
     }
+    cJSON_Delete(paras);
 }
 
 static int ParseCmdAction(Action *actionObj, cJSON *actionCJSON)
@@ -373,4 +373,5 @@ HW_BOOL DeletRulesFromList(RuleInfoList *list, const RuleInfoList *delList)
             DEVICE_RULE_DEBUG("rule: %s del ok", delItem->ruleId);
         }
     }
+    return HW_TRUE;
 }

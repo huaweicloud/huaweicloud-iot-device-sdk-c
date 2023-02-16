@@ -46,10 +46,7 @@ static pthread_t g_deviceRuleThreadId;
 static DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER g_deviceRuleSendMsgCallBack;
 char *g_ruleFilePath;
 
-void RuleMgr_SetSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler)
-{
-    g_deviceRuleSendMsgCallBack = pfnCallbackHandler;
-}
+
 
 typedef struct {
     char *serviceId;
@@ -88,23 +85,22 @@ static void executeCommandCallback(const char *deviceId, const Command * command
     
     if (!CStrDuplicate(&command.service_id, serviceId)) {
         DEVICE_RULE_ERROR("can't copy serviceId name");
-        return;
+        goto RELEASE;
     }
     if (!CStrDuplicate(&command.command_name, commandName)) {
         DEVICE_RULE_ERROR("can't copy command name");
-        MemFree(&command.service_id);
-        return;
+        goto RELEASE;
     }
     command.request_id = DEVICE_RULE;
     char *paras = cJSON_Print(commandBody);
     if (paras == NULL) {
         DEVICE_RULE_ERROR("can't create paras for executing command");
-        return;
+        goto RELEASE;
     }
     command.paras = paras;
     if (g_commandCallbackHandler == NULL) {
         DEVICE_RULE_ERROR("command callback can't be NULL, need to set it");
-        return;
+        goto RELEASE;
     }
     if (strcmp(deviceId, username) != 0) {
         DEVICE_RULE_DEBUG("send message from  this device : %s to device : %s", username, deviceId);
@@ -121,6 +117,7 @@ static void executeCommandCallback(const char *deviceId, const Command * command
     } else {
         g_commandCallbackHandler(&command);
     }
+RELEASE:
     MemFree(&command.service_id);
     MemFree(&command.command_name);
     MemFree(&paras);
@@ -155,6 +152,14 @@ static HW_BOOL getPropertyCallback(const char *serviceId, const char *propertyNa
     return HW_FALSE;
 }
 #endif
+
+
+void RuleMgr_SetSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler)
+{
+#ifdef DEVIC_ERULE_ENALBE
+    g_deviceRuleSendMsgCallBack = pfnCallbackHandler;
+#endif
+}
 
 void RuleMgr_CachePropertiesValue(const ST_IOTA_SERVICE_DATA_INFO *pServiceData, const int serviceNum)
 {
@@ -223,6 +228,8 @@ void RuleMgr_Destroy()
 #endif
 }
 
+
+#ifdef DEVIC_ERULE_ENALBE
 static void RuleJSONObjSaveToFile(const char * filepath)
 {
     if (filepath == NULL) {
@@ -276,9 +283,11 @@ static void UpdateRuleJSONObj(void *target, HW_BOOL isRemove, const cJSON * rule
         const char *ruleId = cJSON_GetStringValue(cJSON_GetObjectItem(rule, "ruleId"));
         RuleJSONObjDelById(ruleId);
     } else {
-        cJSON_AddItemReferenceToArray(g_ruleInfosListJSON, rule);
+        cJSON_AddItemToArray(g_ruleInfosListJSON, cJSON_Duplicate(rule, cJSON_True));
     }
 }
+
+#endif
 
 void RuleMgr_Parse(const char *payload)
 {
@@ -361,6 +370,7 @@ void RuleMgr_DelRule(RuleInfoList *delList)
 
 void RuleMgr_EnableDeviceRuleStorage(const char *filepath)
 {
+#ifdef DEVIC_ERULE_ENALBE
     MemFree(&g_ruleFilePath);
     if (CStrDuplicate(&g_ruleFilePath, filepath)) {
         DEVICE_RULE_WARN("can't save file path");
@@ -399,5 +409,6 @@ void RuleMgr_EnableDeviceRuleStorage(const char *filepath)
     free(buffer);
 
     DEVICE_RULE_INFO("load rule succeed");
+#endif
 }
 
