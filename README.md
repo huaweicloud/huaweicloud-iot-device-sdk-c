@@ -1,50 +1,103 @@
-   English | [简体中文](./README_CN.md) 
+English | [Simplified Chinese](./README_CN.md)
 
-# huaweicloud-iot-device-sdk-c Development Guide
+#  huaweicloud-iot-device-sdk-c Development Guide
 
-# Contents
+## Contents
+<!-- TOC -->
 
-- [1 Change History](#0)
-- [2 About This Document](#1)
-- [3 SDK Overview](#2)
-- [4 Preparations](#3)
-  * [4.1 Environment Requirements](#0)
-  * [4.2 Compiling Library Files](#1)
-  * [4.3 Uploading a Product Model and Registering a Device](#2)
-- [5 Typical Access Scenarios](#4)
-  * [5.1 Directly Connected Device](#3)
-  * [5.2 Generic Protocol](#4)
-  * [5.3 Bootstrap](#5)
-- [6 SDK APIs](#5)
-  * [6.1 Setting Callback Functions for Printing Logs](#6)
-  * [6.2 Initializing the SDK](#7)
-  * [6.3 Setting Parameters for Binding Devices](#8)
-  * [6.4 Setting Callback Functions](#9)
-  * [6.5 Authenticating a Device](#10)
-  * [6.6 Reporting Device Messages/Properties](#11)
-  * [6.7 Receiving Device Messages/Commands/Properties](#12)
-  * [6.8 Reporting Child Device Data](#13)
-- [7 Generating an SDK Library File](#6)
-- [8 Open-Source Protocols](#7)
+- [0 Change History](#0)
+- [1 About This Document](#1)
+- [2 SDK Overview](#2)
+- [3 Preparations](#3)
+  -  [3.1 Environment Requirements](#3.1)
+  -  [3.2 Compiling the OpenSSL Library](#3.2)
+  -  [3.3 Compiling the paho Library](#3.3)
+  -  [3.4 Compiling the zlib Library](#3.4)
+  -  [3.5 Compiling the huawei_secure_c Library](#3.5)
+  -  [3.6 Compiling the libssh Library](#3.6)
+  -  [3.7 Compiling the libnopoll Library](#3.7)
+  -  [3.8 Uploading a Product Model and Registering a Device](#3.8)
+- [4 Quick Experience](#4)
+- [5 Procedure](#5)
+<!-- /TOC -->
 
+<h1 id="0">0. Change History</h1>
 
+| Version Number| Change Type| Description                                                |
+| ------ | -------- | ------------------------------------------------------------ |
+| 1.1.2  | New feature  | Device rules, M2M, GN compilation file, anomaly detection, timestamp printed in logs, MQTT_DEBUG, Chinese cryptographic algorithm, remote configuration, and device-cloud secure communication (soft bus) were added.|
+| 1.1.1  | New feature  | SSH remote O&M function was added.                                         |
+| 1.1.0  | New feature  | MQTT 5.0 was supported. The code was optimized to resolve the memory overflow issue.                 |
+| 1.0.1  | Function enhancement| The application scenarios where MQTTS does not verify the platform public key, using TLS version is V1.2, and adding message storage examples were added.|
+| 0.9.0  | New feature  | The API for the gateway to update the child device status was added.                                  |
+| 0.8.0  | Function enhancement| The access domain name (iot-mqtts.cn-north-4.myhuaweicloud.com) and root certificate were added.<br>If the device uses the old domain name (iot-acc.cn-north-4.myhuaweicloud.com) for access, use the v0.5.0 SDK.|
+| 0.5.0  | Function enhancement| The device access address and the CA certificate matching IoTDA were preset in the SDK.           |
 
-<h1 id="0">1 Change History</h1>
-+ V1.5.0: Implicit subscription was added.
-+ V1.4.0: Compressed message and property reporting were added.
-+ V1.3.0: SDK downstream payload structure encapsulation was added.
-+ V1.2.0: Bootstrap access was added.
-+ V1.0.0: The generic-protocol access was added.
+1. Generic-protocol access was added.
 
-Click <a href="https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases" target="_blank">here</a> to download earlier versions of source code.
+2. Bootstrap scenario was added.
 
+3. Encapsulation of SDK downstream payload structure was added.
 
+4. Compressed message and property reporting were added.
 
-<h1 id="1">2 About This Document</h1>
-This document uses an example to describe how to use iot-device-sdk-cSharp (SDK for short) to quickly connect MQTT devices to the HUAWEI CLOUD IoT platform.
+5. Implicit subscription was added.
 
-<h1 id="2">3 SDK Overview</h1>
-The SDK is designed for embedded devices with powerful computing and storage capabilities. You can call SDK APIs to implement communication between devices and the platform. The SDK currently supports:
+6. Context callback parameters were added.
+
+7. English description was added.
+
+8. The functions of adding and deleting a child device on a gateway were added.
+
+9. Time synchronization function was added.
+
+10. The API for reporting device logs was added.
+
+11. The API for reporting device information was added.
+
+12. The compatibility description of certificates of different versions was added.
+
+13. Configurable timestamp verification was added.
+
+14. The .so library file can be automatically generated.
+
+15. The application scenario where MQTTS does not verify the platform public key was added.
+
+16. The TLS version is V1.2.
+
+17. Message storage examples were added.
+
+18. File uploading/downloading were added.
+
+19. MQTT5.0 was supported.
+
+20. Device-side rules were supported.
+
+21. SSH remote login function was added.
+
+22. The M2M function was added.
+
+23. The GN compilation file was added.
+
+24. The device information abstraction layer was added.
+
+25. Anomaly detection was added.
+
+26. The function of printing timestamps in logs was added.
+
+27. MQTT_DEBUG was added.
+
+28. Remote configuration was added.
+
+29. Device-cloud secure communication (soft bus) was added.
+
+May 6, 2023
+
+<h1 id="1">1 About This Document</h1>
+This document uses an example to describe how to use **huaweicloud-iot-device-sdk-c** (SDK for short) to quickly connect MQTT devices to the Huawei Cloud IoT platform.
+
+<h1 id="2">2. SDK Overview</h1>
+The SDK is designed for embedded devices with powerful computing and storage capabilities. You can call SDK APIs to implement communication between devices and the platform. The SDK currently supports: 
 
 - Product model: reporting device messages/properties/events and receiving the platform's commands/messages/events/requests for setting properties
 
@@ -60,278 +113,411 @@ The SDK is designed for embedded devices with powerful computing and storage cap
 
 - Custom log collection
 
+- Device-side rules
+
+- SSH remote login
+
+- Interconnection with edge M2M devices
+
 **SDK Directory Structure**
 
 ![](./doc/doc_en/sdk_file_content2.PNG)
 
-<h1 id="3">4 Preparations</h1>
-<h2 id="0">4.1 Environment Requirements</h2>
-* Linux operating system
-* GCC (V4.8 or later)
+<h1 id="3">3. Preparations</h1>
+<h2 id="3.1">3.1 Environment Requirements</h2>
+The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) must be installed. The SDK depends on the OpenSSL and Paho libraries. If you have your own compilation chains, compile these library files. For details about the common GCC compilation procedure in Linux, see section 3.2 and 3.3.  
 
-<h2 id="1">4.2 Compiling Library Files</h2>
-The SDK depends on the OpenSSL, Paho, and zlib libraries. If you have your own compilation chains, compile these library files.
+<h2 id="3.2">3.2 Compiling the OpenSSL Library</h2>
 
-- **Compiling the OpenSSL Library**
+1. Visit the OpenSSL website (https://www.openssl.org/source/), download the latest OpenSSL version (for example, **openssl-1.1.1d.tar.gz**), upload it to the Linux compiler (for example, in the directory **/home/test**), and run the following command to decompress the package: 
 
-1. Visit the <a href="https://www.openssl.org/source " target="_blank">OpenSSL website</a> and download the latest version. (This document uses openssl-1.1.1d.tar.gz as an example.)
+   **tar -zxvf openssl-1.1.1d.tar.gz** 
+   ![](./doc/doc_en/untarPkg.png)
 
-2. Upload the OpenSSL package to a directory (for example, **/home/test**) on the Linux compiler.
+2. Generate a **Makefile**.
+   Run the following command to access the OpenSSL source code directory:
 
-3. Run the **tar -zxvf openssl-1.1.1d.tar.gz** command to decompress the package.
-![](./doc/doc_en/untarPkg.png)
-
-4. Run the **cd openssl-1.1.1d** command to access the OpenSSL source code directory.
-
-5. Run the **./config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl** command to generate a **Makefile**.
-     **prefix** is a custom installation directory, **openssldir** is a custom directory that stores configuration files, and **shared** is used to generate a dynamic link library (.so library).
-
-        If the compilation goes wrong, add **no-asm** to the configuration command, indicating that no assembly code is used.
-      ./config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl 
-![](./doc/doc_en/no_asm.png)
-
-6. In the OpenSSL source code directory, run the **make depend** command to add dependencies.
-
-7. Run the **make** command to start compilation.
-
-8. Run the **make install** command to install OpenSSL.
-
-    In the OpenSSL installation directory (**home/test/openssl**), find the **lib** folder, which stores the library files (**libcrypto.so.1.1** and **libssl.so.1.1**) and soft links (**libcrypto.so** and **libssl.so**).
-8. Copy these files to the **lib** folder of the SDK and copy the **openssl** folder in the **home/test/openssl/include** directory to the **include** folder of the SDK.
+   cd openssl-1.1.1d       
    
+   Run the following configuration command: 
 
-        ![](./doc/doc_en/openssl.png)
+   **/config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl** 
+   
+   **prefix** is a custom installation directory, **openssldir** is a custom directory that stores configuration files, and **shared** is used to generate a dynamic link library (.so library).
 
-
-
-- **Compiling the Paho Library**
-  
-  1. Click <a href="https://github.com/eclipse/paho.mqtt.c">here</a> to download the **paho.mqtt.c** source code.
-  
-  2. Decompress the package and upload it to the Linux compiler.
-  
-  3. Run the **vim Makefile** command to edit **Makefile**.
+   - If an exception occurs during the compilation, add **no-asm** to the configuration command (indicating that the assembly code is not used).
      
-  4. Run the **:set nu** command to display the number of lines.
-  
-  5. Add **CFLAGS += -I/home/test/openssl/include** and **LDFLAGS += -L/home/test/openssl/lib -lrt** to the end of line 129. (The **/home/test/openssl/include** directory stores OpenSSL header files, and the **/home/test/openssl/lib** directory stores OpenSSL library files, as customized in [4.2 Compiling Library Files](#1))
-  
-      ![](./doc/doc_en/paho_makefile1.png)  
-      
-  6. Change the addresses in lines 195, 197, 199, and 201 as follows.
-      ![](./doc/doc_en/paho_makefile2.png)
-  
-  7. Run the **make clean** command.
-  
-  8. Run the **make** command.
-     
-     After the compilation is complete, check the compiled libraries in the **build/output** directory.
-     ![](./doc/doc_en/paho.png)
-  
-   9. Copy the Paho library.
-        Currently, the SDK uses only **libpaho-mqtt3as**. Copy the **libpaho-mqtt3as.so** and **libpaho-mqtt3as.so.1** files to the **lib** folder of the SDK, and copy the header files (MQTTAsync.h, MQTTClient.h, MQTTClientPersistence.h, MQTTProperties.h, MQTTReasonCodes.h, and MQTTSubscribeOpts.h) in the **src** folder of the Paho source code directory to the **include/base** directory of the SDK.
-  
-- **Compiling the zlib Library**
+     **/config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl**
+     ![](./doc/doc_en/no_asm.png)
+
+3. Generate library files.
+   In the OpenSSL source code directory, run the following command to add dependencies:
+
+   **make depend** 
+
+   Run the following command to start compilation:
+
+   **make**
+
+   Run the following command to install:
+
+   **make install**
+
+   In the OpenSSL installation directory **home/test/openssl**, find the **lib** folder.
+
+   Find the library files (**libcrypto.so.1.1** and **libssl.so.1.1**) and soft links (**libcrypto.so** and **libssl.so**). Copy these files to the **lib** folder of the SDK and copy the **openssl** folder in the **home/test/openssl/include** directory to the **include** folder of the SDK.
+
+   ![](./doc/doc_en/openssl.png)
+
+4. To use the TLS for Chinese cryptographic algorithm, download [the corresponding version of OpenSSL](https://github.com/jntass/TASSL-1.1.1). The installation method is the same as that of native OpenSSL. Based on OpenSSL 1.1.1s, this version is compatible with various native OpenSSL APIs and supports international TLS.
+
+<h2 id="3.3">3.3 Compiling the Paho Library</h2> 
+1. Visit https://github.com/eclipse/paho.mqtt.c to download the **paho.mqtt.c** source code. The files of version 1.3.9 or earlier in the release version are recommended. For the latest version, the number of lines in the file and the header files to be copied may be changed.
+
+2. Decompress the package and upload it to the Linux compiler.
+
+3. Edit the **Makefile**.
+	- Run the following command to edit the **Makefile**:
+	  
+	  **vim Makefile**
+	  
+	- Run the following command to display the number of lines:
+	  
+	  **:set nu**
+	
+	- Add the following two lines after **DOXYGEN_COMMAND** (locations of the OpenSSL header files and library files customized in [3.2](#3.2)):
+	  
+	  **CFLAGS += -I/home/test/openssl/include** 
+	  
+	  **LDFLAGS += -L/home/test/openssl/lib -lrt** 
+	  
+	  ![](./doc/doc_en/paho_makefile1.png)
+	  
+	- Add the header file reference of the OpenSSL to the **CCFLAGS_SO** and add library file references to **LDFLAGS_CS**, **LDFLAGS_AS**, and **FlagS_EXES**. (The reference is added by default in some updated versions of Paho libraries. In this case, you do not need to modify the reference.)
+	  ![](./doc/doc_en/paho_makefile2.png)
+	
+4. Compile the code.
+	- Run the following command:
+	  
+	  **make clean**
+	  
+	- Run the following command:
+	  
+	  **make**
+	
+5. After the compilation is complete, you can view the libraries that are compiled in the **build/output** directory.
+	![](./doc/doc_en/paho.png)
+
+6. Copy Paho library files.
+	Currently, the SDK uses only **libpaho-mqtt3as**. Copy the **libpaho-mqtt3as.so** and **libpaho-mqtt3as.so.1** files to the **lib** folder of the SDK, and copy the header files (**MQTTAsync.h**, **MQTTClient.h**, **MQTTClientPersistence.h**, **MQTTProperties.h**, **MQTTReasonCodes.h**, and **MQTTSubscribeOpts.h**) in the **src** folder of the Paho source code directory to the **include/base** directory of the SDK. Alternatively, you can add all MQTT-related header files to the directory, as some versions of Paho libraries have the **MQTTExportDeclarations.h** header file. 
+
+
+<h2 id="3.4">3.4 Compiling the zlib Library </h2>
 
 1. Download the [zlib source code package](https://github.com/madler/zlib/archive/v1.2.11.zip).
-2. Run the **unzip zlib-1.2.11.zip** command to decompress the package.
-3. Run the **cd zlib-1.2.11** command to access the source code directory.
-
-4. Run the **./configure** command to generate a **Makefile**.
-
-5. Run the **Makefile**.
-
-6. Copy .so library files.
-   Copy the **libz.so**, **libz.so.1**, and **libz.so.1.2.11** files generated in the source code directory to the **lib** folder of the SDK.
-
-<h2 id="2">4.3 Uploading a Product Model and Registering a Device</h2>
-Upload the developed product model to the console and register a new device.
-
-1. Visit [IoT Device Access (IoTDA)](https://www.huaweicloud.com/en-us/product/iothub.html) and click **Use Now** to access the IoTDA console.
-
-2. View the MQTTS device access address, and save it. ![](./doc/doc_en/upload_profile_1.png)
-
-3. On the IoTDA console, choose **Products** in the navigation pane, and click **Create Product** in the upper right corner. On the displayed page, specify the product name, protocol, data type, manufacturer, industry, and device type, and click **Create**.
-
-   - Set **Protocol** to **MQTT**.
-
-   - Set **Data Type** to **JSON**. ![](./doc/doc_en/upload_profile_2.png)
-
-4. After the product is created, click **View** to access its details. On the **Model Definition** page, click **Import Local Profile** to upload the developed product model.
-
-5. In the navigation pane, choose **Device** > **All Devices**. On the page displayed, click **Individual Register** in the upper right corner. On the page displayed, set the device registration parameters and click **OK**. ![](./doc/doc_en/upload_profile_3.png)
-
-   After the device is registered, save the node ID, device ID, and secret.
-
-
-
-
-<h1 id="4">5 Typical Access Scenarios</h1>
-<h2 id="3">5.1 Directly Connected Device</h2>
-Directly connected devices are allowed to access the platform using a device ID/secret, or a certificate.
-
-- **Access Using a Device ID (Username)/Secret**
-
-  1. Register a device on the platform and obtain the device ID and secret.
-
-  2. Set a mode for the device to access using a secret.
-
-     ```c
-      void SetAuthConfig() {
-       IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
-       IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
-       IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-       IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
-       IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,  EN_IOTA_CFG_AUTH_MODE_SECRET);
-      	 
-          //IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_CERT);
-        //IOTA_ConfigSetStr(EN_MQTT_CFG_PRIVATE_KEY_PASSWORD, "yourPassword");
-      }   
-     ```
-  
-   3. Copy the SDK package to the Linux environment and run the **unzip huaweicloud-iot-device-sdk-c-master.zip** command to decompress the package.
-  
-   4. Run the **cd huaweicloud-iot-device-sdk-c-master** command to access the decompressed folder.
-  
-   5. Modify parameters in the **src/device_demo/device_demo.c** file:
-      ![](./doc/doc_en/4_1.png)
-  
-      **serverIp**: indicates the application access address, which can be viewed on the **Overview** page of the console.
-  
-      **username**: indicates the device ID, which is returned after the device is registered. The MQTT protocol requires writing into a **username**.
-  
-      **password**: indicates the device secret, which is returned after the device is registered.
-  
-  6. Run the **make** command to perform compilation. (For a 32-bit operating system, delete **-m64** from **Makefile**.)
-  
-  7. Run the **export LD_LIBRARY_PATH=./lib/** command to load the library files.
-  
-  8. Run the **./MQTT_Demo.o** command. The following logs are displayed on the console: **login success** indicates that a device is authenticated. **MqttBase_onSubscribeSuccess** indicates that a topic is subscribed, **MqttBase_onPublishSuccess** indicates that device data is published.
-     ![](./doc/doc_en/4_2.png)
-     
-    9. Check the running state of the device.
-  
-  + Gateway (online): Access the console and choose **All Devices** > **Device List** to check whether the gateway is online.
-    
-  + Gateway (reporting data): Access the console and choose **All Devices** > **Device List**, and click **View** to view the reported data.
-    
-  + Child device
-    
-    + A gateway receives the platform's notification of adding a child device.
-    
-      ![](./doc/doc_en/4_5.png)
-    
-    + A child device reports data.
-    
-      ![](./doc/doc_en/4_6.png)
-    
-    + Check the state of the child device.
-    
-         + Online: Access the console and choose **All Devices** > **Device List** to check whether the child device is online.
-         + Reporting data: Access the console and choose **All Devices** > **Device List**, and click **View** to view the reported data.
-  
-- **Access Using a Certificate**
-
-  1. - Create and upload a device certificate. For details, see <a href="https://support.huaweicloud.com/en-us/usermanual-iothub/iot_01_0055.html" target="_blank">Registering a Device Authenticated by an X.509 Certificate</a>.
-
-  2. Change the certificate and secret file names to **deviceCert.pem** and **deviceCert.key** respectively, and place the two files in the **conf** directory of the SDK.
-
-  3. Set a mode for the device to access using a certificate.
-     ```c
-   void SetAuthConfig() {
-     IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
-     IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
-     IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-     // IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
-     // IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,  EN_IOTA_CFG_AUTH_MODE_SECRET);
-  	 	 
-  	     
-        IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_CERT);
-      IOTA_ConfigSetStr(EN_MQTT_CFG_PRIVATE_KEY_PASSWORD, "yourPassword");
-      }   
-     ```
-    ```
-  
-    ```
-  
-  4. For details about subsequent access steps, see steps 3 to 9 in **Access Using a Device ID (Username)/Secret**.
-  
-       Note: You do not need to enter the secret.
-   ```
-  
-   ```
-<h2 id="4">5.2 Generic Protocol</h2>
-Currently, the platform supports only standard protocols such as MQTT, HTTP, and LwM2M. For devices complying with other (third-party) protocols to access the platform, use a gateway to convert these protocols to an MQTT protocol. Click <a href=" https://support.huaweicloud.com/en-us/bestpractice-iothub/iot_bp_0009.html " target="_blank">here</a> to see the working principle.
-
- The SDK provides a demo of generic-protocol access (TCP). Go to the **src/gateway_demo** directory and you will see the following files:
-
-+ **gateway_server_demo.c**: provides a demo related to a generic-protocol gateway, which is used to receive device data, decode the data, and report it to the platform. In addition, this gateway can be used to encode and deliver the platform's commands to devices.
-+ **generic_tcp_protocol.c**: provides custom encoding and decoding rules of the TCP protocol, so that the data from the platform can be encoded and then sent to a device, and the device data is decoded and then sent to the platform.
-+ **gateway_client_demo.c**: provides a demo related to a TCP device (simulating a client), which is used to report data and receive commands. After being decoded based on the rules defined in **generic_tcp_protocol.c**, the data is reported to the platform from the TCP device. After being encoded based on the rules defined in **generic_tcp_protocol.c**, the platform's commands are delivered to the TCP device.
-
-** Access Procedures**
-
-
-  1. Refer to [4.2 Compiling Library Files](#1) to compile the library files. (Go to the next step if the library files have been compiled.)
-  
-  2. Register a device and save the device ID and secret.
-
-  3. Update the device ID and secret in **gateway_server_demo.c**.
-
-  4. Comment out **device_demo.o** from OBJS in **Makefile** and uncomment **generic_tcp_protocol.o gateway_server_demo.o**.
-
-     ![](./doc/doc_en/generic.PNG)
-
- 5. Run the **make** command to perform compilation.
- 6. After the compilation is complete, run the **export LD_LIBRARY_PATH=./lib/ ** command to import the library files to the **lib** folder.
- 7. Run the **./MQTT_Demo.o** command to run a gateway.
- 8. Run the **gcc -o client.o gateway_client_demo.c** command to access the **src/gateway_demo** directory and compile the client.
-  9. Run the **./client.o** command to run the client.
-   10. Report data.
-
-      After the client is started, enter **123** on the client console. The decoded data is displayed on the gateway console and the reported device data can be viewed on the platform.
-
- For details about the decoding rules, see **generic_tcp_protocol.c**.  
-
+	Run the following command to decompress the package:
    
+   	**unzip zlib-1.2.11.zip**
+   
+2. Run the following command to access the source code directory:
 
+	**cd zlib-1.2.11**
+	
+3. Generate a **Makefile**.
+
+	**./configure**
+	
+4. Run the **Makefile**.
+
+	**make**
+	
+5. Copy .so library files.
+	Copy the **libz.so**, **libz.so.1**, and **libz.so.1.2.11** files generated in the source code directory to the **lib** folder of the SDK.
+
+<h2 id="3.5">3.5 Compiling the huawei_secure_c Library </h2>
+
+1. Download the [secure_c source code package](https://gitee.com/openeuler/libboundscheck/blob/master/README.en.md).
+
+2. Access the source code directory and run the **Makefile** with the following command:
+
+   **make**
+
+3. Copy .so library files.
+    Copy the **libboundscheck.so** files generated in the source code of **lib** directory to the **lib** folder of the SDK.
+
+<h2 id="3.6">3.6 Compiling the libssh Library</h2>
+
+1. Download the [libssh source code package](https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz).
+	Run the following command to decompress the package:
+   
+   	tar xvf libssh-0.10.4.tar.xz
+   
+2. Run the following command to access the source code directory:
+
+	**cd libssh-0.10.4**
+	
+3. Run the following commands to compile the library files:
+
+    **mkdir build**
+    **cd build**
+    **cmake ..**
+    **make**
+	
+4. Run the following command to install the lib:
+
+	**sudo make install**
+	
+5. Copy .so library files and header files.
+	Copy the **libssh.so**, **libssh.so.4**, and **libssh.so.4.9.4** files generated in the source code directory to the **lib** folder of the SDK.
+    Copy the **libssh** folder in the **usr/local/include** directory to the **include** folder of the SDK.
+
+<h2 id="3.7">3.7 Compiling the libnopoll Library</h2>
+
+1. Download the [libnopoll source code package](http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz).
+	Run the following command to decompress the package:
+   
+   	**tar xzvf nopoll-0.4.8.b429.tar.gz**
+   
+2. Run the following command to access the source code directory:
+
+	cd nopoll-0.4.8.b429
+	
+3. Run the following commands to compile and install the library files:
+
+	**./configure**
+    **make**
+    **make install**
+    **pkg-config nopoll --cflags**
+    **pkg-config nopoll --libs**
+	
+4. Copy .so library files.
+	Copy the **libnopoll.so**, **libnopoll.so.0**, and **libnopoll.so.0.0.0** files generated in the source code directory to the **lib** folder of the SDK.
+    Copy the **libnopoll** folder in the **usr/local/include** directory to the **include** folder of the SDK.
+
+<h2 id="3.8">3.8 Uploading a Product Model and Registering a Device</h2>
+
+1. To import the developed profile (product model) to the console, choose **Products** in the navigation pane, click **Model Definition** on the displayed page, click **Import from Local**, select **Add File**, select a file, and click **OK**.
+   
+	![](./doc/doc_en/profile1.png)
+
+2. Choose **Device** > **All Devices** in the navigation pane, click **Individual Register** in the upper right corner, select the resource space where the product is located, select the product, enter the node ID (IMEI or MAC address), and customize the device name. If you do not customize the secret, the value is automatically generated by the platform. After all parameters are set, click **OK**.
+	![](./doc/doc_en/profile2.png)
+
+3. You can copy the device secret and click **Save & Close**. The device ID and device secret are automatically downloaded to the local host in TXT format.
+
+	![](./doc/doc_en/profile3.png)
+
+4. Choose **Devices** > **All Devices** in the navigation pane and you can see that the status of the newly created device is inactive.
+	![](./doc/doc_en/profile4.png)
+
+<h1 id="4">4. Quick Experience</h1> 
+1. Copy the SDK package to the Linux environment and run the following command to decompress the package:
+	
+	**unzip  huaweicloud-iot-device-sdk-c-master.zip**
+	
+2. Run the following command to go to the decompressed folder:
+	
+	**cd huaweicloud-iot-device-sdk-c-master**
+
+3. Modify configuration.
+	You need to modify the following parameters in the **src/device_demo/device_demo.c** file: 
+	**servierIp_**: southbound IP address of IoTDA, which can be viewed on the application management page of the console.
+	**username_**: parameter required for using MQTT. The default value is device ID, which is returned during device registration.
+	**password_**: device secret, which is returned during device registration.
+	![](./doc/doc_en/4_1.png)
+
+4. Run the **make** command to start compilation.
+
+	4.1 Run the following command to compile the file using **Makefile**:
+   
+        make (Delete **-m64** from the **Makefile** in a 32-bit OS.)
+
+   4.2 Run the following command to compile the file using GN:
+
+        gn gen -C out
+        ninja -C out
+	
+5. Run.
+	- Run the following command to load library files:
+	
+	  **export LD_LIBRARY_PATH=./lib/**
+
+	- Run the following command:
+	
+	  **./MQTT_Demo**
+	
+	  You can view many printed logs on the console.
+	  **login success** indicates that the device authentication is successful.  
+	  
+	  **MqttBase_onSubscribeSuccess** indicates that the subscription is successful.  
+	  
+	  **MqttBase_onPublishSuccess** indicates that the data has been published.  
+	  
+	  ![](./doc/doc_en/4_2.png)
+
+6. Check the running status of the device.
+  - Gateway (online)
+	  ![](./doc/doc_en/4_3.png)
+	- Gateway (reporting data)
+	  ![](./doc/doc_en/4_4.png)
+	- Child device
+	  - A gateway receives the notification of adding a child device from the platform.
+	    ![](./doc/doc_en/4_5.png)
+	  - A child device reports data.
+	    ![](./doc/doc_en/4_6.png)
+	  - Check the status of the child device.
+	    - Child device (online)
+	      ![](./doc/doc_en/4_7.png)
+	    - Child device (reporting data)
+	      ![](./doc/doc_en/4_8.png)
+        
+7. Device-side Rules
+   
+   7.1 Delivering Rules to a Device
+   
+   Log in to the IoTDA console, choose **Rules** > **Device Linkage**, and click `Create Rule`.
+   
+   ![](./doc/doc_en/4_create_rule.png)
+   
+   Enter the rule name, select the **Device Side** mode, and select a device.
+   
+   ![](./doc/doc_en/4_select_device_rule.png)
+   
+   Configure the rule.
+   ![](./doc/doc_en/4_config_device_rule.png)
+   
+   On the console, when the property is reported and the value of `PhV_phsA` is **9**, the rule on the device is triggered and the `HandleCommandRequest` is invoked.
+   ![](./doc/doc_cn/4_observe_output.png)
+   
+   If a command is executed across devices, the callback function **IOTA_SetDeviceRuleSendMsgCallback** needs to be invoked. You need to implement the **HandleDeviceRuleSendMsg** function to parse and execute the command.
+   ![](./doc/doc_cn/4_send_msg_to_other_device_rule.png)
+   
+   7.2 Storing the Device-side Rules Locally
+   
+   After the device is restarted and no longer connected to the network, the configured device-side rules cannot be obtained from the cloud. Store the rules in a file so that they can still be read after the device restarts. To use this feature, the device must support the file system. You only need to provide a path for the **IOTA_EnableDeviceRuleStorage** API (invoked in **src/device_demo/device_demo.c**) to locally store rules on the device. Change the value **testdata.txt** of the macro definition **DEVICE_RULE_FILE_PATH** in **include/agentlite/iota_datatrans.h** to the target file storage path.
+
+   ![](./doc/doc_cn/addFileStoreDeviceRule.png)
+
+8. SSH Remote Login
+
+  Before using the SSH remote login function, compile the libssh and libnopoll libraries by referring to [3.5 Compiling the libssh Library](#3.5) and [3.6 Compiling the libnopoll Library](#3.6). In addition, ensure that the device is online.
+
+  Log in to the IoTDA console, choose **O&M** > **Remote Login** in the navigation pane, select an online device, enter the user name and password, and click **OK**.
+
+   ![](./doc/doc_en/ssh_1.png)
+
+   The ssh remote login can be realized after the operations. Now you can enter commands for interactive operation.
+
+   ![](./doc/doc_cn/ssh_2.png)
+
+9. Connecting to the Edge M2M
+
+   Currently, the SDK can be used to connect to the edge IoTEdge. The edge node forwards messages to the target device to implement the M2M function. Procedure:
+  - 1. Set up an edge node, create a product, and add edge devices. For details, see Best Practices.
+    https://support.huaweicloud.com/bestpractice-iotedge/iotedge_bestpractice_0050.html
+  - 2. Use the required certificate. For details, see Best Practices.
+    https://support.huaweicloud.com/bestpractice-iotedge/iotedge_bestpractice_0052.html
+
+  Download the **plt-device-ca** certificate file, copy the certificate content, and use it to replace the content in the **conf/rootcert.perm** file in the sdk directory.
+
+  This certificate is used by the device to verify the identity of the edge node.
+  - 3. Replace port number.
+    In the directory of **include/base/mqtt_base.h**, replace
+
+  #**define MQTT_PORT         				"1883"**
+
+  #**define MQTTS_PORT         				"8883"**
+
+  with
+
+  #**define MQTT_PORT         				"7882"**
+
+  #**define MQTTS_PORT         				"7883"**
+
+  - 4. Test the demo.
+    Replace the following information in **src/device_demo/device_demo.c**.
+
+  char *serverIp_ = "xx.xx.xx.xx"; // IP address of the edge node.
+
+  int port_ = 7883; // MQTTS port number. Currently, the IoT Edge uses this port number by default.
+
+  char *username_ = "tunnelDeviceA"; // The value is set in step 1.
+
+  char *password_ = "xxxx"; // The value is set in step 1.
+
+  Assume that the IDs of source device A and target device B are **tunnelDeviceA** and **tunnelDeviceB** respectively. Device A sends a **hello world** message to device B.
+  The following code is invoked on device A (the demo can be invoked in the **main** function):
+
+   void Test_M2MSendMsg()
+   {
+
+     char *to = "deviceB";
+     char *from = username_;
+     char *content = "hello deviceB";
+     char *requestId = "demoIdToDeviceB";
+     int messageId = IOTA_M2MSendMsg(to, from, content, requestId, NULL);
+     ....
+  At the receiving end (device B), the following received message is printed with the callback function **HandleM2mMessageDown**:
+
+  void HandleM2mMessageDown(EN_IOTA_M2M_MESSAGE *rsp)
+  {
+   ...
+
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), requestId: %s\n", rsp->request_id);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), to: %s\n", rsp->to);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), from: %s\n", rsp->from);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), content: %s\n", rsp->content);
+    
+    // You can add the service processing logic here, for example, the subsequent processing after the content is received.
+    // do sth
+  }
+
+  The following information can be printed in terminal logs:
+  Device A:
+
+    DEBUG device_demo: this is m2m demo
+    DEBUG iota_datatrans: IOTA_M2MSendMsg() with payload ==> {
+          "request_id":   "demoIdToDeviceB",
+          "to":   "deviceB",
+          "from": "deviceA",
+          "content":      "hello deviceB"
+    }
+    DEBUG device_demo: Test_M2MSendMsg() ok, messageId 0
+  Device B:
+
+    INFO device_demo: HandleM2mMessageDown(), requestId: demoIdToDeviceB
+    INFO device_demo: HandleM2mMessageDown(), to:        deviceB
+    INFO device_demo: HandleM2mMessageDown(), from:      deviceA
+    INFO device_demo: HandleM2mMessageDown(), content:   hello deviceB
+
+
+
+10. Device-cloud Secure Communication (with the OpenHarmony Soft Bus)
+
+
+
+<h1 id="5">5. Procedure</h1> 
+
+This section describes how to use some APIs. For more information about APIs, see **the API documentation**. 
+
+- **Setting the log callback function**
+
+The SDK provides log callback functions. You can call the **IOTA_SetPrintLogCallback** function as required. For details, see the API documentation. Refer to **IOTA_SetPrintLogCallback** called by the **main()** function in the **device_demo** (**device_demo.c** in the **src/device_demo** folder, hereinafter referred to as demo).
+
+  `void IOTA_SetPrintLogCallback(PFN_LOG_CALLBACK_HANDLER pfnLogCallbackHandler)`
+
+  - To print logs on the console, refer to **vprintf(format, args)** set in the **myPrintLog** function in the demo.
+  - To print logs to the system log file, refer to the **vsyslog(level, format, args)** set in the **myPrintLog** function in the demo. In addition, **#include "syslog.h"** and **#define _SYS_LOG** should be contained.
   
+- **Initializing resources**
 
-<h2 id="5">5.3 Bootstrap</h2>
-You can provision devices to different regions. For details, see the access examples in <a href="https://support.huaweicloud.com/en-us/qs-iotps/iot_03_0006.html " target="_blank">Getting Started</a.
-
-**Note**: The SDK has automatically implemented the bootstrap device in the example. For details, see the <a href=" https://support.huaweicloud.com/en-us/usermanual-iotps/iot_01_0007.html " target="_blank">User Guide</a.
-
-Comment out **device_demo.o** from OBJS in **Makefile** and uncomment **bootstrap_demo.o**.
-![](./doc/doc_en/bootstrap.png)
-
-- **Compiling and Running the Program**
-
-1. Copy the **huaweicloud-iot-device-sdk-c-master.zip** package to the Linux environment and run the **unzip huaweicloud-iot-device-sdk-c-master.zip** command to decompress the package.
-
-2. Run the **cd huaweicloud-iot-device-sdk-c-master** command to access the folder.
-
-3. Run the **make** command to perform compilation.
-
-4. Run the **./MQTT_Demo.o** command to run the SDK demo.
-
-<h1 id="5">6 SDK APIs</h1>
-<h2 id="6">6.1 Setting Callback Functions for Printing Logs</h2>
-The SDK provides callback functions for you to print logs. You can call the **IOTA_SetPrintLogCallback** function to set one as required.  Refer to **IOTA_SetPrintLogCallback** called by the **main()** function in **device_demo.c** (demo for short) under the **src/device_demo** folder. For details about the parameters, see **API Reference (C)**.
-
-`void IOTA_SetPrintLogCallback(PFN_LOG_CALLBACK_HANDLER pfnLogCallbackHandler)`
-
-To print logs on the console, refer to **vprintf(format, args)** set in the **myPrintLog** function in the demo.
-
-To print logs to the system log file, refer to the **vsyslog(level, format, args)** set in the **myPrintLog** function in the demo. In addition, **#include "syslog.h"** and **#define _SYS_LOG** should be contained.
-
-<h2 id="7">6.2 Initializing the SDK</h2>
-Before establishing communication, call the **IOTA_Init()** function to initialize the SDK.  Refer to **IOTA_Init()** called by the **main()** function in the demo. For details about the parameters, see **API Reference (C)**.
+Before initiating services, call the **IOTA_Init()** API to initialize AgentLite resources. For details, see the API documentation. Refer to **IOTA_Init()** called by the **main()** function in the demo.
 
 `IOTA_Init(HW_CHAR *pcWorkPath)`
 
-<h2 id="8">6.3 Setting Parameters for Binding Devices</h2>
-Before connecting a device to the platform, set the IP address, port, device ID, and secret. Refer to **setAuthConfig()** called by the **main()** function in the following demo.
+- **Configuring device binding**
+
+Before connecting a device to the platform, set the IP address, port, device ID, and secret. Refer to **setAuthConfig()** called by the **main()** function in the demo.
 
 ```c
 
@@ -340,7 +526,8 @@ void setAuthConfig(){
   IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
   IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
   IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
-IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET); // Secret mode
+  IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET); // Secret mode
+  IOTA_ConfigSetUint(EN_IOTA_CFG_CHECK_STAMP_METHOD, EN_IOTA_CFG_CHECK_STAMP_OFF);
 /**
   * Configuration is required in certificate mode:
   *
@@ -356,78 +543,83 @@ IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET); // Secr
 }
 ```
 
-+ Obtain **serverIp** (EN_IOTA_CFG_MQTT_ADDR) and **port** (EN_IOTA_CFG_MQTT_PORT) from the IoTDA console.
-+ Obtain **username** (EN_IOTA_CFG_DEVICEID) and **password** (EN_IOTA_CFG_DEVICESECRET) after the device is registered.
+The IP (**EN_IOTA_CFG_MQTT_ADDR**) and port (**EN_IOTA_CFG_MQTT_PORT**) of the platform can be obtained from the application interconnection information on the SP portal.  
 
-When **_SYS_LOG** is defined (print a log in the system file), the facility type (EN_IOTA_CFG_LOG_LOCAL_NUMBER) and display level (EN_IOTA_CFG_LOG_LEVEL) of the log can be customized as required.
+The device ID (**EN_IOTA_CFG_DEVICEID**) and device secret (**EN_IOTA_CFG_DEVICESECRET**) are returned during device registration.  
 
-<h2 id="9">6.4 Setting Callback Functions</h2>
-The SDK provides callback functions for you to implement service processing logic based on different events, including device authentication, device disconnection from the platform, message subscription, publication, and receiving, and command receiving. Refer to **setMyCallbacks()** called by main() function in the following demo.
+The timestamp verification mode (**EN_IOTA_CFG_CHECK_STAMP_METHOD**) can be set to **EN_IOTA_CFG_CHECK_STAMP_OFF**. The sha256 (**EN_IOTA_CFG_CHECK_STAMP_SHA256**) or sm3 (**EN_IOTA_CFG_CHECK_STAMP_SM3**) can be used for hashing algorithm verification.
+
+When **_SYS_LOG** is defined (printing a log in the system file), the facility type (**EN_IOTA_CFG_LOG_LOCAL_NUMBER**) and display level (**EN_IOTA_CFG_LOG_LEVEL**) of the log can be customized as required.
+
+- **Configuring callback function**
+
+You can set callback functions for actions such as device authentication success/failure, device disconnection success/failure, device message subscription success/failure, device message publishment success/failure, and device message/command receiving. Refer to **setMyCallbacks()** called by **main()** function in the demo.
 
 ```c
-void setMyCallbacks(){ 
-   IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
- IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
+void setMyCallbacks(){	
+  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
 
- IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisConnectSuccess);
- IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisConnectFailure);
- IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisConnectSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisConnectFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);
 
- IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);
- IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);
 
- IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);
- IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
 
- IOTA_SetMessageCallback(HandleMessageDown);
- IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
- IOTA_SetCmdCallback(HandleCommandRequest);
- IOTA_SetPropSetCallback(HandlePropertiesSet);
- IOTA_SetPropGetCallback(HandlePropertiesGet);
- IOTA_SetEventCallback(HandleEventsDown);
- IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
+	IOTA_SetMessageCallback(HandleMessageDown);
+	IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
+	IOTA_SetCmdCallback(HandleCommandRequest);
+	IOTA_SetPropSetCallback(HandlePropertiesSet);
+	IOTA_SetPropGetCallback(HandlePropertiesGet);
+	IOTA_SetEventCallback(HandleEventsDown);
+	IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
 }
-
 ```
 
- - The **HandleConnectSuccess** function is called when a device is authenticated.
- - The **HandleConnectFailure** function is called when a device fails to be authenticated.
- - The **HandleDisConnectSuccess** function is called when a device proactively disconnects from the platform.
- - The **HandleDisConnectFailure** function is called when a device fails to proactively disconnect from the platform.
- - The **HandleConnectionLost** function is called when the connection between a device and the platform is lost.
- - The **HandleSubscribesuccess** function is called when a message is subscribed.
- - The **HandleSubscribeFailure** function is called when a message fails to subscribe.
- - The **HandlePublishSuccess** function is called when device data is published.
- - The **HandlePublishFailure** function is called when device data fails to publish.
- - The **HandleMessageDown** function is called when a device receives the platform's transparently transmitted message (default topic), which is not parsed by the platform.
- - The **HandleUserTopicMessageDown** function is called when a device receives the platform's transparently transmitted message (custom topic), which is not parsed by the platform.
- - The **HandleCommandRequest** function is called when a device receives the platform's command.
- - The **HandlePropertiesSet** function is called when a device receives the platform's request for setting device properties.
- - The **HandlePropertiesGet** function is called when a device receives the platform's request for querying device properties.
- - The **HandleEventsDown** function is called when a device receives the platform's notification of an event (a child device addition or deletion event or an OTA event).
- - The **HandleDeviceShadowRsp** function is called when a device receives device shadow data.
+	- The **HandleConnectSuccess** function is called when a device is authenticated. 
+	- The **HandleConnectFailure** function is called when a device fails to be authenticated. 
+	- The **HandleDisConnectSuccess** function is called when a device proactively disconnects from the platform.
+	- The **HandleDisConnectFailure** function is called when a device fails to proactively disconnect from the platform.
+	- The **HandleConnectionLost** function is called when the connection between a device and the platform is lost.
+	- The **HandleSubscribesuccess** function is called when a device subscribes to a message.
+	- The **HandleSubscribeFailure** function is called when a device fails to subscribe to a message.
+	- The **HandlePublishSuccess** function is called when device data is published.
+	- The **HandlePublishFailure** function is called when device data fails to be published.
+	- The **HandleMessageDown** function is called when a device receives the unparsed data message (default topic) from the platform.
+	- The **HandleUserTopicMessageDown** function is called when a device receives the unparsed data message (custom topic) from the platform.
+	- The **HandleCommandRequest** function is called when a device receives a command.
+	- The **HandlePropertiesSet** function is called when a device receives the request for setting device properties.
+	- The **HandlePropertiesGet** function is called when a device receives the request for querying device properties.
+	- The **HandleEventsDown** function is called when a device receives the notification of an event (a child device addition or deletion event or an OTA event).
+	- The **HandleDeviceShadowRsp** function is called when a device receives the device shadow data.
 
-<h2 id="10">6.5 Authenticating a Device</h2>
-After callback functions are set, call the authentication function **HW_INT IOTA_Connect()** in the demo.  
-
- 
-
-After **HW_INT IOTA_Connect()** is called, the message **login success** is displayed. It is recommended that data be reported after a device is authenticated and sleeps for several seconds or process services via the callback function invoked when the device is authenticated.
-![](./doc/login.png)
-You can view that the gateway is online on the console.
-![](./doc/doc_en/upload_profile_4.png)
-
-You can press **Ctrl + C** to stop the program. After that, you can view that the device is offline.
-
-<h2 id="11">6.6 Reporting Device Messages/Properties</h2>
-After a device is authenticated, a gateway can call SDK APIs to report device messages and properties. In addition, the gateway can report the command execution result, property setting result, and property query result. It is recommended that the interval for reporting data be greater than or equal to hundreds of milliseconds.
-
-- **Function for reporting a device message**
+- **Device authentication**
   
-  `HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content)`
+  After callback functions are set, call the authentication function. For details, see the invoking of this API in the demo:
   
-  The data reported via this function is not parsed by the platform. It can be forwarded to other services or pushed to the application server. **object_device_id** indicates the device to report messages. **name** indicates the message name. **id** indicates the message ID. **content** indicates the content to report. **topicParas** indicates the parameters of a custom topic. If this parameter is set to **NULL**, the default topic of the platform is used to report data. Refer to the **Test_MessageReport** function in the demo. For details about the parameters, see **API Reference (C)**.
-   ```c
+  **HW_INT IOTA_Connect()**
+  
+  After the API is called, the message **login success** is displayed. It is recommended that you report data several seconds after a device is authenticated, or process services via the invoked callback function.
+  ![](./doc/doc_cn/login.png)
+  The gateway is online.
+  ![](./doc/doc_en/online.png)
+You can press **Ctrl+C** to stop the program. After that, the device is offline.
+  
+- **Reporting device messages/properties**
+  
+  After a device is authenticated, a gateway can call SDK APIs to report device messages and properties. In addition, the gateway can report the command execution result, property setting result, and property query result. It is recommended that the interval for reporting data is greater than or equal to hundreds of milliseconds.
+  
+  - API for reporting a device message:
+    
+    `HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content)`
+    
+    The data reported via this API is not parsed by the platform. It can be forwarded to other services or pushed to the application server. **object_device_id** indicates the device to be reported. **name** indicates the message name. **id** indicates the message ID. **content** indicates the content to be reported. **topicParas** indicates the parameters of the custom topic. If this parameter is set to **NULL**, the default topic of the platform is used to report data. Refer to the **Test_MessageReport** function in the demo. For details about the parameters, see the API documentation.
+    
+```c
  void Test_MessageReport() {
   //default topic
   // int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", NULL);
@@ -435,78 +627,114 @@ After a device is authenticated, a gateway can call SDK APIs to report device me
   //user topic
   int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg");
   if (messageId != 0) {
-     PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo:   Test_MessageReport() failed, messageId %d\n", messageId);
- }
+  	  PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo:   Test_MessageReport() failed, messageId %d\n", messageId);
+	}
 }
-   ```
-- **Function for reporting device properties**
-  
-  `HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum)`
-  
-  The data reported via this function is parsed by the platform and the data in the structure must be the same as the properties defined in the product model. **ST_IOTA_SERVICE_DATA_INFO** indicates a structure array. A gateway can report multiple services at the same time. **serviceNum** indicates the number of services to report. Refer to the **Test_propertiesReport** function in the demo. For details about the parameters, see **API Reference (C)**.
-  
-   ```c
-  void Test_propertiesReport() {
-int serviceNum = 2; // Number of services to be reported by a gateway
+```
+
+  - API for reporting device properties:
+    
+    `HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum)`
+    
+    The data reported via this API is parsed by the platform and the data in the structure must be the same as the properties defined in the product model. **ST_IOTA_SERVICE_DATA_INFO** indicates a structure array. A gateway can report multiple services at the same time. **serviceNum** indicates the number of services to be reported. Refer to the **Test_propertiesReport** function in the demo. For details about the parameters, see the API documentation.
+    
+```c
+void Test_propertiesReport() {
+  int serviceNum = 2; // Number of services to be reported by a gateway
   ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
-      //---------------the data of service1-------------------------------
-    char *service1 = "{\"Load\":\"5\",\"ImbA_strVal\":\"6\"}";
-    //   services[0].event_time = GetEventTimesStamp(); //you need to free the services[0].event_time
-    services[0].event_time = NULL;
-    services[0].service_id = "parameter";
-    services[0].properties = service1;
-  
+
+  //---------------the data of service1-------------------------------
+  char *service1 = "{\"Load\":\"5\",\"ImbA_strVal\":\"6\"}";
+  //   services[0].event_time = GetEventTimesStamp(); //you need to free the services[0].event_time
+  services[0].event_time = NULL;
+  services[0].service_id = "parameter";
+  services[0].properties = service1;
+
   //---------------the data of service2-------------------------------
-    char *service2 = "{\"PhV_phsA\":\"4\",\"PhV_phsB\":9}";
-    // services[1].event_time =  GetEventTimesStamp(); //you need to free the services[1].event_time
-    services[0].event_time = NULL;
-    services[1].service_id = "analog";
-    services[1].properties = service2;
-  
+  char *service2 = "{\"PhV_phsA\":\"4\",\"PhV_phsB\":9}";
+  //	services[1].event_time =  GetEventTimesStamp(); //you need to free the services[1].event_time
+  services[0].event_time = NULL;
+  services[1].service_id = "analog";
+services[1].properties = service2;
+
   int messageId = IOTA_PropertiesReport(services, serviceNum);
-    if(messageId != 0) {
-     PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_batchPropertiesReport() failed, messageId %d\n", messageId);
+  if(messageId != 0) {
+  	PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_batchPropertiesReport() failed, messageId %d\n", messageId);
+  }
+}
+```
+
+- **Receiving device messages/commands/properties**
+  
+  After a device is authenticated and the callback function is set, it can receive commands from the platform. (The SDK automatically subscribes to related topics.) The following commands are available: message delivery, command delivery, device property setting, device property query, child device addition, and child device deletion. (For details, see the API documentation.) Note: IoTDA uses implicit subscription. Devices do not need to subscribe to the downstream system topic. Devices subscribe to the system topic whose QoS is 0 by default. Call the API to subscribe to another topic whose QoS is 1.
+  
+  - A device receives a data message.
+	  ![](./doc/doc_en/messageDown.png)
+	  After receiving a message, the device processes it via a callback function. For details, see the **HandleMessageDown** function in the demo. (Set the callback function in advance.)
+  
+  - A device receives the command as defined in the product model.
+
+    `HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandler)`
+    This API is used to set the command callback function. When a command is delivered from the cloud or a device-side rule is triggered, `pfnCallbackHandler` is called.
+    ```c
+    void HandleCommandRequest(EN_IOTA_COMMAND *command)
+    {
+        if (command == NULL) {
+            return;
+        }
+
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), messageId %d\n",
+            command->mqtt_msg_info->messageId);
+
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), object_device_id %s\n",
+            command->object_device_id);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), service_id %s\n", command->service_id);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), command_name %s\n", command->command_name);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), paras %s\n", command->paras);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), request_id %s\n", command->request_id);
+        // Specific command can be implemented here.
+        Test_CommandResponse(command->request_id); // response command
     }
-    }
-   ```
+    ```
+    Registers a callback.
+    ```c
+    IOTA_SetCmdCallback(HandleCommandRequest);
+    ```
 
-<h2 id="12">6.7 Receiving Messages/Commands/Properties</h2>
-After a device is authenticated and the callback function is set, it can receive the platform's commands. (The SDK automatically subscribes to related topics.) The commands include messages commands, device property setting or query requests, and child device addition or deletion notifications. For details about the parameters, see **API Reference (C)**.
+    ![](./doc/doc_en/cmdDown.png)
+    
+  - A device receives the request for setting device properties.
+	![](./doc/doc_en/setDown.png)
+	You can use the callback function to process the command. After receiving the request for setting device properties, call the **IOTA_PropertiesSetResponse** API to report the response. For details, see the **HandlePropertiesSet** function in the demo. (Set the callback function in advance.)
 
-- A device receives a message (transparently transmitted message).
-  ![](./doc/doc_en/messageDown.png)
-  After receiving a message, the device processes it via a callback function. For details, see the **HandleMessageDown** function in the demo. (Set the callback function in advance for processing the platform's messages.)
-- A device receives the platform's command as defined in the product model.
-![](./doc/doc_en/cmdDown.png)
-- A device receives the platform's request for setting device properties.
-![](./doc/doc_en/setDown.png)
- After receiving the platform's request for setting device properties, call the **IOTA_PropertiesSetResponse** function to report the response. For details, see the **HandlePropertiesSet** function in the demo. (Set the callback function in advance.)
-- A device receives the platform's request for querying device properties.
-![](./doc/doc_en/getDown.png)
- After receiving the platform's request for querying device properties, call the **IOTA_PropertiesGetResponse** function to report the device's response. For details, see the **HandlePropertiesGet** function in the demo. (Set the callback function in advance.)
-- The platform notifies a gateway of child device addition.
-![](./doc/doc_en/addSubDevice.png)
- After receiving the notification, call the **IOTA_BatchPropertiesReport** function to report child device data (view the reported data on the console). For details, see the **HandlePropertiesGet** function in the demo. (Set the callback function in advance.)
-- The platform notifies a gateway of child device deletion.
-![](./doc/doc_en/deleteSubDevice.png)
+  - A device receives the request for querying device properties.
+	![](./doc/doc_en/getDown.png)
+	You can use the callback function to process the command. After receiving the request for querying device properties, call the **IOTA_PropertiesGetResponse** API to report the response. For details, see the **HandlePropertiesGet** function in the demo. (Set the callback function in advance.)
+	
+  - The platform notifies a gateway of child device addition.
+	![](./doc/doc_en/addSubDevice.png)
+	You can use the callback function to process the command. After receiving the notification, call the **IOTA_BatchPropertiesReport** API to report child device data (view the reported data on the console). For details, see the **HandleEventsDown** function in the demo. (Set the callback function in advance.)
+	
+  - The platform notifies a gateway of child device deletion.
+  <img src="./doc/doc_en/deleteSubDevice.png" style="zoom:67%;" />
+  
+- **Reporting device data (child device)**
+  
+  A child device can report data in batch via the following API:
+  
+  `HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[])`
+  
+  The data reported via this API is parsed by the platform. The data in the structure must be the same as that defined in the product model. **ST_IOTA_DEVICE_DATA_INFO** indicates a structure array. Multiple child devices can report data at the same time and each child device can report multiple services. **deviceNum** indicates the number of child devices to report data. **serviceLenList** indicates the number of services reported by a child device. Refer to the **Test_batchPropertiesReport** function in the demo. For details about parameters, see the API documentation.
 
-<h2 id="13">6.8 Reporting Child Device Data</h2>
-A child device can report data in batch via the following function:
-
-`HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum, HW_INT serviceLenList[])`
-
-The data reported via this function is parsed by the platform. The data in the structure must be the same as that defined in the product model. **ST_IOTA_DEVICE_DATA_INFO** indicates a structure array. Multiple child devices can report data at the same time and each child device can report multiple services. **deviceNum** indicates the number of child devices to report data. **serviceLenList** indicates the number of services reported by a child device. Refer to the **Test_batchPropertiesReport** function in the demo. For details about parameters, see **API Reference (C)**.
-
- ```
-​```c
+```c
 void Test_BatchPropertiesReport() {
-  int deviceNum = 1;      // Number of child devices to report data
-  ST_IOTA_DEVICE_DATA_INFO devices[deviceNum]; // Array hosting the structure of data to be reported by child devices
-  int serviceList[deviceNum]; // Number of services to be reported by each child device
-  serviceList[0] = 2;       // **device1** needs to report two services.
-  // serviceList[1] = 1;    // **device2** needs to report one service.
-  char *device1_service1 = "{\"Load\":\"1\",\"ImbA_strVal\":\"3\"}";     // Properties to be reported by **service1** (in JSON format)
-  char *device1_service2 = "{\"PhV_phsA\":\"2\",\"PhV_phsB\":\"4\"}";// Properties to be reported by **service2** (in JSON format)
+  int deviceNum = 1;      // Number of child devices to report data.
+  ST_IOTA_DEVICE_DATA_INFO devices[deviceNum]; // Array hosting the structure of data to be reported by child devices.
+  int serviceList[deviceNum];  // Number of services to be reported by each child device.
+  serviceList[0] = 2;       // **Device 1** needs to report two services.
+  //	serviceList[1] = 1;		  // **Device 2** needs to report one service.
+  char *device1_service1 = "{\"Load\":\"1\",\"ImbA_strVal\":\"3\"}";     // Properties to be reported by **service 1** (in JSON format).
+  char *device1_service2 = "{\"PhV_phsA\":\"2\",\"PhV_phsB\":\"4\"}";// Properties to be reported by **service 2** (in JSON format).
   devices[0].device_id = subDeviceId;
   devices[0].services[0].event_time = "20191209T081212Z";
   devices[0].services[0].service_id = "parameter";
@@ -514,45 +742,241 @@ void Test_BatchPropertiesReport() {
   devices[0].services[1].event_time = "20191209T081212Z";
   devices[0].services[1].service_id = "analog";
   devices[0].services[1].properties = device1_service2;
-  // char *device2_service1 = "{\"AA\":\"2\",\"BB\":\"4\"}";
-  // devices[1].device_id = "subDevices22222";
-  // devices[1].services[0].event_time = "d2s1";
-  // devices[1].services[0].service_id = "device2_service11111111";
-  // devices[1].services[0].properties = device2_service1;
+  //	char *device2_service1 = "{\"AA\":\"2\",\"BB\":\"4\"}";
+  //	devices[1].device_id = "subDevices22222";
+  //	devices[1].services[0].event_time = "d2s1";
+  //	devices[1].services[0].service_id = "device2_service11111111";
+  //	devices[1].services[0].properties = device2_service1;
   int messageId = IOTA_BatchPropertiesReport(devices, deviceNum, serviceList);
   if(messageId != 0) {
-   printfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_BatchPropertiesReport() failed, messageId %d\n", messageId);
+  	printfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_BatchPropertiesReport() failed, messageId %d\n", messageId);
   }
 }
- ```
+```
+- **Accessing using a certificate**
 
-- **Topic Customization**
-
-  For details, see **API Reference (C)** in the home directory.
-
-- **OTA Upgrades**
-
-  For details, see **API Reference (C)** in the home directory.
-
-- **Device Shadow Query**
-
-  For details, see **API Reference (C)** in the home directory.
+  The platform supports device access authentication using X.509 certificates. The access procedures are as follows:
   
-  <h1 id="6">7 Generating an SDK Library File</h1>
-  To generate a .so file, modify the **Makefile**. You can open the file using Notepad and upload it to the Linux environment. Alternatively, you can directly run the **vim Makefile** to modify the file using in the Linux environment, press **i** to edit the file, and then run **wq!** to save the modification.
+  1. For details about how to create and upload a certificate, visit https://support.huaweicloud.com/usermanual-iothub/iot_01_0055.html.
+  2. Set the following parameters in the SDK:
+	  - Change the certificate and secret file names to **deviceCert.pem** and **deviceCert.key** respectively, and place the two files in the **conf** directory of the SDK.
+	  - Refer to the **SetAuthConfig** function in the demo to set the mode for the device to access using a certificate.
+```c
+void SetAuthConfig() {
+	IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
+	IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
+	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
+	//	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
+	//	IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, 	EN_IOTA_CFG_AUTH_MODE_SECRET);
+	
+	 IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_CERT);
+	 IOTA_ConfigSetStr(EN_MQTT_CFG_PRIVATE_KEY_PASSWORD, "yourPassword");
+}   
+```
+- **TLS accessing using Chinese cryptographic algorithm**
   
-    1. Add **-shared -fPIC** to CFLAGS.
-       ![](./doc/doc_en/so1.png)
-    2. Delete **device_demo.o** from OBJS.
-       ![](./doc/doc_en/so2.png)
-    3. Change the compiled TARGET file from **MQTT_Demo.o** to **libHWMQTT.so** (the file name can be customized).
-       ![](./doc/doc_en/so3.png)
-    4. Run the **make** command to generate the **libHWMQTT.so** file.
-       ![](./doc/doc_en/so4.png)
+  Currently, the SDK supports TLS access and data transmission using Chinese cryptographic algorithm. To use the Chinese cryptographic algorithm for communication, you need to download the corresponding version of OpenSSL. For details, see [3.2 Compiling the OpenSSL Library](#3.2).
+  
+  To use TLS, you need to install a patch for the **paho.mqtt.c-1.3.9/src/SSLSocket.c** file in the **paho_mqtt** open-source library. The patch installation method is as follows:
+    1. Run the following command to decompress .**/generatingLib/gmtls.patch.zip** and obtain the patch file **gmtls.patch**:
 
-<h1 id="6">8 Open-Source Protocols</h1>
-Complying with the BSD-3 open-source license agreement
+        **unzip ./generatingLib/gmtls.patch.zip**
+    2. Run the following command to patch **paho.mqtt.c-1.3.9/src/SSLSocket.c**:
+
+        **patch -b ./generatingLib/paho.mqtt.c-1.3.9/src/SSLSocket.c ./generatingLib/gmtls.patch**
+  
+  ```c
+  // Use the absolute path to read the certificate.
+  const char *signCert = "/volume/tassl/iot-device-sdk-c/conf/gmcert_s/CS.cert.pem";
+  const char *signKey = "/volume/tassl/iot-device-sdk-c/conf/gmcert_s/CS.key.pem";
+  const char *encCert = "/volume/tassl/iot-device-sdk-c/conf/gmcert_e/CE.cert.pem";
+  const char *encKey = "/volume/tassl/iot-device-sdk-c/conf/gmcert_e/CE.key.pem";
+  const char *caPath = "/volume/tassl/iot-device-sdk-c/conf/GMCert_GMCA01.cert.pem";
+  const char *passWord = NULL;
+  ```
+
+  After the patch is installed, you can check whether the preceding certificate path fields exist in **paho.mqtt.c-1.3.9/src/SSLSocket.c**. With password login mode, you do not need to enter the signature certificate, private key, encryption certificate, and private key path. But with certificate login mode, you need to enter the absolute path to access the file. After the modification, recompile the Paho library.
+
+- **Customizing topic**
+
+  For details, see **the API documentation** in the home directory.
+
+- **Conducting OTA upgrade**
+
+  For details, see **the API documentation** in the home directory.
+
+- **Querying device shadow**
+
+  For details, see **the API documentation** in the home directory.
+  
+- **Accessing with generic protocol** 
+
+	[Generic-Protocol Access Demo](./doc/doc_cn/generic_protocol.md)
+
+- **Bootstrap accessing** 
+	You can provision devices to different regions with IoTDA. For details, go to https://support.huaweicloud.com/qs-iotps/iot_03_0006.html for more access examples. For details, see the user guide.
+	You need to enable **device_demo.o** and **bootstrap_demo.o** in OBJS in **Makefile** in the home directory of the SDK.   
+	![](./doc/doc_cn/bootstrap.png)
+	
+
+Currently, IoTDA uses certificates issued by two authoritative CAs: [DigiCert Global Root CA.](https://cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem) and [GlobalSign Root CA - R3](https://valid.r3.roots.globalsign.com/). By default, the certificate in the **conf** directory is bound to the domain name of IoTDA basic edition. For details about how to switch to another IoTDA version, see [Obtaining Resources](https://support.huaweicloud.com/devg-iothub/iot_02_1004.html).
+
+- **Compile and run the program.**
+1. Copy the **huaweicloud-iot-device-sdk-c-master.zip** package to the Linux environment and run the following command to decompress the package:
+	
+	**unzip  huaweicloud-iot-device-sdk-c-master.zip**
+	
+2. Go to the following folder:
+	
+	**cd huaweicloud-iot-device-sdk-c-master**
+	
+3. Run the following command to perform compilation:
+	
+	**make**
+	
+4. Run the following SDK demo:
+	
+	**./MQTT_Demo**
+	
+- **Generating SDK library files**
+  
+  To generate a .so file, modify the **Makefile**. You can open the file using Notepad or run the **vim Makefile** to modify the file in the Linux environment. Press **i** to edit the file, and then run **wq!** to save the modification.
+  
+  - Add **-shared -fPIC** to CFLAGS.
+    ![](./doc/doc_cn/so1.png)
+  - Delete **device_demo.o** from OBJS.
+    ![](./doc/doc_cn/so2.png)
+  - Change the compiled TARGET file from **MQTT_Demo.o** to **libHWMQTT.so** (the file name can be customized).
+    ![](./doc/doc_cn/so3.png)
+  - Run the **make** command to generate the **libHWMQTT.so** file. 
+    
+    ![](./doc/doc_cn/so4.png)
+  
+- **Storing data in abnormal scenarios**
+  
+  IoTDA provides code to store, report, and resend property messages in abnormal scenarios. You can use the **Test_PropertiesStoreData()** function. **STORE_DATA_SWITCH** specifies whether to enable this function. By default, it is disabled with the **#define** added. You can delete the **#define** to enable the function.
+  The new code is sample code. You can use the default dynamic two-dimensional arrays or other data structures as needed. It is recommended that the device stores the collected data and resends the data when the device link is normal.
+  The running logic of this API is as follows:
+  
+- Storing the sensor data before reporting data. (Array is used by default, but you can use other data structures.)
+
+    ![](./doc/doc_en/storage.png)
+  
+- If a publish success response is received, the message is deleted from the container. Or the message will be sent again later.
+  
+    ![](./doc/doc_en/delete_and_resend.png)
+  
+  - After the network is recovered, the remaining data in the container is reported.
+  ![](./doc/doc_en/reconnection.png)
 
 
+- **Using MQTT5.0**
+
+  If you want to use MQTT5.0 (not the default MQTT3.1.1), uncomment **#define MQTTV5** in the **./include/util/mqttv5_util.h** file.
+
+- **Using MQTT_DEBUG**
+
+  To use the MQTT_DEBUG function, change the value of **MQTT_TRACE_ON** to **1** in the **./include/util/mqtt_base.h** file.
+  **MQTT_TRACE_LEVEL** indicates the log level. The default value is **MQTTASYNC_TRACE_MAXIMUM**, which is the highest level.
+
+  Log levels are described as follows:
+
+  |        Log levels        |                 significance                  |
+  | :----------------------: | :-------------------------------------------: |
+  | MQTTASYNC_TRACE_MAXIMUM  |      only print log contains fatal error      |
+  |  MQTTASYNC_TRACE_MEDIUM  |        only print log has severe error        |
+  | MQTTASYNC_TRACE_MINIMUM  |  lesser log, only print when error happened   |
+  | MQTTASYNC_TRACE_PROTOCOL |      only print log about mqtt protocol       |
+  |  MQTTASYNC_TRACE_ERROR   |                   print all                   |
+  |  MQTTASYNC_TRACE_SEVERE  |                   print all                   |
+  |  MQTTASYNC_TRACE_FATAL   | print all, include memory allocation and free |
+
+  When **LOG_FILE_ENABLE** is set to **1**, logs are exported to the file path specified by **LOG_FILE_NAME**. When **LOG_FILE_ENABLE** is set to **0**, logs are directly output.
+
+- **Performing remote configuration**
+
+  Configuration parameters can be remotely delivered. The SDK receives related information through **event/down**. You can register a customized callback hook function through **IOTA_SetDeviceConfigCallback**. The function processes related data after receiving configuration information.
+
+- **Using soft bus**
+
+  You can group and connect devices with the soft bus function of IoTDA. IoTDA can manage security groups and deliver credit identifiers for communication between group members.
+
+  Log in to the IoTDA console, choose **Devices** > **Groups** in the navigation pane, create a child group, create a Harmony soft bus, and customize its name.
+
+  ![](./doc/doc_en/Device-Cloud-Security-Communication1.png)
+
+  To bind a device, click **Bind**, select the device to be bound to the group, and synchronize the soft bus information.
+
+  ![](./doc/doc_en/Device-Cloud-Security-Communication2.png)
+
+  You can call **IOTA_GetLatestSoftBusInfo** to obtain the soft bus information of the device.
+  You can obtain the version of the updated soft bus from the callback function **HandlePropertiesSet** delivered by the device shadow.
+
+- **Automatic reconnection**
+
+  `src/device_demo/device_demo.c` provides two reconnection modes that cannot be used at the same time. You can use the macro `CUSTOM_RECONNECT_SWITCH` to choose one mode.
+
+    1. The `CUSTOM_RECONNECT_SWITCH` macro is not defined. In this case, reconnection is performed with the callback functions of `HandleConnectFailure` and `HandleConnectionLost`. The MQTT disconnection will be detected in a timely manner. This method is recommended.
+
+    2. The macro `CUSTOM_RECONNECT_SWITCH` is defined. In this case, a thread is used to simulate a timer. The `IOTA_IsConnected()` API is invoked every 30 seconds to check the connection status. If a disconnection is detected, reconnection is performed.
 
 
+  The system uses the first mode by default, where the macro `CUSTOM_RECONNECT_SWITCH` is not defined.
+  ```C
+  void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+  {
+      PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() error, messageId %d, code %d, messsage %s\n",
+          rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
+      PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() login again\n");
+
+  #ifndef CUSTOM_RECONNECT_SWITCH
+      // Backoff reconnection
+      connect_failed_times++;
+      if (connect_failed_times < 10) {
+          TimeSleep(50);
+      } else if (connect_failed_times < 50) {
+          TimeSleep(2500);
+      }
+
+      int ret = IOTA_Connect();
+      if (ret != 0) {
+          PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleAuthFailure() error, login again failed, result %d\n", ret);
+      }
+  #endif
+  }
+
+  ```
+
+  To use the second mode, find the following code and uncomment the macro `CUSTOM_RECONNECT_SWITCH`.
+  ```C
+  // #define CUSTOM_RECONNECT_SWITCH
+  ```
+
+  You can use the `IOTA_IsConnected()` API to read the connection status for reconnection.
+  ```C
+  static void ReconnectRoutine(void *args)
+  {
+      (void)args;
+      while (1) {
+          PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: need to reconnect: %s \n", IOTA_IsConnected() ? "no" : "yes");
+          if (!IOTA_IsConnected()) {// Check the connection status.
+              int ret = IOTA_Connect();
+              if (ret != 0) {
+                  PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Connect() error, result %d\n", ret);
+              }
+          }
+          TimeSleep(30 * 1000); // 30s
+      }
+  }
+
+  static void ReconnectDemo()
+  {
+      if (pthread_create(&reconnectThread, NULL, ReconnectRoutine, NULL) != NULL) {
+          PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: create ReconnectionThread failed! ===================>\n");
+      }
+  }
+  ```
+
+## License
+
+* In compliance with the BSD-3 open source license agreement
