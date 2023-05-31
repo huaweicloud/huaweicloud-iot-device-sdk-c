@@ -1,27 +1,32 @@
 /*
- * Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
- * All rights reserved.
- * &Redistribution and use in source and binary forms, with or without modification,
+ * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- * conditions and the following disclaimer.
+ *    conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- * of conditions and the following disclaimer in the documentation and/or other materials
- * provided with the distribution.
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific prior written permission.
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
- * THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  */
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +43,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <linux/limits.h>
 #include "string.h"
 #include "securec.h"
 #include "string_util.h"
@@ -50,8 +56,10 @@
 #include "iota_error_type.h"
 #include "subscribe.h"
 #include "limits.h"
+#include "rule_trans.h"
+#include "rule_manager.h"
 
-char *IOTA_MessageReportPayload(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content)
+static char *IOTA_MessageReportPayload(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content)
 {
     cJSON *root;
     root = cJSON_CreateObject();
@@ -110,12 +118,13 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 }
 #endif
 
-char *IOTA_PropertiesReportPayload(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum)
+static char *IOTA_PropertiesReportPayload(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum)
 {
     if (serviceNum == 0 || pServiceData == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
         return NULL;
     }
+    
     cJSON *root, *serviceDatas;
     root = cJSON_CreateObject();
     serviceDatas = cJSON_CreateArray();
@@ -138,6 +147,9 @@ char *IOTA_PropertiesReportPayload(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_
         cJSON_AddItemToArray(serviceDatas, tmp);
     }
 
+    RuleMgr_CachePropertiesValue(serviceDatas);
+    RuleMgr_CheckAndExecuteNoTimers();
+
     cJSON_AddItemToObject(root, SERVICES, serviceDatas);
     char *payload = cJSON_Print(root);
     cJSON_Delete(root);
@@ -154,7 +166,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReport(ST_IOTA_SERVICE_DATA_INFO pServiceData[
         return IOTA_FAILURE;
     } else {
         messageId = ReportDeviceProperties(payload, compressFlag, context, NULL);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReport() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReport() with payload ==> %s\n", payload);
         MemFree(&payload);
     }
     return messageId;
@@ -172,14 +184,14 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV5(ST_IOTA_SERVICE_DATA_INFO pServiceDat
         return IOTA_FAILURE;
     } else {
         messageId = ReportDeviceProperties(payload, compressFlag, context, (void *)mqttv5);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReportV5() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReportV5() with payload ==> %s\n", payload);
         MemFree(&payload);
     }
     return messageId;
 }
 #endif
 
-char *IOTA_BatchPropertiesReportPayload(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum,
+static char *IOTA_BatchPropertiesReportPayload(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum,
     HW_INT serviceLenList[])
 {
     if (deviceNum == 0 || serviceLenList == NULL || pDeviceData == NULL) {
@@ -216,7 +228,7 @@ char *IOTA_BatchPropertiesReportPayload(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], 
                 cJSON_Delete(deviceData);
                 cJSON_Delete(deviceDatas);
                 cJSON_Delete(root);
-                return IOTA_PARSE_JSON_FAILED;
+                return NULL;
             }
 
             cJSON *tmp;
@@ -247,7 +259,7 @@ HW_API_FUNC HW_INT IOTA_BatchPropertiesReport(ST_IOTA_DEVICE_DATA_INFO pDeviceDa
         return IOTA_FAILURE;
     } else {
         int messageId = ReportBatchDeviceProperties(payload, compressFlag, context, NULL);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BatchPropertiesReport() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BatchPropertiesReport() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -262,15 +274,14 @@ HW_API_FUNC HW_INT IOTA_BatchPropertiesReportV5(ST_IOTA_DEVICE_DATA_INFO pDevice
         return IOTA_FAILURE;
     } else {
         int messageId = ReportBatchDeviceProperties(payload, compressFlag, context, (void *)mqttv5);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BatchPropertiesReport() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BatchPropertiesReportV5() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
 }
 #endif
 
-
-char *IOTA_CommandResponsePayload(HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse)
+static char *IOTA_CommandResponsePayload(HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse)
 {
     cJSON *root;
     root = cJSON_CreateObject();
@@ -305,7 +316,7 @@ HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, 
         return IOTA_FAILURE;
     } else {
         messageId = ReportCommandReponse(requestId, payload, context, NULL);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CommandResponse() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CommandResponse() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -316,7 +327,7 @@ HW_API_FUNC HW_INT IOTA_CommandResponseV5(HW_CHAR *requestId, HW_INT result_code
     HW_CHAR *pcCommandResponse, void *context, MQTTV5_DATA *properties)
 {
     if (pcCommandResponse == NULL || requestId == NULL) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_CommandResponse:the requestId or commandResponse cannot be null.\n");
+        PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_CommandResponseV5:the requestId or commandResponse cannot be null.\n");
         return IOTA_PARAMETER_EMPTY;
     }
 
@@ -326,7 +337,7 @@ HW_API_FUNC HW_INT IOTA_CommandResponseV5(HW_CHAR *requestId, HW_INT result_code
         return IOTA_FAILURE;
     } else {
         messageId = ReportCommandReponse(requestId, payload, context, (void *)properties);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CommandResponse() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CommandResponseV5() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -359,12 +370,11 @@ HW_API_FUNC HW_INT IOTA_PropertiesSetResponse(HW_CHAR *requestId, HW_INT result_
         return IOTA_FAILURE;
     } else {
         messageId = ReportPropSetReponse(requestId, payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesSetResponse() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesSetResponse() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
 }
-
 
 HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVICE_DATA_INFO serviceProp[],
     HW_INT serviceNum, void *context)
@@ -419,7 +429,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVIC
         return IOTA_FAILURE;
     } else {
         messageId = ReportPropGetReponse(requestId, payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesGetResponse() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesGetResponse() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -487,7 +497,7 @@ HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_st
         return IOTA_FAILURE;
     } else {
         messageId = EventUp(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_UpdateSubDeviceStatus() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_UpdateSubDeviceStatus() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -564,7 +574,7 @@ HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW
         return IOTA_FAILURE;
     } else {
         messageId = EventUp(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_AddSubDevice() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_AddSubDevice() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -612,7 +622,7 @@ HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_I
         return IOTA_FAILURE;
     } else {
         messageId = EventUp(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_DelSubDevice() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_DelSubDevice() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -652,7 +662,7 @@ HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo
         return IOTA_FAILURE;
     } else {
         messageId = EventUp(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_OTAVersionReport() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_OTAVersionReport() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -700,7 +710,7 @@ HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInf
         return IOTA_FAILURE;
     } else {
         messageId = EventUp(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_OTAStatusReport() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_OTAStatusReport() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -716,7 +726,26 @@ HW_API_FUNC HW_INT IOTA_SubscribeTopic(HW_CHAR *topic, HW_INT qos)
     return SubsribeTopic(topic, qos);
 }
 
-char *IOTA_GetUrlData(HW_CHAR *url, uint8_t urlLen, char *ip)
+// for v2 api
+static HW_INT IOTA_OTAv2GetFileNameFromUrl(const char *url, char *fileName, int fileNameBufferLength)
+{
+    // Split Url data
+    const char *queryStringStart = strstr(url, HTTP_URL_QUERY_START_MARK);
+    const char *start;
+    for (start = queryStringStart; start != url; --start) {
+        if (*start == SINGLE_SLANT_CHAR) {
+            start++;
+            if (strncpy_s(fileName, fileNameBufferLength, start, queryStringStart - start) != EOK) {
+                return IOTA_FAILURE;
+            } else {
+                return IOTA_SUCCESS;
+            }
+        }
+    }
+    return IOTA_FAILURE;
+}
+
+static char *IOTA_GetUrlData(char *url, char *port, size_t portBufferLength, char *ip,  size_t ipBufferLength)
 {
     // Split Url data
     char *tmp = strstr(url, DOUBLE_OBLIQUE_LINE);
@@ -730,17 +759,20 @@ char *IOTA_GetUrlData(HW_CHAR *url, uint8_t urlLen, char *ip)
         return NULL;
     }
     // the length of ipTmp is enougt to copy
-    int ret = strncpy_s(ip, IP_LENGTH, tmp + strlen(DOUBLE_OBLIQUE_LINE),
+    int ret = strncpy_s(ip, ipBufferLength, tmp + strlen(DOUBLE_OBLIQUE_LINE),
         len - strlen(tmpContainsColon) - strlen(DOUBLE_OBLIQUE_LINE));
     if (ret != 0) {
         return NULL;
     }
 
     char *uri = strstr(tmpContainsColon, SINGLE_SLANT);
+    if (strncpy_s(port, portBufferLength, tmpContainsColon + 1, uri - tmpContainsColon - 1) != EOK) {
+        return NULL;
+    }
     return uri;
 }
 
-int IOTA_ConnectionDomainName(HW_CHAR *ip, HW_INT ipLen, HW_INT timeout)
+static int IOTA_ConnectionDomainName(HW_CHAR *ip, HW_CHAR *port, HW_INT timeout)
 {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
@@ -756,10 +788,16 @@ int IOTA_ConnectionDomainName(HW_CHAR *ip, HW_INT ipLen, HW_INT timeout)
         close(fd);
         return IOTA_FAILURE;
     }
+    uint16_t portInt = (uint16_t)strtoul(port, NULL, 10);
+    if (portInt == 0) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_ConnectionDomainName() invalid port\n");
+        close(fd);
+        return IOTA_FAILURE;
+    }
 
     struct sockaddr_in addr = { 0 };
+    addr.sin_port = htons(portInt);
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(OTA_PORT);
     addr.sin_addr.s_addr = inet_addr(ip);
     if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_ConnectionDomainName() fail to connect server by tcp.\n");
@@ -769,8 +807,7 @@ int IOTA_ConnectionDomainName(HW_CHAR *ip, HW_INT ipLen, HW_INT timeout)
     return fd;
 }
 
-
-SSL *IOTA_OpensslConnect(int fd, SSL_CTX *context)
+static SSL *IOTA_OpensslConnect(int fd, SSL_CTX *context)
 {
     SSL *ssl = SSL_new(context);
     if (ssl == NULL) {
@@ -794,43 +831,54 @@ SSL *IOTA_OpensslConnect(int fd, SSL_CTX *context)
     return ssl;
 }
 
-HW_API_FUNC HW_INT IOTA_SendHttpHeader(char *str1, size_t str1len, char *uri, char *ip, char *token)
+static HW_INT IOTA_GetHttpHeaderLength(const char *uri, const char *ip, const char *token)
 {
     int retSum = 0;
-
-    retSum = memset_s(str1, str1len, 0, HTTP_HEADER_LENGTH);
-    if (retSum != 0) {
-        return IOTA_FAILURE;
+    retSum += strlen(OTA_HTTP_GET);
+    retSum += strlen(uri);
+    retSum += strlen(OTA_HTTP_VERSION);
+    retSum += strlen(OTA_HTTP_HOST);
+    retSum += strlen(ip);
+    retSum += strlen(OTA_LINEFEED);
+    if (token != NULL) {
+        retSum += strlen(OTA_CONTENT_TYPE);
+        retSum += strlen(OTA_AUTH);
+        retSum += strlen(token);
     }
-
-    strcat_s(str1, str1len, OTA_HTTP_GET);
-    retSum = strcat_s(str1, str1len, uri);
-    if (retSum != 0) {
-        return IOTA_FAILURE;
-    }
-    strcat_s(str1, str1len, OTA_HTTP_VERSION);
-
-    strcat_s(str1, str1len, OTA_HTTP_HOST);
-    retSum = strcat_s(str1, str1len, ip);
-    if (retSum != 0) {
-        return IOTA_FAILURE;
-    }
-    strcat_s(str1, str1len, OTA_LINEFEED);
-
-    strcat_s(str1, str1len, OTA_CONTENT_TYPE);
-    strcat_s(str1, str1len, OTA_AUTH);
-    retSum = strcat_s(str1, str1len, token);
-    if (retSum) {
-        return IOTA_FAILURE;
-    }
-    strcat_s(str1, str1len, OTA_CRLF);
-    return 1;
+    retSum += strlen(OTA_CRLF);
+    return retSum;
 }
 
-HW_API_FUNC HW_INT IOTA_IotReadHeaderFlag(SSL *ssl, char *buf, int read_length, char *fileName, long *fileSize)
+static HW_INT IOTA_GetHttpHeader(char *header, size_t headerBufferLength, char *uri, char *ip, char *token)
+{
+    if (memset_s(header, headerBufferLength, 0, headerBufferLength) != EOK) {
+        return IOTA_FAILURE;
+    }
+
+    if (strcat_s(header, headerBufferLength, OTA_HTTP_GET) != EOK || strcat_s(header, headerBufferLength, uri) != EOK ||
+        strcat_s(header, headerBufferLength, OTA_HTTP_VERSION) != EOK ||
+        strcat_s(header, headerBufferLength, OTA_HTTP_HOST) != EOK || strcat_s(header, headerBufferLength, ip) != EOK ||
+        strcat_s(header, headerBufferLength, OTA_LINEFEED) != EOK) {
+        return IOTA_FAILURE;
+    };
+
+    if (token != NULL) {
+        if (strcat_s(header, headerBufferLength, OTA_CONTENT_TYPE) != EOK ||
+            strcat_s(header, headerBufferLength, OTA_AUTH) != EOK ||
+            strcat_s(header, headerBufferLength, token) != EOK) {
+            return IOTA_FAILURE;
+        }
+    }
+    if (strcat_s(header, headerBufferLength, OTA_CRLF) != EOK) {
+        return IOTA_FAILURE;
+    }
+    return IOTA_SUCCESS;
+}
+
+static HW_INT IOTA_IotReadHeaderFlag(char *buf, int readLength, char *fileName, long *fileSize)
 {
     // the length of rspStatusCode is enougt to copy
-    char rspStatusCode[HTTP_STATUS_LENGTH + 1] = { "" };
+    char rspStatusCode[HTTP_STATUS_LENGTH + 1] = {""};
     int result = 0;
     int ret =
         strncpy_s(rspStatusCode, sizeof(rspStatusCode), buf + strlen(OTA_HTTP_RESPONSE_VERSION), HTTP_STATUS_LENGTH);
@@ -840,7 +888,7 @@ HW_API_FUNC HW_INT IOTA_IotReadHeaderFlag(SSL *ssl, char *buf, int read_length, 
 
     rspStatusCode[HTTP_STATUS_LENGTH] = '\0';
     if (strcmp(rspStatusCode, HTTP_OK)) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() error:the statusCode is %s.\n",
+        PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() error: the statusCode is %s.\n",
             rspStatusCode);
         result = IOTA_FAILURE;
     }
@@ -852,7 +900,7 @@ HW_API_FUNC HW_INT IOTA_IotReadHeaderFlag(SSL *ssl, char *buf, int read_length, 
     }
     int p = 0, k;
     char pkgSize[PKG_LENGTH];
-    for (k = content_Length_index + strlen(OTA_CONTENT_LENGTH); k < read_length - 1; k++) {
+    for (k = content_Length_index + strlen(OTA_CONTENT_LENGTH); k < readLength - 1; k++) {
         if (buf[k] == '\r' || buf[k] == '\n' || buf[k] == ';') {
             break;
         } else {
@@ -865,62 +913,55 @@ HW_API_FUNC HW_INT IOTA_IotReadHeaderFlag(SSL *ssl, char *buf, int read_length, 
     *fileSize = strtol(pkgSize, &end, 10);
     PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() the fileSize is %d.\n", *fileSize);
 
-    // get filename  from  Content-Disposition in the reponse Header
+    // get filename  from  Content-Disposition in the reponse Header, for v1 only
     int filename_index = GetSubStrIndex((const char *)buf, FILE_NAME);
     p = 0;
-    if (filename_index < IOTA_SUCCESS) {
-        return IOTA_FAILURE;
-    }
-    for (k = filename_index + strlen(FILE_NAME); k < read_length - 1; k++) {
-        if (buf[k] == '\r' || buf[k] == '\n' || buf[k] == ';') {
-            break;
-        } else {
-            fileName[p++] = buf[k];
+    if (filename_index >= IOTA_SUCCESS) {
+        for (k = filename_index + strlen(FILE_NAME); k < readLength - 1; k++) {
+            if (p >= PKGNAME_MAX) {
+                result = IOTA_FAILURE;
+                PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() the fileName is too long \n");
+                break;
+            }
+            if (buf[k] == '\r' || buf[k] == '\n' || buf[k] == ';') {
+                break;
+            } else {
+                fileName[p++] = buf[k];
+            }
         }
+        fileName[p] = '\0';
+        PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() the fileName is %s \n", fileName);
     }
-    fileName[p] = '\0';
-    PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() the fileName is %s \n", fileName);
     return result;
 }
 
-HW_API_FUNC HW_INT IOTA_IotReadHeaderData(char *buf, int read_length, long fileSize, long *write_size, FILE *fp)
+static HW_INT IOTA_IotReadHeaderData(char *buf, int readLength, long *writeSize, FILE *fp)
 {
-    int write_length = 0;
-    int bodyStart = GetSubStrIndex(buf, OTA_CRLF);
-    if (bodyStart < IOTA_SUCCESS) {
+    int ret = IOTA_SUCCESS;
+    int writeLength = 0;
+    int httpHeaderLength = GetSubStrIndex(buf, OTA_CRLF);
+    if (httpHeaderLength < 0) {
         return IOTA_PARAMETER_EMPTY;
     }
-    if ((*write_size + read_length) < fileSize) {
-        write_length =
-            fwrite(buf + bodyStart + strlen(OTA_CRLF), sizeof(char), read_length - bodyStart - strlen(OTA_CRLF), fp);
-        if (write_length < read_length - bodyStart - (int)strlen(OTA_CRLF)) {
-            return IOTA_FAILURE;
-        }
-        *write_size += write_length;
-        return 1;
-    } else if (((*write_size + read_length) >= fileSize) && (*write_size < fileSize)) {
-        write_length = fwrite(buf + bodyStart + strlen(OTA_CRLF), sizeof(char),
-            fileSize - *write_size - bodyStart - strlen(OTA_CRLF), fp);
-        if (write_length < fileSize - *write_size - bodyStart - (int)strlen(OTA_CRLF)) {
-            return IOTA_FAILURE;
-        }
-        *write_size += write_length;
-        return IOTA_SUCCESS;
-    } else {
-        return IOTA_SUCCESS;
+    httpHeaderLength += strlen(OTA_CRLF);
+
+    int otaBodySize = readLength - httpHeaderLength;
+    writeLength = fwrite(buf + httpHeaderLength, sizeof(char), otaBodySize, fp);
+    if (writeLength < otaBodySize) {
+        ret = IOTA_FAILURE;
     }
-    return 1;
+    *writeSize = writeLength;
+    return ret;
 }
 
-HW_API_FUNC HW_INT IOTA_IotRead(SSL *ssl)
+static HW_INT IOTA_IotRead(SSL *ssl, const char *otaFilePath, char *otaFileNameOut)
 {
-    int read_length = 0;
-    int write_length = 0;
-    long write_size = 0L;
+    int readLength = 0;
+    int writeLength = 0;
+    long writeSize = 0L;
     long fileSize = 0L;
-    int ret = 0;
+    int ret = IOTA_SUCCESS;
     int result = 0;
-    char fileName[PKGNAME_MAX] = {0};
 
     int headerFlag = 0; // to judge if read the response header
     FILE *fp = NULL;
@@ -928,53 +969,75 @@ HW_API_FUNC HW_INT IOTA_IotRead(SSL *ssl)
     char buf[BUFSIZE];
     do {
         memset_s(buf, sizeof(buf), 0, sizeof(buf));
-        read_length = SSL_read(ssl, buf, sizeof(buf) - 1);
+        readLength = SSL_read(ssl, buf, sizeof(buf) - 1);
 
         if (headerFlag == 0) {
             headerFlag = 1;
-            result = IOTA_IotReadHeaderFlag(ssl, buf, read_length, fileName, &fileSize);
-            if (strlen(fileName) > PATH_MAX || NULL == fileName || result < 0) {
-                PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() the fileName is invalid.\n");
+            result = IOTA_IotReadHeaderFlag(buf, readLength, otaFileNameOut, &fileSize);
+
+            if (strlen(otaFileNameOut) > PATH_MAX || result < 0) {
+                PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_IotReadHeaderFlag() return = %d.\n", result);
                 break;
             }
-            char fileName2[PATH_MAX] = {0};
-            realpath(fileName, fileName2);
-            fp = fopen(fileName2, "wb");
+            char canonicalFilePath[PATH_MAX] = {0};
+            if (otaFilePath == NULL) {
+                realpath(otaFileNameOut, canonicalFilePath);
+            } else {
+                char *fileNameWithPath = NULL;
+                if (StrEndWith(otaFilePath, "/")) {
+                    fileNameWithPath = CombineStrings(2, otaFilePath, otaFileNameOut);
+                } else {
+                    fileNameWithPath = CombineStrings(3, otaFilePath, "/", otaFileNameOut);
+                }
+                if (!fileNameWithPath) {
+                    result = IOTA_FAILURE;
+                    break;
+                }
+                realpath(fileNameWithPath, canonicalFilePath);
+                MemFree((void **)&fileNameWithPath);
+            }
+            fp = fopen(canonicalFilePath, "wb");
+
             if (fp == NULL) {
                 result = IOTA_FAILURE;
-                PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() fopen %s Failed\n", fileName);
+                PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_IotRead() fopen %s Failed\n", otaFileNameOut);
                 break;
             }
-            ret = IOTA_IotReadHeaderData(buf, read_length, fileSize, &write_size, fp);
-            if (ret == -1) {
-                PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() %s Write Failed!.\n", fileName);
+            PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_IotRead() destination file path is %s\n",
+                canonicalFilePath);
+
+            ret = IOTA_IotReadHeaderData(buf, readLength, &writeSize, fp);
+            if (ret == IOTA_FAILURE) {
+                PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_IotRead() %s Write Failed!.\n", otaFileNameOut);
+                break;
             }
-            if (ret <= 0) {
+            if (writeSize >= fileSize) {
                 break;
             }
         } else {
-            if ((write_size + read_length) < fileSize && fp != NULL) {
-                write_length = fwrite((void *)buf, sizeof(char), read_length, fp);
-                if (write_length < read_length) {
-                    PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() %s Write Failed.\n", fileName);
+            if ((writeSize + readLength) < fileSize && fp != NULL) {
+                writeLength = fwrite((void *)buf, sizeof(char), readLength, fp);
+                if (writeLength < readLength) {
+                    PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_IotRead() %s Write Failed.\n", otaFileNameOut);
+                    ret = IOTA_FAILURE;
                     break;
                 }
-                write_size += write_length;
-            } else if (((write_size + read_length) >= fileSize) && (write_size < fileSize) && fp != NULL) {
-                write_length = fwrite((void *)buf, sizeof(char), fileSize - write_size, fp);
-                if (write_length < fileSize - write_size) {
-                    PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() %s Write Failed!.\n",
-                        fileName);
+                writeSize += writeLength;
+            } else if (((writeSize + readLength) >= fileSize) && (writeSize < fileSize) && fp != NULL) {
+                writeLength = fwrite((void *)buf, sizeof(char), fileSize - writeSize, fp);
+                if (writeLength < fileSize - writeSize) {
+                    PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_IotRead() %s Write Failed!.\n", otaFileNameOut);
+                    ret = IOTA_FAILURE;
                     break;
                 }
-                write_size += write_length;
+                writeSize += writeLength;
                 break;
             } else {
                 break;
             }
         }
-        buf[read_length] = '\0';
-    } while (read_length > 0);
+        buf[readLength] = '\0';
+    } while (readLength > 0);
 
     fflush(fp);
     if (fp != NULL) {
@@ -985,20 +1048,73 @@ HW_API_FUNC HW_INT IOTA_IotRead(SSL *ssl)
 
 HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT timeout)
 {
-    if (url == NULL || token == NULL ||
+    char filename[PKGNAME_MAX + 1];
+    return IOTA_GetOTAPackages_Ext(url, token, timeout, NULL, filename);
+}
+
+HW_API_FUNC HW_INT IOTA_GetLatestSoftBusInfo(HW_CHAR *busId, HW_CHAR *eventId, void *context) {
+    cJSON *root_soft_bus;
+    root_soft_bus = cJSON_CreateObject();
+
+    cJSON *services_soft_bus;
+    services_soft_bus = cJSON_CreateArray();
+
+    cJSON *service_soft_bus; 
+    service_soft_bus = cJSON_CreateObject();
+
+    cJSON *paras = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(service_soft_bus, SERVICE_ID, SOFT_BUS_SERVICEID);
+    cJSON_AddStringToObject(service_soft_bus, EVENT_TYPE, SOFT_BUS_EVENT_REQ);
+
+    if (eventId != NULL) {
+        cJSON_AddStringToObject(service_soft_bus, EVENT_ID, eventId);
+    }
+    if (busId != NULL) {
+        cJSON_AddStringToObject(paras, BUS_ID, busId);
+    }
+
+    cJSON_AddItemToObject(service_soft_bus, PARAS, paras);
+    cJSON_AddItemToArray(services_soft_bus, service_soft_bus);
+    cJSON_AddItemToObject(root_soft_bus, SERVICES, services_soft_bus);
+    char *payload = cJSON_Print(root_soft_bus);
+    cJSON_Delete(root_soft_bus);
+
+    int messageId = 0;
+    if (payload == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: get the newest soft bus info failed, the payload is null\n");
+	} else {
+        messageId = EventUp(payload, context);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_GetLatestSoftBusInfo() with payload ==> %s\n", payload);
+        if (messageId != 0) {
+            PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: get the newest soft bus info failed, the result is %d\n", messageId);
+        }
+        free(payload);
+        return messageId;
+    }
+}
+
+HW_API_FUNC HW_INT IOTA_GetOTAPackages_Ext(HW_CHAR *url, HW_CHAR *token, HW_INT timeout, const HW_CHAR *otaFilePath,
+    HW_CHAR *otaFilenameOut)
+{
+    if (url == NULL || otaFilenameOut == NULL ||
         timeout <= OTA_TIMEOUT_MIN_LENGTH) { // the timeout value must be greater than 300s
-        PrintfLog(EN_LOG_LEVEL_ERROR, "the input is invalid.\n");
+        PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_GetOTAPackages() the input is invalid.\n");
         return IOTA_PARAMETER_ERROR;
     }
 
     int result = 0;
-    char ip[IP_LENGTH] = { "" };
-    char *uri = IOTA_GetUrlData(url, strlen(url), ip);
+    char ipBuffer[IP_LENGTH] = {""};
+    char portBuffer[PORT_LENGTH] = {""};
+
+    char *ip = ipBuffer;
+    char *port = portBuffer;
+    char *uri = IOTA_GetUrlData(url, port, PORT_LENGTH, ip, IP_LENGTH);
     if (uri == NULL) {
         return IOTA_FAILURE;
     }
 
-    int fd = IOTA_ConnectionDomainName(ip, IP_LENGTH, timeout);
+    int fd = IOTA_ConnectionDomainName(ip, port, timeout);
     PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() connect server success by tcp.\n");
 
     SSL_CTX *context = IOTA_ssl_init();
@@ -1010,13 +1126,19 @@ HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT time
     }
 
     PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() connect to server.\n");
-
-
-    char str1[HTTP_HEADER_LENGTH];
-    result = IOTA_SendHttpHeader(str1, sizeof(str1), uri, ip, token);
-    if (result < 0) {
-        PrintfLog(EN_LOG_LEVEL_ERROR,
-            "iota_datatrans: IOTA_GetOTAPackages() HTTP_HEADER_LENGTH Insufficient length \n");
+    if (token == NULL) {
+        if (IOTA_OTAv2GetFileNameFromUrl(url, otaFilenameOut, PKGNAME_MAX + 1) == IOTA_FAILURE) {
+            PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() get v2 filename failed \n");
+            SSL_CTX_free(context);
+            close(fd);
+            return IOTA_FAILURE;
+        }
+    }
+    int httpHeaderLength = IOTA_GetHttpHeaderLength(uri, ip, token);
+    int httpHeaderBufferLength = httpHeaderLength + 1;
+    char *httpHeaderStr = (char *)malloc(sizeof(char) * httpHeaderBufferLength);
+    if (httpHeaderStr == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() can't allocate memory for http header \n");
         SSL_shutdown(ssl);
         SSL_free(ssl);
         SSL_CTX_free(context);
@@ -1024,9 +1146,21 @@ HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT time
         return IOTA_FAILURE;
     }
 
-    PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() the request header is \n%s.\n", str1);
+    result = IOTA_GetHttpHeader(httpHeaderStr, httpHeaderBufferLength, uri, ip, token);
+    if (result < 0) {
+        PrintfLog(EN_LOG_LEVEL_ERROR,
+            "iota_datatrans: IOTA_GetOTAPackages() HTTP_HEADER_LENGTH Insufficient length \n");
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+        SSL_CTX_free(context);
+        close(fd);
+        MemFree(&httpHeaderStr);
+        return IOTA_FAILURE;
+    }
 
-    int res = SSL_write(ssl, str1, strlen(str1));
+    PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() the request header is \n%s.\n", httpHeaderStr);
+
+    int res = SSL_write(ssl, httpHeaderStr, httpHeaderLength);
 
     if (res < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR,
@@ -1035,23 +1169,26 @@ HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT time
         close(fd);
         SSL_free(ssl);
         SSL_CTX_free(context);
+        MemFree(&httpHeaderStr);
         return IOTA_FAILURE;
     }
 
-    result = IOTA_IotRead(ssl);
+    result = IOTA_IotRead(ssl, otaFilePath, otaFilenameOut);
     SSL_shutdown(ssl);
     close(fd);
     SSL_free(ssl);
     SSL_CTX_free(context);
-    PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() success.\n");
-
+    MemFree(&httpHeaderStr);
+    if (result == 0) {
+        PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() success.\n");
+    }
     usleep(1000 * 1000); // wait connection released
     return result;
 }
 
 HW_API_FUNC SSL_CTX *IOTA_ssl_init()
 {
-    PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: evssl_init1() start to init ssl.\n");
+    PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_ssl_init() start to init ssl.\n");
     static SSL_CTX *server_ctx;
 
     // init openssl
@@ -1066,11 +1203,11 @@ HW_API_FUNC SSL_CTX *IOTA_ssl_init()
     server_ctx = SSL_CTX_new(SSLv23_client_method());
 
     if (server_ctx == NULL) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: evssl_init1() New SSL_CTX failed.\n");
+        PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_ssl_init() New SSL_CTX failed.\n");
         return NULL;
     }
 
-    PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: evssl_init1() end to init ssl.\n");
+    PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_ssl_init() end to init ssl.\n");
     return server_ctx;
 }
 
@@ -1156,7 +1293,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceDat
         return IOTA_FAILURE;
     } else {
         messageId = ReportDevicePropertiesV3(payload, 0, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReportV3() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_PropertiesReportV3() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -1170,7 +1307,7 @@ HW_API_FUNC HW_INT IOTA_BinaryReportV3(HW_CHAR *payload, void *context)
     }
 
     int messageId = ReportDevicePropertiesV3(payload, 1, context);
-    PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BinaryReportV3() with payload %s ==>\n", payload);
+    PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_BinaryReportV3() with payload ==> %s\n", payload);
     return messageId;
 }
 
@@ -1200,7 +1337,7 @@ HW_API_FUNC HW_INT IOTA_CmdRspV3(ST_IOTA_COMMAND_RSP_V3 *cmdRspV3, void *context
         return IOTA_FAILURE;
     } else {
         messageId = ReportDevicePropertiesV3(payload, 0, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CmdRspV3() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_CmdRspV3() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -1220,7 +1357,6 @@ HW_API_FUNC HW_INT IOTA_SubscribeBoostrap()
 {
     return SubscribeBootstrap();
 }
-
 
 HW_API_FUNC HW_INT IOTA_GetNTPTime(void *context)
 {
@@ -1253,14 +1389,13 @@ HW_API_FUNC HW_INT IOTA_GetNTPTime(void *context)
         return IOTA_FAILURE;
     } else {
         messageId = EventUp(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_GetNTPTime() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_GetNTPTime() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
 }
 
-HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, size_t contentSiz, HW_CHAR *timestamp,
-    void *context)
+HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR *timestamp, void *context)
 {
     cJSON *root, *services, *serviceEvent;
     root = cJSON_CreateObject();
@@ -1289,12 +1424,11 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, size_t 
         return IOTA_FAILURE;
     } else {
         messageId = EventUp(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_ReportDeviceLog() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_ReportDeviceLog() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
 }
-
 
 /**
  *@Description: report device info to the iot platform
@@ -1320,6 +1454,9 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceInfo(ST_IOTA_DEVICE_INFO_REPORT *device_info
     cJSON_AddStringToObject(paras, DEVICE_SDK_VERSION, device_info_report->device_sdk_version);
     cJSON_AddStringToObject(paras, SW_VERSION, device_info_report->sw_version);
     cJSON_AddStringToObject(paras, FW_VERSION, device_info_report->fw_version);
+    if(device_info_report->device_ip != NULL) {
+	    cJSON_AddStringToObject(paras, DEVICE_IP, device_info_report->device_ip);
+    }
 
     cJSON_AddItemToObject(serviceEvent, PARAS, paras);
     cJSON_AddItemToArray(services, serviceEvent);
@@ -1334,12 +1471,93 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceInfo(ST_IOTA_DEVICE_INFO_REPORT *device_info
         return IOTA_FAILURE;
     } else {
         messageId = EventUp(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_ReportDeviceInfo() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_ReportDeviceInfo() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
 }
 
+HW_API_FUNC HW_INT IOTA_RptDeviceConfigRst(const ST_IOTA_DEVICE_CONFIG_RESULT *device_config_report, void *context)
+{
+    cJSON *root = NULL;
+    cJSON *services = NULL;
+    cJSON *serviceEvent = NULL;
+    cJSON *paras = NULL;
+    char *payload = NULL;
+    char *event_time = NULL;
+    int messageId = 0;
+
+    root = cJSON_CreateObject();
+    services = cJSON_CreateArray();
+    serviceEvent = cJSON_CreateObject();
+    paras =  cJSON_CreateObject();
+    event_time = GetEventTimesStamp();
+    if (!root || !services || !serviceEvent || !paras || !event_time) {
+        cJSON_Delete(root);
+        cJSON_Delete(services);
+        cJSON_Delete(serviceEvent);
+        cJSON_Delete(paras);
+        MemFree(&event_time);
+        PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_RptDeviceConfigRst: memory alloc failed!");
+        return IOTA_FAILURE;
+    }
+    cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, device_config_report->object_device_id);
+
+    cJSON_AddStringToObject(serviceEvent, SERVICE_ID, DEVICE_CONFIG);
+    cJSON_AddStringToObject(serviceEvent, EVENT_TYPE, DEVICE_CONFIG_UPDATE_RESPONSE);
+    cJSON_AddStringToObject(serviceEvent, EVENT_TIME, event_time);
+
+    cJSON_AddNumberToObject(paras, RESULT_CODE, device_config_report->result_code);
+    cJSON_AddStringToObject(paras, DESCRIPTION, device_config_report->description);
+
+    cJSON_AddItemToObject(serviceEvent, PARAS, paras);
+    cJSON_AddItemToArray(services, serviceEvent);
+    cJSON_AddItemToObject(root, SERVICES, services);
+
+    payload = cJSON_Print(root);
+    cJSON_Delete(root);
+    MemFree(&event_time);
+
+    if (payload == NULL) {
+        return IOTA_FAILURE;
+    } else {
+        messageId = EventUp(payload, context);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_RptDeviceConfigRst() with payload ==> %s\n", payload);
+        MemFree(&payload);
+        return messageId;
+    }
+}
+
+HW_API_FUNC HW_INT IOTA_M2MSendMsg(HW_CHAR *to, HW_CHAR *from, HW_CHAR *content, HW_CHAR *requestId, void *context)
+{
+    if ((to == NULL) || (from == NULL) || (content == NULL)) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "the intput param cannot be null\n");
+        return -1;
+    }
+
+    cJSON *root = cJSON_CreateObject();
+    if (root == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "cJSON_CreateObject failed\n");
+    }
+
+    cJSON_AddStringToObject(root, REQUEST_ID, requestId);
+    cJSON_AddStringToObject(root, TO, to);
+    cJSON_AddStringToObject(root, FROM, from);
+    cJSON_AddStringToObject(root, CONTENT, content);
+
+    char *payload = cJSON_Print(root);
+    cJSON_Delete(root);
+
+    int messageId = 0;
+    if (payload == NULL) {
+        return IOTA_FAILURE;
+    } else {
+        messageId = OCM2MSendMsg(to, from, payload, requestId, context);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_M2MSendMsg() with payload ==> %s\n", payload);
+        MemFree(&payload);
+        return messageId;
+    }
+}
 
 /**
  * ----------------------------deprecated below, do not use it-------------------------------------->
@@ -1354,7 +1572,7 @@ HW_API_FUNC HW_INT IOTA_ReportSubDeviceInfo(HW_CHAR *pcPayload, void *context)
     }
 
     HW_INT messageId = ReportSubDeviceInfo(pcPayload, context);
-    PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_ReportSubDeviceInfo() with payload %s ==>\n", pcPayload);
+    PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_ReportSubDeviceInfo() with payload ==> %s\n", pcPayload);
     return messageId;
 }
 
@@ -1379,7 +1597,7 @@ HW_API_FUNC HW_INT IOTA_SubDeviceVersionReport(HW_CHAR *version, void *context)
         return IOTA_FAILURE;
     } else {
         messageId = ReportSubDeviceInfo(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_SubDeviceVersionReport() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_SubDeviceVersionReport() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }
@@ -1406,7 +1624,7 @@ HW_API_FUNC HW_INT IOTA_SubDeviceProductGetReport(cJSON *product_id_list, void *
         return IOTA_FAILURE;
     } else {
         messageId = ReportSubDeviceInfo(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_SubDeviceProductGetReport() with payload %s ==>\n",
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_SubDeviceProductGetReport() with payload ==> %s\n",
             payload);
         MemFree(&payload);
         return messageId;
@@ -1434,7 +1652,7 @@ HW_API_FUNC HW_INT IOTA_SubDeviceScanReport(cJSON *device_list, void *context)
         return IOTA_FAILURE;
     } else {
         messageId = ReportSubDeviceInfo(payload, context);
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_SubDeviceScanReport() with payload %s ==>\n", payload);
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_SubDeviceScanReport() with payload ==> %s\n", payload);
         MemFree(&payload);
         return messageId;
     }

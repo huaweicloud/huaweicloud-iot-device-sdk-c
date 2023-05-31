@@ -1,27 +1,32 @@
 /*
- * Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
- * All rights reserved.
- * &Redistribution and use in source and binary forms, with or without modification,
+ * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- * conditions and the following disclaimer.
+ *    conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- * of conditions and the following disclaimer in the documentation and/or other materials
- * provided with the distribution.
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific prior written permission.
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
- * THE POSSIBILITY OF SUCH DAMAGE.
- *
- *   */
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #if defined(WIN32) || defined(WIN64)
 #include "windows.h"
@@ -32,6 +37,8 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <string.h>
+#include "securec.h"
 #include "string_util.h"
 #include "log_util.h"
 #include "mqtt_base.h"
@@ -102,11 +109,6 @@ MQTTAsync client = NULL;
 HMODULE mqttdll = NULL;
 #endif
 
-#if defined(MQTTV5)
-char **send_mass = NULL; // MQTT v5 Subject alias heap
-char topic_alias_len = 0;
-#endif
-
 char *encrypted_password = NULL;
 
 int GetEncryptedPassword(char **timestamp, char **encryptedPwd)
@@ -131,7 +133,7 @@ int GetEncryptedPassword(char **timestamp, char **encryptedPwd)
         return IOTA_FAILURE;
     }
 
-    int ret = EncryWithHMacSha256(temp_pwd, timestamp, ENCRYPT_LENGTH, temp_encrypted_pwd);
+    int ret = EncryWithHMac(temp_pwd, timestamp, ENCRYPT_LENGTH, temp_encrypted_pwd, checkTimestamp);
     if (ret != IOTA_SUCCESS) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: GetEncryptedPassword() error, encrypt failed %d\n", ret);
         MemFree(&temp_pwd);
@@ -151,8 +153,44 @@ int GetEncryptedPassword(char **timestamp, char **encryptedPwd)
     return IOTA_SUCCESS;
 }
 
+static void LogProperties(MQTTProperties *props)
+{
+    int i = 0;
+#if defined(WIN32) || defined(WIN64)
+    pMQTTProperty_getType MQTTProperty_getType = (pMQTTProperty_getType)GetProcAddress(mqttdll, "MQTTProperty_getType");
+#endif
+    for (i = 0; i < props->count; ++i) {
+        int id = props->array[i].identifier;
+        const char *name = MQTTPropertyName(id);
+        char *intformat = "Property name %s value %d\n";
+
+        switch (MQTTProperty_getType(id)) {
+            case MQTTPROPERTY_TYPE_BYTE:
+                PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.byte);
+                break;
+            case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
+                PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.integer2);
+                break;
+            case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
+                PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.integer4);
+                break;
+            case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
+                PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.integer4);
+                break;
+            case MQTTPROPERTY_TYPE_BINARY_DATA:
+            case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
+                PrintfLog(EN_LOG_LEVEL_DEBUG, "Property name %s value len %s\n", name, props->array[i].value.data.data);
+                break;
+            case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
+                PrintfLog(EN_LOG_LEVEL_DEBUG, "Property name %s key %s value %s\n", name,
+                    props->array[i].value.data.data, props->array[i].value.value.data);
+                break;
+        }
+    }
+}
+
 #if defined(MQTTV5)
-void HandleCallbackFailure5(const char *currentFunctionName, MQTT_BASE_CALLBACK_HANDLER callback, void *context,
+static void HandleCallbackFailure5(const char *currentFunctionName, MQTT_BASE_CALLBACK_HANDLER callback, void *context,
     MQTTAsync_failureData5 *response)
 {
     EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp = (EN_IOTA_MQTT_PROTOCOL_RSP *)malloc(sizeof(EN_IOTA_MQTT_PROTOCOL_RSP));
@@ -197,7 +235,7 @@ void HandleCallbackFailure5(const char *currentFunctionName, MQTT_BASE_CALLBACK_
     MemFree(&protocolRsp);
 }
 
-void HandleCallbackSuccess5(const char *currentFunctionName, MQTT_BASE_CALLBACK_HANDLER callback, void *context,
+static void HandleCallbackSuccess5(const char *currentFunctionName, MQTT_BASE_CALLBACK_HANDLER callback, void *context,
     MQTTAsync_successData5 *response)
 {
     PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: %s messageId %d\n", currentFunctionName, response ? response->token : -1);
@@ -222,7 +260,7 @@ void HandleCallbackSuccess5(const char *currentFunctionName, MQTT_BASE_CALLBACK_
     protocolRsp->message = NULL;
     if (response->properties.count > 0) {
         PrintfLog(EN_LOG_LEVEL_DEBUG, "response properties:\n");
-        logProperties(&response->properties);
+        LogProperties(&response->properties);
     }
 
     if (callback) {
@@ -232,7 +270,7 @@ void HandleCallbackSuccess5(const char *currentFunctionName, MQTT_BASE_CALLBACK_
     MemFree(&protocolRsp);
 }
 
-MQTTV5_DATA DataConversionArrived(MQTTProperties *props)
+static MQTTV5_DATA DataConversionArrived(MQTTProperties *props)
 {
     MQTTV5_DATA mqttv5_por = mqttv5_initializer;
     if (props->count == 0) {
@@ -270,48 +308,14 @@ MQTTV5_DATA DataConversionArrived(MQTTProperties *props)
     mqttv5_por.properties = user_head;
     return mqttv5_por;
 }
-void logProperties(MQTTProperties *props)
-{
-    int i = 0;
-#if defined(WIN32) || defined(WIN64)
-    pMQTTProperty_getType MQTTProperty_getType = (pMQTTProperty_getType)GetProcAddress(mqttdll, "MQTTProperty_getType");
-#endif
-    for (i = 0; i < props->count; ++i) {
-        int id = props->array[i].identifier;
-        const char *name = MQTTPropertyName(id);
-        char *intformat = "Property name %s value %d\n";
 
-        switch (MQTTProperty_getType(id)) {
-            case MQTTPROPERTY_TYPE_BYTE:
-                PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.byte);
-                break;
-            case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
-                PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.integer2);
-                break;
-            case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
-                PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.integer4);
-                break;
-            case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
-                PrintfLog(EN_LOG_LEVEL_DEBUG, intformat, name, props->array[i].value.integer4);
-                break;
-            case MQTTPROPERTY_TYPE_BINARY_DATA:
-            case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
-                PrintfLog(EN_LOG_LEVEL_DEBUG, "Property name %s value len %s\n", name, props->array[i].value.data.data);
-                break;
-            case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
-                PrintfLog(EN_LOG_LEVEL_DEBUG, "Property name %s key %s value %s\n", name,
-                    props->array[i].value.data.data, props->array[i].value.value.data);
-                break;
-        }
-    }
-}
-MQTTProperties DataConversion(MQTTV5_DATA *properties)
+static MQTTProperties DataConversion(MQTTV5_DATA *properties)
 {
     MQTTProperties pro = MQTTProperties_initializer;
     MQTTProperty property;
 
     if (properties == NULL) {
-        printf("properties == NULL\n");
+        PrintfLog(EN_LOG_LEVEL_INFO, "properties == NULL\n");
         return pro;
     }
     MQTTV5_USER_PRO *user = properties->properties;
@@ -348,34 +352,7 @@ MQTTProperties DataConversion(MQTTV5_DATA *properties)
     }
     return pro;
 }
-int MQTTV5_Topic_Heap(char *sum)
-{
-    if (send_mass == NULL || sum == NULL) {
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "MQTTV5_Topic_Heap() EER\n");
-        return -1;
-    }
 
-    int index = 0;
-    int i = 0;
-    for (i = 0; i < topic_alias_len; i++) {
-        if (strcmp(sum, send_mass[i]) == 0) {
-            index = i;
-            break;
-        }
-    }
-    if (i != topic_alias_len) {
-        return index + 1;
-    } else {
-        if (topic_alias_len < TOPIC_ALIAS_MAX) {
-            send_mass[topic_alias_len] = (char *)malloc(sizeof(char) * strlen(sum) + 1);
-            strcpy_s(send_mass[topic_alias_len], strlen(sum) + 1, sum);
-            topic_alias_len++;
-        } else {
-            return -1;
-        }
-    }
-    return 0;
-}
 #else
 
 void HandleCallbackFailure(const char *currentFunctionName, MQTT_BASE_CALLBACK_HANDLER callback, void *context,
@@ -406,8 +383,6 @@ void HandleCallbackFailure(const char *currentFunctionName, MQTT_BASE_CALLBACK_H
         protocolRsp->message = (char *)response->message;
     } else {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: %s error, response is NULL\n", currentFunctionName);
-
-
         protocolRsp->mqtt_msg_info->context = context;
         protocolRsp->mqtt_msg_info->messageId = 0;
         protocolRsp->mqtt_msg_info->code = IOTA_FAILURE;
@@ -456,8 +431,8 @@ void HandleCallbackSuccess(const char *currentFunctionName, MQTT_BASE_CALLBACK_H
 }
 #endif
 
-MQTT_BASE_CALLBACK_HANDLER onConnectS; // in order not to be duplicated with the callback function name set by the
-                                       // application
+// in order not to be duplicated with the callback function name set by the application
+MQTT_BASE_CALLBACK_HANDLER onConnectS;
 MQTT_BASE_CALLBACK_HANDLER onConnectF;
 MQTT_BASE_CALLBACK_HANDLER onDisconnectS;
 MQTT_BASE_CALLBACK_HANDLER onDisconnectF;
@@ -469,46 +444,42 @@ MQTT_BASE_CALLBACK_HANDLER onPublishF;
 MQTT_BASE_CALLBACK_HANDLER_WITH_TOPIC onMessageA;
 
 #if defined(MQTTV5)
-void MqttBase_OnConnectSuccess5(void *context, MQTTAsync_successData5 *response)
+static void MqttBase_OnConnectSuccess5(void *context, MQTTAsync_successData5 *response)
 {
-    if (topic_alias_len == 0 && send_mass == NULL) {
-        PrintfLog(EN_LOG_LEVEL_DEBUG, "send_mass Init\n");
-        send_mass = (char **)malloc(TOPIC_ALIAS_MAX * sizeof(char *));
-    }
-    HandleCallbackSuccess5("MqttBase_OnConnectSuccess()", onConnectS, context, response);
+    HandleCallbackSuccess5("MqttBase_OnConnectSuccess5()", onConnectS, context, response);
 }
 
-void MqttBase_OnConnectFailure5(void *context, MQTTAsync_failureData5 *response)
+static void MqttBase_OnConnectFailure5(void *context, MQTTAsync_failureData5 *response)
 {
     HandleCallbackFailure5("MqttBase_OnConnectFailure5()", onConnectF, context, response);
 }
 
-void MqttBase_OnSubscribeSuccess5(void *context, MQTTAsync_successData5 *response)
+static void MqttBase_OnSubscribeSuccess5(void *context, MQTTAsync_successData5 *response)
 {
-    HandleCallbackSuccess5("MqttBase_OnSubscribeSuccess()", onSubscribeS, context, response);
+    HandleCallbackSuccess5("MqttBase_OnSubscribeSuccess5()", onSubscribeS, context, response);
 }
 
-void MqttBase_OnSubscribeFailure5(void *context, MQTTAsync_failureData5 *response)
+static void MqttBase_OnSubscribeFailure5(void *context, MQTTAsync_failureData5 *response)
 {
-    HandleCallbackFailure5("MqttBase_OnSubscribeFailure()", onSubscribeF, context, response);
+    HandleCallbackFailure5("MqttBase_OnSubscribeFailure5()", onSubscribeF, context, response);
 }
 
-void MqttBase_OnPublishSuccess5(void *context, MQTTAsync_successData5 *response)
+static void MqttBase_OnPublishSuccess5(void *context, MQTTAsync_successData5 *response)
 {
-    HandleCallbackSuccess5("MqttBase_OnPublishSuccess()", onPublishS, context, response);
+    HandleCallbackSuccess5("MqttBase_OnPublishSuccess5()", onPublishS, context, response);
 }
 
-void MqttBase_OnPublishFailure5(void *context, MQTTAsync_failureData5 *response)
+static void MqttBase_OnPublishFailure5(void *context, MQTTAsync_failureData5 *response)
 {
     HandleCallbackFailure5("MqttBase_OnPublishFailure5()", onPublishF, context, response);
 }
 
-void MqttBase_OnDisconnectSuccess5(void *context, MQTTAsync_successData5 *response)
+static void MqttBase_OnDisconnectSuccess5(void *context, MQTTAsync_successData5 *response)
 {
     HandleCallbackSuccess5("MqttBase_OnDisconnectSuccess5()", onDisconnectS, context, response);
 }
 
-void MqttBase_OnDisconnectFailure5(void *context, MQTTAsync_successData5 *response)
+static void MqttBase_OnDisconnectFailure5(void *context, MQTTAsync_failureData5 *response)
 {
     HandleCallbackFailure5("MqttBase_OnDisconnectFailure5()", onDisconnectF, context, response);
 }
@@ -588,11 +559,6 @@ void MqttBase_OnConnectionLost(void *context, char *cause)
     MemFree(&protocolRsp);
 }
 
-void MQTTBase_Disconnected(void *context, MQTTProperties *props, enum MQTTReasonCodes rc)
-{
-    PrintfLog(EN_LOG_LEVEL_ERROR, "Callback: disconnected, reason code \"%s\"", MQTTReasonCode_toString(rc));
-}
-
 
 int MqttBase_OnMessageArrived(void *context, char *topicName, int topicLen, MQTTAsync_message *message)
 {
@@ -603,7 +569,7 @@ int MqttBase_OnMessageArrived(void *context, char *topicName, int topicLen, MQTT
     MQTTV5_DATA mqttv5_por = DataConversionArrived(&message->properties);
     if (message->properties.count > 0) {
         PrintfLog(EN_LOG_LEVEL_DEBUG, "Suback properties:\n");
-        logProperties(&message->properties);
+        LogProperties(&message->properties);
     }
 #endif
 
@@ -648,19 +614,7 @@ int MqttBase_OnMessageArrived(void *context, char *topicName, int topicLen, MQTT
     return 1; // can not return 0 here, otherwise the message won't update or something wrong would happen
 }
 
-void MqttBase_OnDisconnected(void *context, MQTTProperties *props, enum MQTTReasonCodes rc)
-{
-    PrintfLog(EN_LOG_LEVEL_ERROR, "Callback: disconnected, reason code \"%s\"", MQTTReasonCode_toString(rc));
-#if defined(MQTTV5)
-    int i = 0;
-    for (i = 0; i < topic_alias_len; i++) {
-        free(send_mass[i]);
-    }
-    free(send_mass);
-#endif
-}
-
-int MqttBase_SetCallback(int item, MQTT_BASE_CALLBACK_HANDLER handler)
+void MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_SETTING item, MQTT_BASE_CALLBACK_HANDLER handler)
 {
     switch (item) {
         case EN_MQTT_BASE_CALLBACK_CONNECT_SUCCESS:
@@ -693,23 +647,12 @@ int MqttBase_SetCallback(int item, MQTT_BASE_CALLBACK_HANDLER handler)
         default:
             PrintfLog(EN_LOG_LEVEL_WARNING,
                 "MqttBase: MqttBase_SetCallback() warning, the item (%d) to be set is not available\n", item);
-            return IOTA_RESOURCE_NOT_AVAILABLE;
     }
-    return IOTA_SUCCESS;
 }
 
-
-int MqttBase_SetCallbackWithTopic(int item, MQTT_BASE_CALLBACK_HANDLER_WITH_TOPIC handler)
+void MqttBase_SetMessageArrivedCallback(MQTT_BASE_CALLBACK_HANDLER_WITH_TOPIC handler)
 {
-    switch (item) {
-        case EN_MQTT_BASE_CALLBACK_MESSAGE_ARRIVED:
-            onMessageA = handler;
-            return IOTA_SUCCESS;
-        default:
-            PrintfLog(EN_LOG_LEVEL_WARNING,
-                "MqttBase: MqttBase_SetCallbackWithTopic() warning, the item (%d) to be set is not available\n", item);
-            return IOTA_RESOURCE_NOT_AVAILABLE;
-    }
+    onMessageA = handler;
 }
 
 int MqttBase_init(char *workPath)
@@ -746,10 +689,9 @@ int MqttBase_init(char *workPath)
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase_init(): there is not enough memory here.\n");
         return IOTA_FAILURE;
     }
-
-    ca_path =
-        CombineStrings(2, workDir, "/conf/rootcert.pem"); // ca_path cannot be released until the programe is destoried,
-                                                          // must replace with "/conf/bsrootcert.pem" for bootstraping
+    // ca_path cannot be released until the programe is destoried,must replace with "/conf/bsrootcert.pem" for
+    // bootstraping
+    ca_path = CombineStrings(2, workDir, "/conf/rootcert.pem");
 
 #if defined(WIN32) || defined(WIN64)
     char *libPath = CombineStrings(2, workDir, "/lib/paho-mqtt3as.dll");
@@ -766,10 +708,12 @@ int MqttBase_init(char *workPath)
 
     return IOTA_SUCCESS;
 }
-void MqttBase_SetPort(char *value, int valueLen)
+
+static void MqttBase_SetPort(char *value, int valueLen)
 {
     MemFree(&port);
-    CopyStrValue(&port, (const char *)value, valueLen); // port should not be free until the program finishes.
+    // port should not be free until the program finishes.
+    CopyStrValue(&port, (const char *)value, valueLen);
     if (StrInStr(port, MQTT_PORT)) {
         urlPrefix = TCP_URL_PREFIX;
     } else {
@@ -778,7 +722,7 @@ void MqttBase_SetPort(char *value, int valueLen)
     return;
 }
 
-int MqttBase_SetConfig(int item, char *value)
+int MqttBase_SetConfig(ENUM_MQTT_BASE_CONFIG item, char *value)
 {
     int len = StringLength(value);
 
@@ -791,8 +735,8 @@ int MqttBase_SetConfig(int item, char *value)
     switch (item) {
         case EN_MQTT_BASE_CONFIG_SERVER_IP:
             MemFree(&serverIp);
-            CopyStrValue(&serverIp, (const char *)value,
-                len); // serverIp should not be free until the program finishes.
+            // serverIp should not be free until the program finishes.
+            CopyStrValue(&serverIp, (const char *)value, len);
             break;
 
         case EN_MQTT_BASE_CONFIG_SERVER_PORT:
@@ -801,13 +745,13 @@ int MqttBase_SetConfig(int item, char *value)
 
         case EN_MQTT_BASE_CONFIG_USERNAME:
             MemFree(&username);
-            CopyStrValue(&username, (const char *)value,
-                len); // username should not be free until the program finishes.
+            // username should not be free until the program finishes.
+            CopyStrValue(&username, (const char *)value, len);
             break;
         case EN_MQTT_BASE_CONFIG_PASSWORD:
             MemFree(&password);
-            CopyStrValue(&password, (const char *)value,
-                len); // password should not be free until the program finishes.
+            // password should not be free until the program finishes.
+            CopyStrValue(&password, (const char *)value, len);
             break;
         case EN_MQTT_BASE_CONFIG_AUTH_MODE:
             authMode = atoi(value);
@@ -853,8 +797,9 @@ int MqttBase_SetConfig(int item, char *value)
         }
         case EN_MQTT_BASE_CONFIG_RESET_SECRET_IN_PROGRESS: {
             int tValue = String2Int(value);
-            mqttClientCreateFlag = tValue; // value from the app should be 0, thus make sure the encryptedPassword and
-                                           // loginTimestamp will be created again
+            // value from the app should be 0, thus make sure the encryptedPassword and
+            // loginTimestamp will be created again
+            mqttClientCreateFlag = tValue;
             if (tValue) {
                 PrintfLog(EN_LOG_LEVEL_WARNING, "MqttBase: MqttBase_SetConfig() warning, the value to be set should be "
                     "zero for RESET_SECRET_IN_PROGRESS\n");
@@ -879,6 +824,9 @@ int MqttBase_SetConfig(int item, char *value)
         case EN_MQTT_BASE_BS_MODE:
             bs_reg_mode = atoi(value);
             break;
+        case EN_MQTT_BASE_CHECK_STAMP:
+            checkTimestamp = atoi(value);
+            break;
         default:
             PrintfLog(EN_LOG_LEVEL_WARNING,
                 "MqttBase: MqttBase_SetConfig() warning, the item to be set is not available\n");
@@ -891,7 +839,7 @@ int MqttBase_SetConfig(int item, char *value)
     return IOTA_SUCCESS;
 }
 
-char *MqttBase_GetConfig(int item)
+char *MqttBase_GetConfig(ENUM_MQTT_BASE_CONFIG item)
 {
     switch (item) {
         case EN_MQTT_BASE_CONFIG_SERVER_IP:
@@ -976,7 +924,7 @@ int MqttBase_publish(const char *topic, void *payload, int len, void *context, v
     pubmsg.properties = DataConversion((MQTTV5_DATA *)properties);
 
     printf("-------------------------->>\n");
-    logProperties(&pubmsg.properties);
+    LogProperties(&pubmsg.properties);
     // PrintfLog(EN_LOG_LEVEL_DEBUG, "topic = %s\n", topic);
     int ret = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts);
 
@@ -1001,7 +949,7 @@ MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 #endif
 MQTTAsync_SSLOptions ssl_opts = MQTTAsync_SSLOptions_initializer;
 
-char *MqttBase_gitClientId(char *temp_authMode, char *loginTimestamp)
+static char *MqttBase_gitClientId(char *temp_authMode, char *loginTimestamp)
 {
     char *clientId = NULL;
     if (bs_reg_mode) {
@@ -1011,7 +959,8 @@ char *MqttBase_gitClientId(char *temp_authMode, char *loginTimestamp)
     }
     return clientId;
 }
-int MqttBase_setSslOpts()
+
+static int MqttBase_setSslOpts(void)
 {
     if (verifyCert == 0) {
         ssl_opts.trustStore = NULL;
@@ -1041,7 +990,8 @@ int MqttBase_setSslOpts()
     }
     return IOTA_SUCCESS;
 }
-int MqttBase_setConnOptsByClientCreate(char *loginTimestamp)
+
+static int MqttBase_setConnOptsByClientCreate(char *loginTimestamp)
 {
     conn_opts.cleansession = 1;
     conn_opts.keepAliveInterval = keepAliveInterval;
@@ -1079,6 +1029,21 @@ int MqttBase_setConnOptsByClientCreate(char *loginTimestamp)
     }
     return IOTA_SUCCESS;
 }
+
+#if MQTT_TRACE_ON
+
+void MQTTBase_TraceCallback(enum MQTTASYNC_TRACE_LEVELS level, char *message)
+{
+    PrintfLog((level + EN_LOG_LEVEL_MQTT_MAXIMUM - 1), "%s\n", message);
+}
+
+void MqttBase_DeBugInit()
+{
+    MQTTAsync_setTraceCallback(MQTTBase_TraceCallback);
+    MQTTAsync_setTraceLevel(MQTT_TRACE_LEVEL);
+}
+#endif
+
 int MqttBase_CreateConnection()
 {
 #if defined(WIN32) || defined(WIN64)
@@ -1102,20 +1067,18 @@ int MqttBase_CreateConnection()
         return IOTA_FAILURE;
     }
     if (authMode) {
-        cert_path = CombineStrings(2, workDir,
-            "/conf/deviceCert.pem"); // cert_path cannot be released until the programe is destoried
-        key_path = CombineStrings(2, workDir,
-            "/conf/deviceCert.key"); // key_path cannot be released until the programe is destoried
+        // cert_path cannot be released until the programe is destoried
+        cert_path = CombineStrings(2, workDir, "/conf/deviceCert.pem");
+        // key_path cannot be released until the programe is destoried
+        key_path = CombineStrings(2, workDir, "/conf/deviceCert.key"); 
     }
-
+#if MQTT_TRACE_ON
+    MqttBase_DeBugInit();
+#endif
     pthread_mutex_lock(&login_locker);
 
-    char *temp_authMode = NULL;
-    if (checkTimestamp == 0) {
-        temp_authMode = "_0_0_";
-    } else {
-        temp_authMode = "_0_1_";
-    }
+    char temp_authMode[CHECK_STAMP_LENGTH] = "_0_0_";
+    temp_authMode[CHECK_STAMP_INDEX] = '0' + checkTimestamp;
 
     if (!mqttClientCreateFlag) {
         if (serverIp == NULL || port == NULL || username == NULL) {
@@ -1213,8 +1176,8 @@ int MqttBase_ReleaseConnection()
 #endif
     MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
 #if defined(MQTTV5)
-    disc_opts.onSuccess = MqttBase_OnDisconnectSuccess5;
-    disc_opts.onFailure = MqttBase_OnDisconnectFailure5;
+    disc_opts.onSuccess5 = MqttBase_OnDisconnectSuccess5;
+    disc_opts.onFailure5 = MqttBase_OnDisconnectFailure5;
 #else
     disc_opts.onSuccess = MqttBase_OnDisconnectSuccess;
     disc_opts.onFailure = MqttBase_OnDisconnectFailure;
@@ -1276,4 +1239,9 @@ int MqttBase_destory()
 
     MQTTAsync_destroy(&client);
     return IOTA_SUCCESS;
+}
+
+int MqttBase_IsConnected()
+{
+    return MQTTAsync_isConnected(client);
 }

@@ -50,8 +50,14 @@
 #include "cJSON.h"
 #include "iota_error_type.h"
 #include "mqttv5_util.h"
+#include "securec.h"
 #ifdef SSH_SWITCH
 #include "wss_client.h"
+#endif
+
+#ifdef SOFT_BUS_OPTION2
+#include "soft_bus_datatrans.h"
+#include "dconncaseone_interface.h"
 #endif
 /*
  * if you want to use syslog,you should do this:
@@ -73,53 +79,61 @@ char *password_ = "XXXXX";
 
 int disconnected_ = 0;
 
+/* If you cancel #define CUSTOM_RECONNECT_SWITCH comments, enable customized reconnection example
+ * it demostrates how to use IOTA_IsConnected() to check conneciton state and reconnect outside
+ * the callback of EN_IOTA_CALLBACK_CONNECT_SUCCESS and EN_IOTA_CALLBACK_CONNECT_FAILURE.
+ * Note: the change is only a sample, for reference only
+ */
+// #define CUSTOM_RECONNECT_SWITCH
+#ifndef CUSTOM_RECONNECT_SWITCH
 int connect_failed_times = 0;
+#endif
 
 char *ota_version = NULL;
 char *subDeviceId = "XXXX";
-void Test_MessageReport(void);
-void Test_PropertiesReport(void);
-void Test_BatchPropertiesReport(char *deviceId);
-void Test_CommandResponse(char *requestId);
-void Test_PropSetResponse(char *requestId);
-void Test_PropGetResponse(char *requestId);
-void Test_ReportOTAVersion(void);
-void Test_ReportUpgradeStatus(int i, char *version);
-void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandleDisConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandleDisConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandleSubscribesuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void HandleMessageDown(EN_IOTA_MESSAGE *rsp, void *mqttv5);
-void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp);
-void HandleCommandRequest(EN_IOTA_COMMAND *command);
-void HandlePropertiesSet(EN_IOTA_PROPERTY_SET *rsp);
-void TimeSleep(int ms);
-void HandlePropertiesGet(EN_IOTA_PROPERTY_GET *rsp);
-void HandleDeviceShadowRsp(EN_IOTA_DEVICE_SHADOW *rsp);
-void HandleEventsDown(EN_IOTA_EVENT *message);
-void MyPrintLog(int level, char *format, va_list args);
-void SetAuthConfig(void);
-void SetMyCallbacks(void);
-void Test_ReportJson();
-void Test_ReportBinary();
-void Test_CmdRspV3();
-void Test_UpdateSubDeviceStatus(char *deviceId);
-void Test_GtwAddSubDevice();
-void Test_GtwDelSubDevice();
-void Test_ReportDeviceInfo();
+static void Test_MessageReport(void);
+static void Test_PropertiesReport(void);
+static void Test_BatchPropertiesReport(char *deviceId);
+static void Test_CommandResponse(char *requestId);
+static void Test_PropSetResponse(char *requestId);
+static void Test_PropGetResponse(char *requestId);
+static void Test_ReportOTAVersion(void);
+static void Test_ReportUpgradeStatus(int i, char *version);
+static void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+static void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+static void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+static void HandleDisConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+static void HandleDisConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+static void HandleSubscribesuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+static void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+static void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+static void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
+static void HandleMessageDown(EN_IOTA_MESSAGE *rsp, void *mqttv5);
+static void HandleM2mMessageDown(EN_IOTA_M2M_MESSAGE *rsp);
+static void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp);
+static void HandleCommandRequest(EN_IOTA_COMMAND *command);
+static void HandlePropertiesSet(EN_IOTA_PROPERTY_SET *rsp);
+static void TimeSleep(int ms);
+static void HandlePropertiesGet(EN_IOTA_PROPERTY_GET *rsp);
+static void HandleDeviceShadowRsp(EN_IOTA_DEVICE_SHADOW *rsp);
+static void HandleEventsDown(EN_IOTA_EVENT *message);
+static void MyPrintLog(int level, char *format, va_list args);
+static void SetAuthConfig(void);
+static void SetMyCallbacks(void);
+static void Test_ReportJson(void);
+static void Test_ReportBinary(void);
+static void Test_CmdRspV3(void);
+static void Test_UpdateSubDeviceStatus(char *deviceId);
+static void Test_GtwAddSubDevice(void);
+static void Test_GtwDelSubDevice(void);
+static void Test_ReportDeviceInfo(void);
 
 #if defined(MQTTV5)
-void Test_CorreaytionData(char *response_topic);
-void Test_PayloadFormatIndicator();
-void Test_ContentType();
-void Test_UserProperty();
-void Test_MessageReportV5();
-void Test_PropertiesReportV5();
+static void Test_CorreaytionData(void);
+static void Test_ContentType(void);
+static void Test_UserProperty(void);
+static void Test_MessageReportV5(void);
+static void Test_PropertiesReportV5(void);
 #endif
 
 void TimeSleep(int ms)
@@ -134,9 +148,10 @@ void TimeSleep(int ms)
 #if defined(MQTTV5)
 
 // V5 correlation data and response topic
-void Test_CorreaytionData(char *response_topicParas)
+static void Test_CorreaytionData()
 {
     MQTTV5_DATA massv5 = mqttv5_initializer;
+    char *response_topicParas = "test";
     ST_IOTA_MESS_REP_INFO mass = { NULL, "data123", "123", "hello123123123123", NULL };
     char *topic = CombineStrings(4, "$oc/devices/", username_, "/user/", response_topicParas);
     char num[5] = "1234";
@@ -161,7 +176,7 @@ void Test_CorreaytionData(char *response_topicParas)
 }
 
 // v5 contnt type
-void Test_ContentType()
+static void Test_ContentType()
 {
     MQTTV5_DATA massv5 = mqttv5_initializer;
     ST_IOTA_MESS_REP_INFO mass = { NULL, "data123", "123", "hello123123123123", NULL };
@@ -176,7 +191,7 @@ void Test_ContentType()
 }
 
 // v5 User Property
-void Test_UserProperty()
+static void Test_UserProperty()
 {
     MQTTV5_DATA massv5 = mqttv5_initializer;
     ST_IOTA_MESS_REP_INFO mass = { NULL, "data123", "123", "hello123123123123", NULL };
@@ -201,7 +216,7 @@ void Test_UserProperty()
 }
 
 // v5 message report
-void Test_MessageReportV5()
+static void Test_MessageReportV5()
 {
     MQTTV5_DATA massv5 = mqttv5_initializer;
     ST_IOTA_MESS_REP_INFO mass = { NULL, "data123", "123", "hello123123123123", NULL };
@@ -233,7 +248,7 @@ void Test_MessageReportV5()
 }
 
 // v5 Properties Report
-void Test_PropertiesReport5()
+static void Test_PropertiesReportV5()
 {
     int serviceNum = 2; // reported services' totol count
     ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
@@ -279,20 +294,20 @@ void Test_PropertiesReport5()
 #endif
 // ---------------------------Test  data report------------------------------------
 
-void Test_MessageReport()
+static void Test_MessageReport()
 {
     // default topic
     int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello123123123123", NULL, 0, NULL);
 
     // user topic
-    // 	int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg", 0);
+    // int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg", 0, NULL);
     if (messageId != 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
     }
 }
 
 // V3 report
-void Test_ReportJson()
+static void Test_ReportJson()
 {
     const int serviceNum = 2; // reported services' totol count
     ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
@@ -321,7 +336,7 @@ void Test_ReportJson()
 }
 
 // V3 report
-void Test_ReportBinary()
+static void Test_ReportBinary()
 {
     int messageId = IOTA_BinaryReportV3("1234567890", NULL);
     if (messageId != 0) {
@@ -330,7 +345,7 @@ void Test_ReportBinary()
 }
 
 // V3 report
-void Test_CmdRspV3()
+static void Test_CmdRspV3()
 {
     ST_IOTA_COMMAND_RSP_V3 *rsp = (ST_IOTA_COMMAND_RSP_V3 *)malloc(sizeof(ST_IOTA_COMMAND_RSP_V3));
     if (rsp == NULL) {
@@ -367,7 +382,7 @@ int cacheSpaceLen = 0;
 int cache_p = 0;
 #define CACHE_SPACE_MAX 100
 
-void Test_PropertiesStoreData()
+static void Test_PropertiesStoreData()
 {
     int serviceNum = 2; // reported services' totol count
     int i = 0;
@@ -418,7 +433,7 @@ void Test_PropertiesStoreData()
 }
 #endif
 
-void Test_PropertiesReport()
+static void Test_PropertiesReport()
 {
     const int serviceNum = 2; // reported services' totol count
     ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
@@ -446,13 +461,13 @@ void Test_PropertiesReport()
     MemFree(&services[0].event_time);
 }
 
-void Test_BatchPropertiesReport(char *deviceId)
+static void Test_BatchPropertiesReport(char *deviceId)
 {
     const int deviceNum = 1;                     // the number of sub devices
     ST_IOTA_DEVICE_DATA_INFO devices[deviceNum]; // Array of structures to be reported by sub devices
     int serviceList[deviceNum]; // Corresponding to the number of services to be reported for each sub device
     serviceList[0] = 2;         // device 1 reports two services
-                                // 	serviceList[1] = 1;		  // device 2 reports one service
+ // serviceList[1] = 1;		    // device 2 reports one service
 
     char *device1_service1 = "{\"Load\":\"1\",\"ImbA_strVal\":\"3\"}"; // must be json
 
@@ -482,7 +497,7 @@ void Test_BatchPropertiesReport(char *deviceId)
     MemFree(&devices[0].services[1].event_time);
 }
 
-void Test_UpdateSubDeviceStatus(char *deviceId)
+static void Test_UpdateSubDeviceStatus(char *deviceId)
 {
     int deviceNum = 1;
     ST_IOTA_DEVICE_STATUSES device_statuses;
@@ -496,7 +511,7 @@ void Test_UpdateSubDeviceStatus(char *deviceId)
     MemFree(&device_statuses.event_time);
 }
 
-void Test_CommandResponse(char *requestId)
+static void Test_CommandResponse(char *requestId)
 {
     char *pcCommandRespense = "{\"SupWh\": \"aaa\"}"; // in service accumulator
 
@@ -509,7 +524,7 @@ void Test_CommandResponse(char *requestId)
     }
 }
 
-void Test_PropSetResponse(char *requestId)
+static void Test_PropSetResponse(char *requestId)
 {
     int messageId = IOTA_PropertiesSetResponse(requestId, 0, "success", NULL);
     if (messageId != 0) {
@@ -517,7 +532,7 @@ void Test_PropSetResponse(char *requestId)
     }
 }
 
-void Test_PropGetResponse(char *requestId)
+static void Test_PropGetResponse(char *requestId)
 {
     const int serviceNum = 2;
     ST_IOTA_SERVICE_DATA_INFO serviceProp[serviceNum];
@@ -543,7 +558,7 @@ void Test_PropGetResponse(char *requestId)
     MemFree(&serviceProp[1].event_time);
 }
 
-void Test_ReportOTAVersion()
+static void Test_ReportOTAVersion()
 {
     ST_IOTA_OTA_VERSION_INFO otaVersion;
 
@@ -558,7 +573,7 @@ void Test_ReportOTAVersion()
     }
 }
 
-void Test_ReportUpgradeStatus(int i, char *version)
+static void Test_ReportUpgradeStatus(int i, char *version)
 {
     ST_IOTA_UPGRADE_STATUS_INFO statusInfo;
     if (i == 0) {
@@ -582,7 +597,7 @@ void Test_ReportUpgradeStatus(int i, char *version)
     }
 }
 
-void Test_GtwAddSubDevice()
+static void Test_GtwAddSubDevice()
 {
     ST_IOTA_SUB_DEVICE_INFO subDeviceInfos;
     int deviceNum = 2;
@@ -601,8 +616,7 @@ void Test_GtwAddSubDevice()
     subDeviceInfos.deviceInfo[1].name = "sub_device222";
     subDeviceInfos.deviceInfo[1].node_id = "node_id123";
     subDeviceInfos.deviceInfo[1].parent_device_id = NULL;
-    subDeviceInfos.deviceInfo[0].product_id = "your_product_id";
-    subDeviceInfos.deviceInfo[1].product_id = "5f58768785edc002bc69cbf2";
+    subDeviceInfos.deviceInfo[1].product_id = "your_product_id"; // Please change the product ID of the sub device
 
     subDeviceInfos.event_id = "123123";
     subDeviceInfos.event_time = NULL;
@@ -614,7 +628,7 @@ void Test_GtwAddSubDevice()
 }
 
 
-void Test_GtwDelSubDevice()
+static void Test_GtwDelSubDevice()
 {
     ST_IOTA_DEL_SUB_DEVICE delSubDevices;
     int deviceNum = 3;
@@ -631,7 +645,7 @@ void Test_GtwDelSubDevice()
     }
 }
 
-void Test_ReportDeviceInfo()
+static void Test_ReportDeviceInfo()
 {
     ST_IOTA_DEVICE_INFO_REPORT deviceInfo;
 
@@ -639,6 +653,7 @@ void Test_ReportDeviceInfo()
     deviceInfo.sw_version = "v1.0";
     deviceInfo.fw_version = "v1.0";
     deviceInfo.event_time = NULL;
+    deviceInfo.device_ip = NULL;
     deviceInfo.object_device_id = username_;
 
     int messageId = IOTA_ReportDeviceInfo(&deviceInfo, NULL);
@@ -647,11 +662,26 @@ void Test_ReportDeviceInfo()
     }
 }
 
+static void Test_M2MSendMsg(void)
+{
+    PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: this is m2m demo\n");
+    char *to = "deviceA";
+    char *from = username_;
+    char *content = "hello deviceB";
+    char *requestId = "demoIdToDeviceB";
+    int messageId = IOTA_M2MSendMsg(to, from, content, requestId, NULL);
+    if (messageId != 0) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_M2MSendMsg() failed, messageId %d\n", messageId);
+    } else {
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: Test_M2MSendMsg() ok, messageId %d\n", messageId);
+    }
+}
 
 // ---------------------------------------------------------------------------------------------
 
-void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+static void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
+    (void)rsp;
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: handleConnectSuccess(), login success\n");
     disconnected_ = 0;
 #if defined(STORE_DATA_SWITCH)
@@ -670,17 +700,18 @@ void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
             TimeSleep(100);
         }
     }
-
 #endif
 }
 
-void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+static void HandleConnectionBroken(const char *handleName, const EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
-    PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() error, messageId %d, code %d, messsage %s\n",
+    PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: %s() error, messageId %d, code %d, messsage %s\n", handleName,
         rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
+
+#ifndef CUSTOM_RECONNECT_SWITCH
     // judge if the network is available etc. and login again
     // ...
-    PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() login again\n");
+    PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: %s() login again\n", handleName);
 
     connect_failed_times++;
     if (connect_failed_times < 10) {
@@ -693,53 +724,45 @@ void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
     if (ret != 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleAuthFailure() error, login again failed, result %d\n", ret);
     }
+#endif
 }
 
-void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+static void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
-    PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectionLost() error, messageId %d, code %d, messsage %s\n",
-        rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
-    // judge if the network is available etc. and login again
-    // ...
-
-    if (connect_failed_times < 10) {
-        TimeSleep(50);
-    } else if (connect_failed_times < 50) {
-        TimeSleep(2500);
-    }
-
-    int ret = IOTA_Connect();
-    if (ret != 0) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectionLost() error, login again failed, result %d\n",
-            ret);
-    }
+    HandleConnectionBroken("HandleConnectFailure", rsp);
 }
 
-void HandleDisConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+static void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
+    HandleConnectionBroken("HandleConnectionLost", rsp);
+}
+
+static void HandleDisConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+{
+    (void)rsp;
     disconnected_ = 1;
 }
 
-void HandleDisConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+static void HandleDisConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
     PrintfLog(EN_LOG_LEVEL_WARNING,
         "device_demo: HandleDisConnectFailure() warning, messageId %d, code %d, messsage %s\n",
         rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
-void HandleSubscribesuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+static void HandleSubscribesuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubscribesuccess() messageId %d\n", rsp->mqtt_msg_info->messageId);
 }
 
-void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+static void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
     PrintfLog(EN_LOG_LEVEL_WARNING,
         "device_demo: HandleSubscribeFailure() warning, messageId %d, code %d, messsage %s\n",
         rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
-void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+static void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePublishSuccess() messageId %d\n", rsp->mqtt_msg_info->messageId);
 
@@ -766,7 +789,7 @@ void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 #endif
 }
 
-void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+static void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
     PrintfLog(EN_LOG_LEVEL_WARNING, "device_demo: HandlePublishFailure() warning, messageId %d, code %d, messsage %s\n",
         rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
@@ -774,7 +797,7 @@ void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 
 // -------------------handle  message arrived-------------------------------
 
-void HandleMessageDown(EN_IOTA_MESSAGE *rsp, void *mqttv5)
+static void HandleMessageDown(EN_IOTA_MESSAGE *rsp, void *mqttv5)
 {
     if (rsp == NULL) {
         return;
@@ -800,7 +823,7 @@ void HandleMessageDown(EN_IOTA_MESSAGE *rsp, void *mqttv5)
         PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(),response_topic = %s\n", mqtt->response_topic);
     }
     // 删除链表、释放内存
-    listFree(mqtt->properties);
+    mqttV5_listFree(mqtt->properties);
 #endif
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), content %s\n", rsp->content);
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), id %s\n", rsp->id);
@@ -808,7 +831,21 @@ void HandleMessageDown(EN_IOTA_MESSAGE *rsp, void *mqttv5)
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), object_device_id %s\n", rsp->object_device_id);
 }
 
-void HandlePropertiesSet(EN_IOTA_PROPERTY_SET *rsp)
+static void HandleM2mMessageDown(EN_IOTA_M2M_MESSAGE *rsp)
+{
+	if (rsp == NULL) {
+		return;
+	}
+
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), requestId: %s\n", rsp->request_id);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), to:        %s\n", rsp->to);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), from:      %s\n", rsp->from);
+	PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), content:   %s\n", rsp->content);
+
+	// do sth
+}
+
+static void HandlePropertiesSet(EN_IOTA_PROPERTY_SET *rsp)
 {
     if (rsp == NULL) {
         return;
@@ -830,7 +867,7 @@ void HandlePropertiesSet(EN_IOTA_PROPERTY_SET *rsp)
     Test_PropSetResponse(rsp->request_id); // response
 }
 
-void HandlePropertiesGet(EN_IOTA_PROPERTY_GET *rsp)
+static void HandlePropertiesGet(EN_IOTA_PROPERTY_GET *rsp)
 {
     if (rsp == NULL) {
         return;
@@ -844,7 +881,7 @@ void HandlePropertiesGet(EN_IOTA_PROPERTY_GET *rsp)
     Test_PropGetResponse(rsp->request_id); // response
 }
 
-void HandleDeviceShadowRsp(EN_IOTA_DEVICE_SHADOW *rsp)
+static void HandleDeviceShadowRsp(EN_IOTA_DEVICE_SHADOW *rsp)
 {
     if (rsp == NULL) {
         return;
@@ -868,7 +905,7 @@ void HandleDeviceShadowRsp(EN_IOTA_DEVICE_SHADOW *rsp)
     }
 }
 
-void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp)
+static void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp)
 {
     if (rsp == NULL) {
         return;
@@ -880,7 +917,7 @@ void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp)
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), object_device_id %s\n", rsp->object_device_id);
 }
 
-void HandleCommandRequest(EN_IOTA_COMMAND *command)
+static void HandleCommandRequest(EN_IOTA_COMMAND *command)
 {
     if (command == NULL) {
         return;
@@ -899,8 +936,143 @@ void HandleCommandRequest(EN_IOTA_COMMAND *command)
     Test_CommandResponse(command->request_id); // response command
 }
 
+static void HandleSubDeviceManager(EN_IOTA_EVENT *message, int i)
+{
+    // if it is the platform inform the gateway to add or delete the sub device
+    if (message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY ||
+        message->services[i].event_type == EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY) {
+        int j = 0;
+        while (message->services[i].paras->devices_count > 0) {
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), parent_device_id: %s \n",
+                message->services[i].paras->devices[j].parent_device_id);
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), device_id: %s \n",
+                message->services[i].paras->devices[j].device_id);
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), node_id: %s \n",
+                message->services[i].paras->devices[j].node_id);
+
+            // add a sub device
+            if (message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY) {
+                PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), name: %s \n",
+                    message->services[i].paras->devices[j].name);
+                PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), manufacturer_id: %s \n",
+                    message->services[i].paras->devices[j].manufacturer_id);
+                PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), product_id: %s \n",
+                    message->services[i].paras->devices[j].product_id);
+                
+                // report status of the sub device
+                Test_UpdateSubDeviceStatus(message->services[i].paras->devices[j].device_id);
+                // report data of the sub device
+                Test_BatchPropertiesReport(message->services[i].paras->devices[j].device_id); 
+            } else if (message->services[i].event_type == EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY) { 
+                // delete a sub device
+                PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), the sub device is deleted: %s\n",
+                    message->services[i].paras->devices[j].device_id);
+            }
+
+            j++;
+            message->services[i].paras->devices_count--;
+        }
+    } else if (message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_RESPONSE) {
+        int j = 0;
+        while (message->services[i].gtw_add_device_paras->successful_devices_count > 0) {
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), device_id: %s \n",
+                message->services[i].gtw_add_device_paras->successful_devices[j].device_id);
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), name: %s \n",
+                message->services[i].gtw_add_device_paras->successful_devices[j].name);
+            j++;
+            message->services[i].gtw_add_device_paras->successful_devices_count--;
+        }
+        j = 0;
+        while (message->services[i].gtw_add_device_paras->failed_devices_count > 0) {
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), error_code: %s \n",
+                message->services[i].gtw_add_device_paras->failed_devices[j].error_code);
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), error_msg: %s \n",
+                message->services[i].gtw_add_device_paras->failed_devices[j].error_msg);
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), node_id: %s \n",
+                message->services[i].gtw_add_device_paras->failed_devices[j].node_id);
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), product_id: %s \n",
+                message->services[i].gtw_add_device_paras->failed_devices[j].product_id);
+
+            j++;
+            message->services[i].gtw_add_device_paras->failed_devices_count--;
+        }
+    } else if (message->services[i].event_type == EN_IOTA_EVENT_DEL_SUB_DEVICE_RESPONSE) {
+        int j = 0;
+        while (message->services[i].gtw_del_device_paras->successful_devices_count > 0) {
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), device_id: %s \n",
+                message->services[i].gtw_del_device_paras->successful_devices[j]);
+            j++;
+            message->services[i].gtw_del_device_paras->successful_devices_count--;
+        }
+        j = 0;
+        while (message->services[i].gtw_del_device_paras->failed_devices_count > 0) {
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), error_code: %s \n",
+                message->services[i].gtw_del_device_paras->failed_devices[j].error_code);
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), error_msg: %s \n",
+                message->services[i].gtw_del_device_paras->failed_devices[j].error_msg);
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleSubDeviceManager(), device_id: %s \n",
+                message->services[i].gtw_del_device_paras->failed_devices[j].device_id);
+
+            j++;
+            message->services[i].gtw_del_device_paras->failed_devices_count--;
+        }
+    }
+}
+
+static void HandleEventOta(EN_IOTA_EVENT *message, int i)
+{
+    if (message->services[i].event_type == EN_IOTA_EVENT_VERSION_QUERY) {
+        // report OTA version
+        Test_ReportOTAVersion();
+    }
+
+    if (message->services[i].event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE ||
+        message->services[i].event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE ||
+        message->services[i].event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE_V2 ||
+        message->services[i].event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE_V2) {
+        // check sha256
+        const char *pkg_sha256 = "your package sha256"; // the sha256 value of your ota package
+        if (message->services[i].ota_paras->sign != NULL) {
+            if (strcmp(pkg_sha256, message->services[i].ota_paras->sign)) { //V1 only
+                // report failed status
+                Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version);
+            }
+        }
+
+        char filename[PKGNAME_MAX + 1];
+        // start to receive packages and firmware_upgrade or software_upgrade
+        if (IOTA_GetOTAPackages_Ext(message->services[i].ota_paras->url, message->services[i].ota_paras->access_token, 1000, ".", filename) == 0) {
+            usleep(3000 * 1000);
+            PrintfLog(EN_LOG_LEVEL_DEBUG, "the filename is %s\n", filename);
+            // report successful upgrade status
+            Test_ReportUpgradeStatus(0, message->services[i].ota_paras->version);
+        } else {
+            // report failed status
+            Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version);
+        }
+    }
+}
+
+static void HandleTimeSync(EN_IOTA_EVENT *message, int i)
+{
+    if (message->services[i].event_type == EN_IOTA_EVENT_GET_TIME_SYNC_RESPONSE) {
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleTimeSync(), device_real_time: %lld \n",
+            message->services[i].ntp_paras->device_real_time);
+    }
+}
+
+static void HandleDeviceLog(EN_IOTA_EVENT *message, int i)
+{
+    if (message->services[i].event_type == EN_IOTA_EVENT_LOG_CONFIG) {
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceLog(), log_switch: %s \n",
+            message->services[i].device_log_paras->log_switch);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceLog(), end_time: %s \n",
+            message->services[i].device_log_paras->end_time);
+    }
+}
+
 #ifdef SSH_SWITCH
-void HandleTunnelMgr(EN_IOTA_EVENT *message, int i)
+static void HandleTunnelMgr(EN_IOTA_EVENT *message, int i)
 {
     URL_INFO info = {NULL, NULL, NULL, NULL};
     int ret = 0;
@@ -921,7 +1093,7 @@ void HandleTunnelMgr(EN_IOTA_EVENT *message, int i)
 }
 #endif
 
-void HandleEventsDown(EN_IOTA_EVENT *message)
+static void HandleEventsDown(EN_IOTA_EVENT *message)
 {
     if (message == NULL) {
         return;
@@ -934,142 +1106,51 @@ void HandleEventsDown(EN_IOTA_EVENT *message)
     while (message->services_count > 0) {
         // sub device manager
         if (message->services[i].servie_id == EN_IOTA_EVENT_SUB_DEVICE_MANAGER) {
-            // if it is the platform inform the gateway to add or delete the sub device
-            if (message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY ||
-                message->services[i].event_type == EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY) {
-                int j = 0;
-                while (message->services[i].paras->devices_count > 0) {
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), parent_device_id: %s \n",
-                        message->services[i].paras->devices[j].parent_device_id);
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id: %s \n",
-                        message->services[i].paras->devices[j].device_id);
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), node_id: %s \n",
-                        message->services[i].paras->devices[j].node_id);
-
-                    // add a sub device
-                    if (message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY) {
-                        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), name: %s \n",
-                            message->services[i].paras->devices[j].name);
-                        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), manufacturer_id: %s \n",
-                            message->services[i].paras->devices[j].manufacturer_id);
-                        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), product_id: %s \n",
-                            message->services[i].paras->devices[j].product_id);
-
-                        Test_UpdateSubDeviceStatus(
-                            message->services[i].paras->devices[j].device_id); // report status of the sub device
-                        Test_BatchPropertiesReport(
-                            message->services[i].paras->devices[j].device_id); // report data of the sub device
-                    } else if (message->services[i].event_type ==
-                        EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY) { // delete a sub device
-                        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), the sub device is deleted: %s\n",
-                            message->services[i].paras->devices[j].device_id);
-                    }
-
-                    j++;
-                    message->services[i].paras->devices_count--;
-                }
-            } else if (message->services[i].event_type == EN_IOTA_EVENT_ADD_SUB_DEVICE_RESPONSE) {
-                int j = 0;
-                while (message->services[i].gtw_add_device_paras->successful_devices_count > 0) {
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id: %s \n",
-                        message->services[i].gtw_add_device_paras->successful_devices[j].device_id);
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), name: %s \n",
-                        message->services[i].gtw_add_device_paras->successful_devices[j].name);
-                    j++;
-                    message->services[i].gtw_add_device_paras->successful_devices_count--;
-                }
-                j = 0;
-                while (message->services[i].gtw_add_device_paras->failed_devices_count > 0) {
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), error_code: %s \n",
-                        message->services[i].gtw_add_device_paras->failed_devices[j].error_code);
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), error_msg: %s \n",
-                        message->services[i].gtw_add_device_paras->failed_devices[j].error_msg);
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), node_id: %s \n",
-                        message->services[i].gtw_add_device_paras->failed_devices[j].node_id);
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), product_id: %s \n",
-                        message->services[i].gtw_add_device_paras->failed_devices[j].product_id);
-
-                    j++;
-                    message->services[i].gtw_add_device_paras->failed_devices_count--;
-                }
-            } else if (message->services[i].event_type == EN_IOTA_EVENT_DEL_SUB_DEVICE_RESPONSE) {
-                int j = 0;
-                while (message->services[i].gtw_del_device_paras->successful_devices_count > 0) {
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id: %s \n",
-                        message->services[i].gtw_del_device_paras->successful_devices[j]);
-                    j++;
-                    message->services[i].gtw_del_device_paras->successful_devices_count--;
-                }
-                j = 0;
-                while (message->services[i].gtw_del_device_paras->failed_devices_count > 0) {
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), error_code: %s \n",
-                        message->services[i].gtw_del_device_paras->failed_devices[j].error_code);
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), error_msg: %s \n",
-                        message->services[i].gtw_del_device_paras->failed_devices[j].error_msg);
-                    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_id: %s \n",
-                        message->services[i].gtw_del_device_paras->failed_devices[j].device_id);
-
-                    j++;
-                    message->services[i].gtw_del_device_paras->failed_devices_count--;
-                }
-            }
+            HandleSubDeviceManager(message, i);
         } else if (message->services[i].servie_id == EN_IOTA_EVENT_OTA) {
-            if (message->services[i].event_type == EN_IOTA_EVENT_VERSION_QUERY) {
-                // report OTA version
-                Test_ReportOTAVersion();
-            }
-
-            if (message->services[i].event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE ||
-                message->services[i].event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE) {
-                // check md5
-                char *pkg_md5 = "yourMd5"; // the md5 value of your ota package
-                if (strcmp(pkg_md5, message->services[i].ota_paras->sign)) {
-                    // report failed status
-                    Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version);
-                }
-
-                // start to receive packages and firmware_upgrade or software_upgrade
-                if (IOTA_GetOTAPackages(message->services[i].ota_paras->url,
-                    message->services[i].ota_paras->access_token, 1000) == 0) {
-                    usleep(3000 * 1000);
-                    // report successful upgrade status
-                    Test_ReportUpgradeStatus(0, message->services[i].ota_paras->version);
-                } else {
-                    // report failed status
-                    Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version);
-                }
-            }
+            HandleEventOta(message, i);
         } else if (message->services[i].servie_id == EN_IOTA_EVENT_TIME_SYNC) {
-            if (message->services[i].event_type == EN_IOTA_EVENT_GET_TIME_SYNC_RESPONSE) {
-                PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), device_real_time: %lld \n",
-                    message->services[i].ntp_paras->device_real_time);
-            }
+            HandleTimeSync(message, i);
         } else if (message->services[i].servie_id == EN_IOTA_EVENT_DEVICE_LOG) {
-            if (message->services[i].event_type == EN_IOTA_EVENT_LOG_CONFIG) {
-                PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), log_switch: %s \n",
-                    message->services[i].device_log_paras->log_switch);
-                PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), end_time: %s \n",
-                    message->services[i].device_log_paras->end_time);
-            }
+            HandleDeviceLog(message, i);
         } else if (message->services[i].servie_id == EN_IOTA_EVENT_TUNNEL_MANAGER) {
-#ifdef SSH_SWITCH            
+#ifdef SSH_SWITCH
             HandleTunnelMgr(message, i);
 #endif
-		}
+        } else if (message->services[i].servie_id == EN_IOTA_EVENT_SOFT_BUS) {
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), event_id: %s \n", message->services[i].event_id);
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), soft_bus_info: %s \n", message->services[i].soft_bus_paras->bus_infos);
+        }
         i++;
         message->services_count--;
     }
 }
 
+static int HandleDeviceRuleSendMsg(char *deviceId, char *message)
+{
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceRuleSendMsg(), deviceId is %s, the message is %s",
+        deviceId, message);
+    return 0;
+}
+
+static int HandleDeviceConfig(JSON *cfg, char *description)
+{
+    char *cfgstr = cJSON_Print(cfg);
+    PrintfLog(EN_LOG_LEVEL_INFO, "HandleDeviceConfig config content: %s\n", cfgstr);
+    (void)strcpy_s(description, MaxDescriptionLen, "update config success");
+    MemFree(&cfgstr);
+    return 0;
+}
 // -------------------------------------------------------------------------
 
-void SetAuthConfig()
+static void SetAuthConfig()
 {
     IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
     IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
     IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
     IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
     IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET);
+    IOTA_ConfigSetUint(EN_IOTA_CFG_CHECK_STAMP_METHOD, EN_IOTA_CFG_CHECK_STAMP_OFF);
     /* *
      * Configuration is required in certificate mode:
      *
@@ -1083,9 +1164,46 @@ void SetAuthConfig()
     IOTA_ConfigSetUint(EN_IOTA_CFG_LOG_LEVEL, LOG_INFO);
 #endif
 }
+#if defined(SOFT_BUS_OPTION2)
+void SendDataToDeviceCb(const char *deviceId, int result)
+{
+    PrintfLog(EN_LOG_LEVEL_INFO, "Data sent to [%s] result: %d\n", deviceId, result);
+}
 
+void ReceiveDataFromDeviceCb(const char *deviceId, char *receiveData, int datelen)
+{
+    PrintfLog(EN_LOG_LEVEL_INFO, "Data received from device [%s]. Datalen: %d, Data: %s\n", deviceId, datelen, receiveData);
+}
 
-void SetMyCallbacks()
+void Test_PrintfSoftBusInfo() {
+    soft_bus_total *g_soft_bus_total = getSoftBusTotal();
+    int total = g_soft_bus_total->count;
+    PrintfLog(EN_LOG_LEVEL_INFO, "总共有下发的bus信息个数为 : %d\n", total);
+    int i;
+    for (i = 0; i < total; i++)
+    {
+        PrintfLog(EN_LOG_LEVEL_INFO, "第 %d 个bus信息为: ---------- \n", i);
+        char* bus_key = g_soft_bus_total->g_soft_bus_info[i].bus_key;
+        PrintfLog(EN_LOG_LEVEL_INFO, "bus_key : %s \n", bus_key);
+
+        int count = g_soft_bus_total->g_soft_bus_info[i].count;
+        PrintfLog(EN_LOG_LEVEL_INFO, "设备数count为 : %d \n", count);
+
+        int j;
+        for (j = 0; j < count; j++)
+        {
+            PrintfLog(EN_LOG_LEVEL_INFO, "    第 %d 个设备信息为:---------- \n", j);
+            char* device_id = g_soft_bus_total->g_soft_bus_info[i].g_device_soft_bus_info[j].device_id;
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_id : %s \n", device_id);
+            char* device_ip = g_soft_bus_total->g_soft_bus_info[i].g_device_soft_bus_info[j].device_ip;
+            PrintfLog(EN_LOG_LEVEL_INFO, "device_ip : %s \n", device_ip);
+        }	
+    }
+    PrintfLog(EN_LOG_LEVEL_INFO, "---------------------------------------------- \n");
+}
+#endif	
+
+static void SetMyCallbacks()
 {
     IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
     IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
@@ -1101,15 +1219,31 @@ void SetMyCallbacks()
     IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
 
     IOTA_SetMessageCallback(HandleMessageDown);
+    IOTA_SetM2mCallback(HandleM2mMessageDown);
     IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
     IOTA_SetCmdCallback(HandleCommandRequest);
     IOTA_SetPropSetCallback(HandlePropertiesSet);
     IOTA_SetPropGetCallback(HandlePropertiesGet);
     IOTA_SetEventCallback(HandleEventsDown);
     IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
+    IOTA_SetDeviceRuleSendMsgCallback(HandleDeviceRuleSendMsg);
+    IOTA_SetDeviceConfigCallback(HandleDeviceConfig);
+
+#if defined(SOFT_BUS_OPTION2)
+    // 注册鸿蒙软总线
+    CallbackParam param = {
+        .sendDataResultCb = SendDataToDeviceCb,
+        .onReceiveDataCb = ReceiveDataFromDeviceCb,
+        .isValidIP = isValidIP,
+        .isValidDeviceID = isValidDeviceID,
+        .getAuthKey = getAuthKey,
+        .getDeviceID = getDeviceId,
+    };
+    RegisterCallback(&param);
+#endif	
 }
 
-void MyPrintLog(int level, char *format, va_list args)
+static void MyPrintLog(int level, char *format, va_list args)
 {
     vprintf(format, args);
     /*
@@ -1117,6 +1251,34 @@ void MyPrintLog(int level, char *format, va_list args)
      * vsyslog(level, format, args);
      *   */
 }
+
+
+#ifdef CUSTOM_RECONNECT_SWITCH
+static pthread_t g_reconnectionThread;
+
+static void *ReconnectRoutine(void *args)
+{
+    (void)args;
+    while (1) {
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: need to reconnect: %s \n", IOTA_IsConnected() ? "no" : "yes");
+        if (!IOTA_IsConnected()) {
+            int ret = IOTA_Connect();
+            if (ret != 0) {
+                PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Connect() error, result %d\n", ret);
+            }
+        }
+        TimeSleep(30 * 1000); // 30s
+    }
+    return NULL;
+}
+
+static void ReconnectDemo()
+{
+    if (pthread_create(&g_reconnectionThread, NULL, ReconnectRoutine, NULL) != NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: create ReconnectionThread failed! ===================>\n");
+    }
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -1134,14 +1296,27 @@ int main(int argc, char **argv)
 
     SetAuthConfig();
     SetMyCallbacks();
+    // add your fileName to store device rule
+    IOTA_EnableDeviceRuleStorage(DEVICE_RULE_FILE_PATH);
 
+#ifndef CUSTOM_RECONNECT_SWITCH
     // see handleLoginSuccess and handleLoginFailure for login result
     int ret = IOTA_Connect();
     if (ret != 0) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Auth() error, Auth failed, result %d\n", ret);
+        PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Connect() error, Auth failed, result %d\n", ret);
     }
 
     TimeSleep(10500);
+#else
+    ReconnectDemo();
+    while (!IOTA_IsConnected()) {
+        int errorCode = pthread_yield();
+        if (errorCode != 0) {
+            PrintfLog(EN_LOG_LEVEL_WARNING, "device_demo: pthread_yield() failed, error code: %d", errorCode);
+        }
+    }
+#endif
+
     int count = 0;
     while (count < 10000) {
         // report device info
@@ -1158,7 +1333,7 @@ int main(int argc, char **argv)
         char timeStampStr[14];
         sprintf_s(timeStampStr, sizeof(timeStampStr), "%llu", timestamp);
         char *log = "device log";
-        IOTA_ReportDeviceLog("DEVICE_STATUS", log, strlen(log), timeStampStr, NULL);
+        IOTA_ReportDeviceLog("DEVICE_STATUS", log , timeStampStr, NULL);
 
         // message up
         Test_MessageReport();
@@ -1197,12 +1372,15 @@ int main(int argc, char **argv)
         // get device shadow
         IOTA_GetDeviceShadow("1232", NULL, NULL, NULL);
 
+        // m2m send msg
+        Test_M2MSendMsg();
+
         count++;
     }
     count = 0;
     while (count < 100) {
         count++;
-        TimeSleep(50);
+        TimeSleep(11050);
     }
 
     return 0;

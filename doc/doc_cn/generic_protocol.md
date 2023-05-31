@@ -25,7 +25,7 @@
      
   6. 运行网关   
   
-     ./MQTT_Demo.o
+     ./MQTT_Demo
       
   7. 进入到src/gateway_demo文件夹下，编译客户端   
   

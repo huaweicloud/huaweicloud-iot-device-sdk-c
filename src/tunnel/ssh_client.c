@@ -30,6 +30,8 @@
 
 #include <stdio.h>
 #include "libssh/libssh.h"
+#include "securec.h"
+#include "string_util.h"
 #include "json_util.h"
 #include "log_util.h"
 #include "iota_error_type.h"
