@@ -9,22 +9,33 @@
 - [1 前言](#1)
 - [2 SDK简介](#2)
 - [3 准备工作](#3)
-    -  [3.1 环境信息](#3.1)
-    -  [3.2 编译openssl库](#3.2)
-    -  [3.3 编译paho库](#3.3)
-    -  [3.4 编译zlib库](#3.4)
-    -  [3.5 编译华为安全函数库](#3.5)
-    -  [3.6 编译libssh库](#3.6)
-    -  [3.7 编译libnopoll库](#3.7)
-    -  [3.8 上传profile及注册设备](#3.8)
+  -  [3.1 环境信息](#3.1)
+  -  [3.2 编译openssl库](#3.2)
+  -  [3.3 编译paho库](#3.3)
+  -  [3.4 编译zlib库](#3.4)
+  -  [3.5 编译华为安全库](#3.5)
+  -  [3.6 编译libssh库](#3.6)
+  -  [3.7 编译libnopoll库](#3.7)
+  -  [3.8 上传profile及注册设备](#3.8)
 - [4 快速体验](#4)
 - [5 使用步骤](#5)
 <!-- /TOC -->
 
 <h1 id="0">0.版本更新说明</h1>
+
+| 版本号 | 变更类型 | 功能描述说明                                                 |
+| ------ | -------- | ------------------------------------------------------------ |
+| 1.1.2  | 新功能   | 增加规则引擎、M2M、gn编译文件、异常检测、日志打印时间戳、MQTT_DEBUG、国密算法、远程配置、端云安全通信（软总线）功能 |
+| 1.1.1  | 新功能   | 新增SSH远程运维功能                                          |
+| 1.1.0  | 新功能   | 增加MQTT5.0功能，优化代码，修复内存溢出问题                  |
+| 1.0.1  | 功能增强 | 增加mqtts不校验平台公钥场景、TLS版本为V1.2、增加消息存储样例等场景 |
+| 0.9.0  | 新功能   | 增加网关更新子设备状态接口                                   |
+| 0.8.0  | 功能增强 | 更换新的接入域名（iot-mqtts.cn-north-4.myhuaweicloud.com）和根证书。<br/>如果设备使用老域名（iot-acc.cn-north-4.myhuaweicloud.com）接入，请使用 v0.5.0版本的SDK |
+| 0.5.0  | 功能增强 | sdk预置了设备接入地址及华为物联网平台配套的CA证书，支持对接华为云物联网平台。 |
+
 1、增加泛协议接入场景
 
-2、增加boostrap场景
+2、增加bootstrap场景
 
 3、SDK下行payload结构体封装
 
@@ -56,13 +67,31 @@
 
 17、增加消息存储样例
 
-18、增加MQTT5.0协议
+18、增加文件上传/下载功能
 
-19、增加SSH远程登录功能
+19、增加MQTT5.0协议
 
-如需回到旧版，请下载realeases版本 https://github.com/huaweicloud/huaweicloud-iot-device-sdk-c/releases
+20、增加端侧规则引擎
 
-*2022/12/22*
+21、增加SSH远程登录功能
+
+22、增加M2M功能
+
+23、增加gn编译文件
+
+24、增加设备信息抽象层
+
+25、增加异常检测
+
+26、增加日志打印时间戳功能
+
+27、增加MQTT_DEBUG功能
+
+28、增加远程配置功能
+
+29、增加端云安全通信（软总线）功能
+
+*2023/05/06*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
@@ -84,7 +113,11 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 
 - 支持自定义日志收集能力
 
+- 支持端侧规则引擎
+
 - 支持SSH远程登录
+
+- 支持对接边缘M2M
 
 **SDK目录结构**
 
@@ -94,7 +127,8 @@ SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过�
 <h2 id="3.1">3.1 环境信息</h2>
 SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本）。SDK依赖openssl库和paho库，如果开发者有自己的编译链，需要自行编译openssl/paho库文件。Linux通用的gcc编译步骤请参考章节3.2/3.3。   
 
-<h2 id="3.2">3.2 编译openssl库</h2>  
+<h2 id="3.2">3.2 编译openssl库</h2>
+
 1. 访问openssl官网https://www.openssl.org/source ，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以上传到目录/home/test为例），并使用如下命令解压：  
 
    tar -zxvf openssl-1.1.1d.tar.gz  
@@ -105,24 +139,17 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
    cd openssl-1.1.1d        
    
-   **非交叉编译运行如下配置命令：**  
+   运行如下配置命令：  
 
    ./config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl  
    
-   其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）。 
+   其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）。
 
    - 如果编译有问题配置命令加上no-asm（表示不使用汇编代码）
      
      ./config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl
      ![](./doc/doc_cn/no_asm.png)
-   
-   **交叉编译运行如下配置命令：**
-   
-  ./config no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl --cross-compile-prefix=xxx/arm-linux-gnueabi-
-   
-其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）,--cross-compile-prefix是交叉编译工具链的位置。 （图片以交叉工具链路径在/usr/longshijing/gcc-linaro-7.5.0-arm-linux-gnueabi为例）
-   ![](./doc/doc_cn/openssl交叉编译.png)
-   
+
 3. 编译出库。
    在openssl源码目录下，运行make depend命令添加依赖：
 
@@ -142,6 +169,8 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
    ![](./doc/doc_cn/openssl.png)
 
+4. 若需要使用国密TLS，可访问[国密版本openssl](https://github.com/jntass/TASSL-1.1.1)，安装方法同原生openssl。该版本当前基于openssl1.1.1s，兼容openssl各类原生接口，仍支持国际TLS。
+
 <h2 id="3.3">3.3 编译paho库</h2>  
 1. 访问github下载地址https://github.com/eclipse/paho.mqtt.c, 下载paho.mqtt.c源码(建议下载release版本中1.3.9及之前的版本的Source code (tar.gz)文件，如果使用最新的版本，下方适配的文件中的行数可能会有所改变，以及需要拷贝的头文件按照最新版本增加)。
 
@@ -156,10 +185,6 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	  
 	  :set nu
 	
-	- *若为交叉编译，把CC ?= gcc修改为CC := xxx/arm-linux-gnueabi-gcc,其中xxx为交叉编译工具链地址。*
-	  
-	   ![img](./doc/doc_cn/paho交叉编译.png) 
-	  
 	- 在"DOXYGEN_COMMAND"之后添加下面两行（[3.2](#3.2)中自定义的openssl的头文件和库文件位置）
 	  
 	  CFLAGS += -I/home/test/openssl/include  
@@ -167,8 +192,6 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	  LDFLAGS += -L/home/test/openssl/lib -lrt  
 	  
 	  ![](./doc/doc_cn/paho_makefile1.png)
-	  
-	  *ps:该openssl产物必须与paho的交叉编译工具为同一个，否则可能出现校验证书失败问题。*
 	  
 	- 在CCFLAGS_SO中添加openssl的头文件引用、LDFLAGS_CS、LDFLAGS_AS以及FLAGS_EXES中添加库文件引用（随着paho版本的更新，有的版本会默认添加该引用，此时可不需要再修改）
 	  ![](./doc/doc_cn/paho_makefile2.png)
@@ -203,14 +226,6 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 	./configure
 	
-	*如果为交叉编译，需要把makefile文件中 CC=gcc 改成 CC = 交叉工具链路径。*
-	
-	*vim Makefile*
-	
-	*修改 CC=gcc* 
-	
-	![1673945193303](./doc/doc_cn/zlib交叉编译.png)
-	
 4. 执行makefile文件
 
 	make
@@ -218,21 +233,18 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 5. 拷贝so库文件
 	将源码目录下生成的libz.so、libz.so.1、libz.so.1.2.11拷贝到sdk的lib文件夹下。
 
+<h2 id="3.5">3.5 编译华为安全函数库</h2>
 
-<h2 id="3.5">3.5 编译华为安全函数库</h2>  
 1. 下载安全函数库源码https://gitee.com/openeuler/libboundscheck.git
-	
+
 2. 进入源码makefile同级目录，执行makefile文件
-	
-	 make
-	
-	*ps:若为交叉编译，需要把Makefile中的 CC?=gcc 改为 CC=交叉编译链路径。*
-	
+
+   make
+
 3. 拷贝so库文件
-	将源码目录下生成的lib文件夹下的libboundscheck.so拷贝到sdk的lib文件夹下。
+    将源码目录下生成的lib文件夹下的libboundscheck.so拷贝到sdk的lib文件夹下。
 
 <h2 id="3.6">3.6 编译libssh库</h2>
-远程登陆维测功能需要编译该库，若不需要此功能可不编译该库，不影响主体功能的使用，不编译该库时请注释Makefile的 SSH_SWITCH :=1 这行代码
 
 1. 下载libssh源码https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz
 	通过如下命令解压缩：
@@ -245,25 +257,20 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	
 3. 编译库文件：
 
-        mkdir build
-	    
-        cd build
-	    
-        cmake ..
-	    
-        make
+    mkdir build
+    cd build
+    cmake ..
+    make
 	
 4. 安装库：
 
 	sudo make install
 	
 5. 拷贝so库文件和头文件
-	将源码生成的libssh.so、libssh.so.4、libssh.so.4.9.4拷贝到sdk的lib文件夹下。
+	将源码目录下生成的libssh.so、libssh.so.4、libssh.so.4.9.4拷贝到sdk的lib文件夹下。
     将/usr/local/include下的libssh的整个头文件目录拷贝到sdk的include文件夹下。
 
 <h2 id="3.7">3.7 编译libnopoll库</h2>
-远程登陆维测功能需要编译该库，若不需要此功能可不编译该库，不影响主体功能的使用，不编译该库时请注释Makefile的 SSH_SWITCH :=1 这行代码
-
 1. 下载nopoll源码http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz
 	通过如下命令解压缩：
    
@@ -275,33 +282,30 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	
 3. 编译与安装
 
-        ./configure
-	    
-        make
-	    
-        sudo make install
-	    
-        pkg-config nopoll --cflags
-	    
-        pkg-config nopoll --libs
+	./configure
+    make
+    make install
+    pkg-config nopoll --cflags
+    pkg-config nopoll --libs
 	
 4. 拷贝so库文件
-	通过上一步获取到的路径，将源码生成的libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0拷贝到sdk的lib文件夹下。
+	通过上一步获取到的路径，将源码目录下生成的libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0拷贝到sdk的lib文件夹下。
     将/usr/local/include下的libnopoll的整个头文件目录拷贝到sdk的include文件夹下。
 
 <h2 id="3.8">3.8 上传profile及注册设备</h2>     
-1. 将已开发完成的profile（产品模型）导入到控制台，点击“产品模型”，再点击右上角的“新增产品模型”，选择从本地导入。
+1. 将已开发完成的profile（产品模型）导入到控制台，点击左侧导航栏“产品”，点击“模型定义”，再点击下方的“上传模型文件”，选择”添加文件“，选择文件后点击”确定“，即可完成profile导入。
    
-	![](./doc/doc_cn/profile1.png)
 
-2. 点击“设备”，选中“设备注册”，点击右上角的创建，选择刚导入的产品模型，填写设备标识码（一般是IMEI、MAC地址等），“密钥”如果不自定义，平台会自动生成。全部填写完毕后，点击确认。（此处是网关注册）
+![](./doc/doc_cn/profile1.png)
+
+2. 点击“设备”->“所有设备”，点击右上角“注册设备”，选择产品所在的“资源空间”，选择上方创建的产品，填写设备标识码（一般是IMEI、MAC地址等），自定义“设备名称”，“密钥”如果不自定义，平台会自动生成。全部填写完毕后，点击“确定”。
 	![](./doc/doc_cn/profile2.png)
 
-3. 保存设备ID和密钥。
+3. 可以直接复制设备秘钥，点击“保存并关闭”将自动将设备ID以及设备秘钥以txt文本形式下载到本地。
 
 	![](./doc/doc_cn/profile3.png)
 
-4. 点击“所有设备”，在最上方可看到该设备的状态是未激活。
+4. 点击”设备“->“所有设备”，在最上方可看到该设备的状态是未激活。
 	![](./doc/doc_cn/profile4.png)
 
 <h1 id="4">4.快速体验</h1>  
@@ -320,9 +324,16 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	password_：设备密钥，设备注册时返回的值。
 	![](./doc/doc_cn/4_1.png)
 
-4. 执行make命令进行编译（如果是32位的操作系统，请删除掉Makefile中的"-m64"，如果是交叉编译，请把gcc 改为对应的工具链地址）：
+4. 执行命令进行编译：
 
-	make
+	4.1 用Makefile进行编译：
+   
+        make（如果是32位的操作系统，请删除掉Makefile中的"-m64"）
+
+   4.2 用gn进行编译：
+
+        gn gen -C out
+        ninja -C out
 	
 5. 运行：	
 	- 加载库文件
@@ -331,7 +342,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 	- 执行如下命令：
 	
-	  ./MQTT_Demo.o
+	  ./MQTT_Demo
 	
 	  在控制台上可以看到很多打印的日志：
 	  “login success”表示设备鉴权成功   
@@ -343,7 +354,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	  ![](./doc/doc_cn/4_2.png)
 
 6. 查看设备运行情况：
-	- 网关设备在线：
+  - 网关设备在线：
 	  ![](./doc/doc_cn/4_3.png)
 	- 网关上报数据
 	  ![](./doc/doc_cn/4_4.png)
@@ -357,24 +368,137 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 	      ![](./doc/doc_cn/4_7.png)
 	    - 子设备上报数据
 	      ![](./doc/doc_cn/4_8.png)
+        
+7. 端侧规则引擎
+   
+   7.1 下发端侧规则
+   
+   进入IoTDA控制台，在规则、设备联动页面上点击`创建规则`按钮,
+   
+   ![](./doc/doc_cn/4_create_rule.png)
+   
+   填写规则名称，选中端侧执行然后选中设备：
+   
+   ![](./doc/doc_cn/4_select_device_rule.png)
+   
+   配置端侧规则
+   ![](./doc/doc_cn/4_config_device_rule.png)
+   
+   在控制台中可以观察到当属性上报、`PhV_phsA`为"9"时，端侧规则触发执行, 从而调用`HandleCommandRequest`：
+   ![](./doc/doc_cn/4_observe_output.png)
+   
+   如果是跨设备执行命令时，需要调用回调函数IOTA_SetDeviceRuleSendMsgCallback，用户需要自行实现以下功能：HandleDeviceRuleSendMsg，从中解析出命令并执行。
+   ![](./doc/doc_cn/4_send_msg_to_other_device_rule.png)
+   
+   7.2 端侧规则引擎支持本地存储
+   
+   当设备重启后若不再具备联网条件，将无法从云端拉取配置的端侧规则，进而导致设备端侧规则丢失。为满足该场景下不影响设备执行端侧规则，可以将云端配置的规则存储在文件中，设备重启后将从文件系统中读取规则。该特性要求设备支持文件系统。用户只需要提供一个路径给接口IOTA_EnableDeviceRuleStorage（该接口在src/device_demo/device_demo.c被调用），即可实现端侧规则本地存储。具体如下图，将include/agentlite/iota_datatrans.h中的宏定义DEVICE_RULE_FILE_PATH的值testdata.txt修改为自己的文件存储路径即可。
 
-7. 支持SSH远程登录
+   ![](./doc/doc_cn/addFileStoreDeviceRule.png)
 
-   使用SSH远程登录功能前，需参考[3.6 编译libssh库](#3.6)和[3.7 编译libnopoll库](#3.7)实现libssh和libnopoll库的编译，并且设备必须在线。
+8.支持SSH远程登录
 
-   如下图进入IoTDA控制台, 选择"监控运维——远程登录——{自己的在线设备}——输入用户名密码——确认"
+  使用SSH远程登录功能前，需参考[3.5 编译libssh库](#3.5)和[3.6 编译libnopoll库](#3.6)实现libssh和libnopoll库的编译，并且设备必须在线。
+
+  如下图进入IoTDA控制台, 选择"监控运维——远程登录——{自己的在线设备}——输入用户名密码——确认"
 
    ![](./doc/doc_cn/ssh_1.png)
 
    如上图操作操作之后即可实现ssh远程登录。实现效果如下，可输入命令进行交互
 
    ![](./doc/doc_cn/ssh_2.png)
-	
+
+9.对接边缘M2M功能
+
+   目前支持使用SDK对接边缘IoTEdge，边缘节点完成消息的中转到目标设备，从而实现M2M的功能。使用步骤如下：
+  - 1.搭建边缘节点，创建产品，并添加边缘设备，参考如下最佳实践：
+    https://support.huaweicloud.com/bestpractice-iotedge/iotedge_bestpractice_0050.html
+  - 2.替换相应的证书：
+    https://support.huaweicloud.com/bestpractice-iotedge/iotedge_bestpractice_0052.html
+
+  下载其中的plt-device-ca证书文件，将证书内容拷贝并替换sdk目录当中conf/rootcert.perm文件中的内容。
+
+  此证书用于设备校验边缘节点的身份。
+  - 3.替换端口号：
+    将include/base/mqtt_base.h中的：
+
+  #define MQTT_PORT         				"1883"
+
+  #define MQTTS_PORT         				"8883"
+
+  替换为：
+
+  #define MQTT_PORT         				"7882"
+
+  #define MQTTS_PORT         				"7883"
+
+  - 4.测试Demo：
+    将src/device_demo/device_demo.c中边缘节点IP等信息进行替换：
+
+  char *serverIp_ = "xx.xx.xx.xx"; // 边缘节点的IP
+
+  int port_ = 7883; // MQTTS端口号, 目前IoTEdge默认使用此端口号
+
+  char *username_ = "tunnelDeviceA"; // 上述步骤1当中设置
+
+  char *password_ = "xxxx"; // 上述步骤1中设置
+
+  假设源设备A和目标设备B的ID分别：tunnelDeviceA和tunnelDeviceB, 设备A向设备B发送"hello world"消息。
+  在A设备当中调用如下代码（demo可在main函数中调用）:
+
+   void Test_M2MSendMsg()
+   {
+
+     char *to = "deviceB";
+     char *from = username_;
+     char *content = "hello deviceB";
+     char *requestId = "demoIdToDeviceB";
+     int messageId = IOTA_M2MSendMsg(to, from, content, requestId, NULL);
+     ....
+  在接收端(即B设备)，会在回调函数HandleM2mMessageDown中打印接收的消息：
+
+  void HandleM2mMessageDown(EN_IOTA_M2M_MESSAGE *rsp)
+  {
+   ...
+
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), requestId: %s\n", rsp->request_id);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), to: %s\n", rsp->to);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), from: %s\n", rsp->from);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), content: %s\n", rsp->content);
+    
+    // 用户可在此处加上业务处理逻辑，比如接收到content的后续处理
+    // do sth
+  }
+
+  可以在终端日志中打印出如下信息：
+  设备A:
+
+    DEBUG device_demo: this is m2m demo
+    DEBUG iota_datatrans: IOTA_M2MSendMsg() with payload ==> {
+          "request_id":   "demoIdToDeviceB",
+          "to":   "deviceB",
+          "from": "deviceA",
+          "content":      "hello deviceB"
+    }
+    DEBUG device_demo: Test_M2MSendMsg() ok, messageId 0
+  设备B:
+
+    INFO device_demo: HandleM2mMessageDown(), requestId: demoIdToDeviceB
+    INFO device_demo: HandleM2mMessageDown(), to:        deviceB
+    INFO device_demo: HandleM2mMessageDown(), from:      deviceA
+    INFO device_demo: HandleM2mMessageDown(), content:   hello deviceB
+
+
+
+10.端云安全通信（结合OpenHarmony软总线）
+
+
+
 <h1 id="5">5.使用步骤</h1>  
+
 以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。  
 
 - **设置日志回调函数**
-  
 
 SDK以日志回调函数的方式供开发者使用，开发者可以根据自己的需求调用IOTA_SetPrintLogCallback函数设置。具体API接口的参数使用请参考SDK API接口文档。可参考device_demo（在src/device_demo文件夹下的device_demo.c，以下简称为demo）中main()方法对IOTA_SetPrintLogCallback函数的调用。
 
@@ -384,14 +508,12 @@ SDK以日志回调函数的方式供开发者使用，开发者可以根据自�
   - 如果需要打印到系统日志文件中，可以参考demo中的myPrintLog函数中设置的vsyslog(level, format, args)函数。同时需要引入头文件#include "syslog.h"，并且定义宏#define _SYS_LOG。
   
 - **初始化**
-  
 
 在发起业务前，需要先初始化Agent Lite相关资源，调用API接口IOTA_Init()，初始化Agent Lite资源。具体API接口的参数使用请参考Agent Lite API接口文档。可参考demo中main()方法对IOTA_Init()的调用。
 
 `IOTA_Init(HW_CHAR *pcWorkPath)`
 
 - **设备绑定配置**
-  
 
 设备连接到IoT平台之前，需配置平台的地址、端口、设备Id及设备密钥。可以参考demo中main()方法中调用的setAuthConfig()函数。
 
@@ -402,7 +524,8 @@ void setAuthConfig(){
   IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
   IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
   IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
-  IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE,     EN_IOTA_CFG_AUTH_MODE_SECRET); //密码模式
+  IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET); //密码模式
+  IOTA_ConfigSetUint(EN_IOTA_CFG_CHECK_STAMP_METHOD, EN_IOTA_CFG_CHECK_STAMP_OFF);
 /**
   * Configuration is required in certificate mode:
   *
@@ -422,10 +545,11 @@ void setAuthConfig(){
 
 设备ID（EN_IOTA_CFG_DEVICEID）、设备密钥（EN_IOTA_CFG_DEVICESECRET）是注册设备的时候返回的。   
 
+时间戳检验方式（EN_IOTA_CFG_CHECK_STAMP_METHOD）可设置不校验（EN_IOTA_CFG_CHECK_STAMP_OFF）、使用sha256（EN_IOTA_CFG_CHECK_STAMP_SHA256）或者国密sm3（EN_IOTA_CFG_CHECK_STAMP_SM3）做杂凑算法校验。
+
 当定义了_SYS_LOG（日志打印在系统文件中）时，日志的facility类型（EN_IOTA_CFG_LOG_LOCAL_NUMBER）、日志的显示级别（EN_IOTA_CFG_LOG_LEVEL）可以按需自定义。
 
 - **回调函数配置**
-  
 
 SDK针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消息成功/失败、设备发布消息成功/失败、设备接收消息/命令等动作，以回调函数的方式供开发者调用，开发者可以针对不同的事件设置回调函数来实现业务处理逻辑。可以参考demo中main()方法中调用的setMyCallbacks()函数。
 
@@ -452,7 +576,6 @@ void setMyCallbacks(){
 	IOTA_SetEventCallback(HandleEventsDown);
 	IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
 }
-
 ```
 
 	- 鉴权成功后，将调用HandleConnectSuccess函数；  
@@ -548,7 +671,35 @@ services[1].properties = service2;
 	  设备收到消息后可以通过回调函数进行命令处理，可以参考demo中HandleMessageDown函数（需在回调函数配置中提前设置，下行消息的处理均需要提前设置回调函数）。
   
   - 设备接收命令下发（profile中定义的命令）：
-  ![](./doc/doc_cn/cmdDown.png)
+
+    `HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandler)`
+    通过该接口设置命令回调函数，当云端下发命令或端侧规则触发执行命令时，`pfnCallbackHandler`会被调用。
+    ```c
+    void HandleCommandRequest(EN_IOTA_COMMAND *command)
+    {
+        if (command == NULL) {
+            return;
+        }
+
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), messageId %d\n",
+            command->mqtt_msg_info->messageId);
+
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), object_device_id %s\n",
+            command->object_device_id);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), service_id %s\n", command->service_id);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), command_name %s\n", command->command_name);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), paras %s\n", command->paras);
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleCommandRequest(), request_id %s\n", command->request_id);
+        // 可以在此处实现具体命令处理
+        Test_CommandResponse(command->request_id); // response command
+    }
+    ```
+    注册回调函数:
+    ```c
+    IOTA_SetCmdCallback(HandleCommandRequest);
+    ```
+
+    ![](./doc/doc_cn/cmdDown.png)
     
   - 设备接收平台属性设置
 	![](./doc/doc_cn/setDown.png)
@@ -620,6 +771,30 @@ void SetAuthConfig() {
 	 IOTA_ConfigSetStr(EN_MQTT_CFG_PRIVATE_KEY_PASSWORD, "yourPassword");
 }   
 ```
+- **国密TLS接入**
+  
+  当前SDK已支持国密TLS方式接入并进行数据传输。若需要采用国密通信，需要下载国密版本的openssl，具体可参考[3.2 编译openssl库](#3.2)第4点。
+  
+  使用国密TLS需要对paho_mqtt开源库中paho.mqtt.c-1.3.9/src/SSLSocket.c文件打补丁，补丁方法如下：
+    1. 解压./generatingLib/gmtls.patch.zip得到补丁文件gmtls.patch
+
+        unzip ./generatingLib/gmtls.patch.zip
+    2. 对paho.mqtt.c-1.3.9/src/SSLSocket.c文件进行打补丁
+
+        patch -b ./generatingLib/paho.mqtt.c-1.3.9/src/SSLSocket.c ./generatingLib/gmtls.patch
+  
+  ```c
+  // 使用绝对路径来读取证书
+  const char *signCert = "/volume/tassl/iot-device-sdk-c/conf/gmcert_s/CS.cert.pem";
+  const char *signKey = "/volume/tassl/iot-device-sdk-c/conf/gmcert_s/CS.key.pem";
+  const char *encCert = "/volume/tassl/iot-device-sdk-c/conf/gmcert_e/CE.cert.pem";
+  const char *encKey = "/volume/tassl/iot-device-sdk-c/conf/gmcert_e/CE.key.pem";
+  const char *caPath = "/volume/tassl/iot-device-sdk-c/conf/GMCert_GMCA01.cert.pem";
+  const char *passWord = NULL;
+  ```
+
+  打完补丁后，可以查看paho.mqtt.c-1.3.9/src/SSLSocket.c中是否存在上述证书路径字段。若使用口令登录的方式则不需要填写对应的签名证书、私钥和加密证书、私钥路径，若使用证书登录的方式则需要填写对应文件的路径，并使用绝对路径来进行访问。修改完成后重新编译paho库即可。
+
 - **自定义tpoic**
 
   请参考主目录下的**API文档**。
@@ -641,8 +816,7 @@ void SetAuthConfig() {
 	SDK中需要将主目录下的Makefile里的OBJS中的device_demo.o，同时将bootstrap_demo.o放开。    
 	![](./doc/doc_cn/bootstrap.png)
 	
-- **bootstrap接入场景**  
-当前，平台使用了 [DigiCert Global Root CA.](https://global-root-ca.chain-demos.digicert.com/info/index.html) 和 [GlobalSign Root CA - R3](https://valid.r3.roots.globalsign.com/) 两个权威CA签发的证书。conf目录下的证书默认是跟IoTDA的基础版域名绑定的。如果需要切换到其他IoTDA版本，请参考官方文档的 [证书资源](https://support.huaweicloud.com/devg-iothub/iot_02_1004.html#section3) 章节。
+  当前，平台使用了 [DigiCert Global Root CA.](https://cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem) 和 [GlobalSign Root CA - R3](https://valid.r3.roots.globalsign.com/) 两个权威CA签发的证书。conf目录下的证书默认是跟IoTDA的基础版域名绑定的。如果需要切换到其他IoTDA版本，请参考官方文档的 [证书资源](https://support.huaweicloud.com/devg-iothub/iot_02_1004.html#section3) 章节。
 
 - **编译并运行程序**
 1. 将huaweicloud-iot-device-sdk-c-master.zip压缩包拷贝到Linux环境中，通过如下命令解压：
@@ -659,7 +833,7 @@ void SetAuthConfig() {
 	
 4. 运行SDK Demo
 	
-	./MQTT_Demo.o
+	./MQTT_Demo
 	
 - **生成SDK库文件**
   
@@ -669,7 +843,7 @@ void SetAuthConfig() {
     ![](./doc/doc_cn/so1.png)
   - 把OBJS中的device_demo.o删除掉
     ![](./doc/doc_cn/so2.png)
-  - 把编译后的TARGET文件由MQTT_Demo.o修改为libHWMQTT.so（名称可以自定义）
+  - 把编译后的TARGET文件由MQTT_Demo修改为libHWMQTT.so（名称可以自定义）
     ![](./doc/doc_cn/so3.png)
   - 修改完毕后执行make即可生成libHWMQTT.so文件  
     
@@ -681,7 +855,7 @@ void SetAuthConfig() {
   该新增代码为样例代码，存储的容器采用的是动态二维数组，用户可以根据自己的业务逻辑来进行选择。建议设备采集到数据后就进行存储，设备链路正常的时候再进行重发。
   基本逻辑如下：
 - 上报数据前 存储传感器的数据（当前使用的是数组 用户可以自己选择）
-  
+
     ![](./doc/doc_cn/存储.png)
   
 - 如果收到了publish成功的响应 再从容器中删除该条消息，如果存储中有未发送的数据，再次发送。
@@ -695,6 +869,99 @@ void SetAuthConfig() {
 
   如果想使用MQTT5.0协议（默认为MQTT3.1.1），需要在文件./include/util/mqttv5_util.h 中取消 #define MQTTV5的备注。
 
+- **MQTT_DEBUG功能使用**
+
+  如果想使用 MQTT_DEBUG 功能，需要在文件./include/util/mqtt_base.h 中把 MQTT_TRACE_ON 的值改为1。 
+  其中，MQTT_TRACE_LEVEL 是 MQTT_DEBUG 日志打印级别，默认为最高等级 MQTTASYNC_TRACE_MAXIMUM。
+
+  日志打印级别说明：
+    ![](./doc/doc_cn/logLevel.png)
+
+  LOG_FILE_ENABLE 为 1 时，的log就会输出到 LOG_FILE_NAME 设置的文件路径中。当 LOG_FILE_ENABLE 为 0 时，log会直接输出。
+
+- **远程配置功能**
+
+  支持配置参数通过远程下发，SDK通过event/down接收相关信息，用户可通过IOTA_SetDeviceConfigCallback注册自定义的回调钩子函数，该回调函数会在接收到配置信息后进行处理相关数据。
+
+- **软总线功能**
+
+  通过平台下发设备组，设备可通过软总线实现物物互联。IoTDA可以进行安全群组管理以及下发群成员之间通信的授信标识。
+
+  进入IoTDA平台，点击左侧“设备”->"群组"，新建子群组，“点击创建”进行创建鸿蒙软总线，自定义鸿蒙软总线名称。
+
+  ![](./doc/doc_cn/端云安全通信1.png)
+
+  绑定设备，点击图中“绑定”，选择要绑定到该群组的设备，之后点击右侧进行同步软总线信息。
+
+  ![](./doc/doc_cn/端云安全通信2.png)
+
+  用户可通过 IOTA_GetLatestSoftBusInfo主动获取设备软总线信息。
+  当软总线更新时，会在影子下发的回调函数HandlePropertiesSet中获取版本。
+
+- **自动重连**
+
+  `src/device_demo/device_demo.c`中提供两种重连示例，两种示例对应的重连方法不能同时使用，用户可使用宏`CUSTOM_RECONNECT_SWITCH`进行选择:
+
+    1. 不定义宏`CUSTOM_RECONNECT_SWITCH`，此时在`HandleConnectFailure`, `HandleConnectionLost`回调函数内进行重连，可以第一时间感知到MQTT的断连，为推荐重连做法。
+
+    2. 定义宏`CUSTOM_RECONNECT_SWITCH`，此时使用线程模拟定时器，每隔30秒调用`IOTA_IsConnected()`接口检查连接状态，如果发现断开则进行重连。
+
+
+  默认情况下宏`CUSTOM_RECONNECT_SWITCH`未定义，此时使用示例1：
+  ```C
+  void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
+  {
+      PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() error, messageId %d, code %d, messsage %s\n",
+          rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
+      PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleConnectFailure() login again\n");
+
+  #ifndef CUSTOM_RECONNECT_SWITCH
+      //退避重连
+      connect_failed_times++;
+      if (connect_failed_times < 10) {
+          TimeSleep(50);
+      } else if (connect_failed_times < 50) {
+          TimeSleep(2500);
+      }
+
+      int ret = IOTA_Connect();
+      if (ret != 0) {
+          PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: HandleAuthFailure() error, login again failed, result %d\n", ret);
+      }
+  #endif
+  }
+
+  ```
+
+  要开启示例2，找到以下代码并取消最前面的注释, 此时定义宏 `CUSTOM_RECONNECT_SWITCH`：
+  ```C
+  // #define CUSTOM_RECONNECT_SWITCH
+  ```
+
+  用户可以参考以下`IOTA_IsConnected()`接口用法，使用该接口读取连接状态进行重连。
+  ```C
+  static void ReconnectRoutine(void *args)
+  {
+      (void)args;
+      while (1) {
+          PrintfLog(EN_LOG_LEVEL_DEBUG, "device_demo: need to reconnect: %s \n", IOTA_IsConnected() ? "no" : "yes");
+          if (!IOTA_IsConnected()) { //检查连接状态
+              int ret = IOTA_Connect();
+              if (ret != 0) {
+                  PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Connect() error, result %d\n", ret);
+              }
+          }
+          TimeSleep(30 * 1000); // 30s
+      }
+  }
+
+  static void ReconnectDemo()
+  {
+      if (pthread_create(&reconnectThread, NULL, ReconnectRoutine, NULL) != NULL) {
+          PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: create ReconnectionThread failed! ===================>\n");
+      }
+  }
+  ```
 
 ## 开源协议
 

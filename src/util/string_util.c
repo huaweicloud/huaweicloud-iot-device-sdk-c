@@ -1,62 +1,64 @@
-/* Copyright (c) <2020>, <Huawei Technologies Co., Ltd>
- * All rights reserved.
- * &Redistribution and use in source and binary forms, with or without modification,
+/*
+ * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- * conditions and the following disclaimer.
+ *    conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- * of conditions and the following disclaimer in the documentation and/or other materials
- * provided with the distribution.
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific prior written permission.
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
- * THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  */
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#include "securec.h"
 #include <time.h>
+#include <sys/time.h>
+#include "securec.h"
 #include "string_util.h"
 #include "zlib.h"
 
 
-int StringLength(char *str)
+int StringLength(const char *str)
 {
     if (str == NULL) {
         return 0;
     }
     int len = 0;
-    char *temp_str = str;
+    const char *temp_str = str;
     while (*temp_str++ != '\0') {
         len++;
     }
     return len;
 }
 
-size_t ConstStringLength(const char *_Str)
+char *StrInStr(const char *str, const char *subStr)
 {
-    return strlen(_Str);
-}
-
-char *StrInStr(const char *_Str, const char *_SubStr)
-{
-    if (_Str == NULL || _SubStr == NULL) {
+    if ((str == NULL) || (subStr == NULL)) {
         return NULL;
     }
 
-    return strstr(_Str, _SubStr);
+    return strstr(str, subStr);
 }
 
 int String2Int(const char *value)
@@ -65,22 +67,6 @@ int String2Int(const char *value)
         return -1;
     }
     return atoi(value);
-}
-
-
-void MemFreeConst(const char **str)
-{
-    if (*str != NULL) {
-        free((void *)(*str));
-        *str = NULL;
-    }
-}
-void MemFree(char **str)
-{
-    if (*str != NULL) {
-        free(*str);
-        *str = NULL;
-    }
 }
 
 void StringMalloc(char **str, int length)
@@ -95,7 +81,7 @@ void StringMalloc(char **str, int length)
     memset_s(*str, length, 0, length);
 }
 
-char *CombineStrings(int strAmount, char *str1, ...)
+char *CombineStrings(int strAmount, const char *str1, ...)
 {
     int length = StringLength(str1) + 1;
     if (length == 1) {
@@ -149,7 +135,7 @@ char *CombineStrings(int strAmount, char *str1, ...)
     return result;
 }
 
-/* *NOTE: "*dst" will be "malloc" inside this function, and the invocation needs to free it after used.
+/* NOTE: "*dst" will be "malloc" inside this function, and the invocation needs to free it after used.
  * If this function is recalled with the same "**dst", you should free the pointer "*dst" before invoking this function
  * in case of memory leak.
  */
@@ -174,8 +160,9 @@ int CopyStrValue(char **dst, const char *src, int length)
     return 0;
 }
 
-// NOTE: the invocation need to free the return char pointer.
-// return parameter e.g. 20190531T011540Z
+/* NOTE: the invocation need to free the return char pointer.
+ * return parameter e.g. 20190531T011540Z
+ */
 char *GetEventTimesStamp()
 {
     time_t t;
@@ -204,9 +191,9 @@ unsigned long long getTime()
     return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
-
-// NOTE: the invocation need to free the return char pointer.
-// return parameter e.g. 2019053101
+/* NOTE: the invocation need to free the return char pointer.
+ * return parameter e.g. 2019053101
+ */
 char *GetClientTimesStamp()
 {
     time_t t;
@@ -229,8 +216,59 @@ char *GetClientTimesStamp()
 }
 
 /*
+ * NOTE: the caller need to free the return char pointer.
+ * return local time in the format of year:month:day hour:minute:second.microsecond,
+ * e.g. "2023-01-28 15:38:29.609"
+ *
+ * return NULL if any errors occur.
+ */
+char *GetLocalTimeWithMs()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    time_t t = (time_t)tv.tv_sec;
+    struct tm *lt = localtime(&t);
+    char timeSec[LOCAL_TIME_LENGTH + 1];
+    if (strftime(timeSec, LOCAL_TIME_LENGTH + 1, "%Y-%m-%d %H:%M:%S", lt) == 0) {
+        return NULL;
+    }
+
+    char *destStr = malloc(LOCAL_TIME_WITH_MS_LENGTH + 1);
+    if (destStr == NULL) {
+        return NULL;
+    }
+
+    if (sprintf_s(destStr, LOCAL_TIME_WITH_MS_LENGTH + 1, "%s.%03d", timeSec, tv.tv_usec / 1000) == -1) {
+        MemFree(&destStr);
+        return NULL;
+    }
+    return destStr;
+}
+
+/*
+ * NOTE: the caller need to free the return char pointer.
+ * return a string that is made by prepending input with GetLocalTimeWithMs() and a space,
+ * e.g. PrependLocalTimeWithMs("abc") returns "2023-01-28 15:38:29.609 abc"
+ * 
+ * return NULL if argument is null.
+ * return NULL if any errors occur.
+ */
+char *PrependLocalTimeWithMs(const char *s)
+{
+    char *t = GetLocalTimeWithMs();
+    if (t == NULL) {
+        return NULL;
+    } else {
+        char *ret = CombineStrings(3, t, " ", s);
+        MemFree(&t);
+        return ret;
+    }
+}
+
+/*
  * the max length of substring is SUB_STERING_MAX_LENGTH,
- *  */
+ */
 int GetSubStrIndex(const char *str, const char *substr)
 {
     if (str == NULL || substr == NULL) {
@@ -258,10 +296,25 @@ int GetSubStrIndex(const char *str, const char *substr)
     return -1;
 }
 
+int StrEndWith(const char *str, const char *suffix)
+{
+    if (str == NULL || suffix == NULL) {
+        return 0;
+    }
+
+    size_t lenStr = strlen(str);
+    size_t lenSuffix = strlen(suffix);
+
+    if (lenSuffix > lenStr) {
+        return 0;
+    }
+    return strncmp(str + lenStr - lenSuffix, suffix, lenSuffix) == 0;
+}
+
 /*
  * get the value of long long type from string
-*  */
-long long getLLongValueFromStr(const * str, const * subStr)
+ */
+long long getLLongValueFromStr(const char *str, const char *subStr)
 {
     char *version_tmp = strstr(str, subStr);
     char buf[LONG_LONG_MAX_LENGTH+1] = {0};
@@ -286,7 +339,6 @@ long long getLLongValueFromStr(const * str, const * subStr)
     long long version = strtoll(buf, &end, 10);
     return version;
 }
-
 
 int gZIPCompress(const char *src, int srcLength, unsigned char *dest, int destLength)
 {
@@ -327,4 +379,23 @@ int gZIPCompress(const char *src, int srcLength, unsigned char *dest, int destLe
         return (int)c_stream.total_out;
     }
     return -1;
+}
+
+// Reassign memory
+char *ReassignMemory(char *oldMemory, unsigned int resultLen) {
+    if (resultLen <= 0) {
+        return oldMemory;
+    }
+	char *result = (char *)malloc(resultLen);
+	if (result == NULL) {
+		return oldMemory;
+	}
+	result[0] = 0;
+	int ret = strncat_s(result, resultLen, oldMemory, strlen(oldMemory));
+    if (ret != EOK) {
+        MemFree(&result);
+        return oldMemory;
+    }
+	MemFree(&oldMemory);
+	return result;
 }

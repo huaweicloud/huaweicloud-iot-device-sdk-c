@@ -30,6 +30,7 @@
 
 #include <pthread.h>
 #include <nopoll.h>
+#include "securec.h"
 #include "log_util.h"
 #include "iota_error_type.h"
 #include "string_util.h"

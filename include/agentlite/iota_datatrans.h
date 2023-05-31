@@ -40,6 +40,7 @@
 #define MaxSubDeviceCount 100
 #define MaxAddedSubDevCount 50
 #define MaxDelSubDevCount 50
+#define MaxDescriptionLen 100
 
 typedef struct {
 	HW_CHAR *service_id; // the device service id obtained from the profile
@@ -144,7 +145,14 @@ typedef struct {
 	HW_CHAR *device_sdk_version;
 	HW_CHAR *sw_version;
 	HW_CHAR *fw_version;
+	HW_CHAR *device_ip;
 } ST_IOTA_DEVICE_INFO_REPORT;
+
+typedef struct {
+	HW_CHAR *object_device_id;
+	HW_INT result_code;
+	HW_CHAR description[MaxDescriptionLen];
+} ST_IOTA_DEVICE_CONFIG_RESULT;
 
 /**
  *@Description: report message to IoT platform
@@ -230,6 +238,18 @@ HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVIC
 HW_API_FUNC HW_INT IOTA_GetDeviceShadow(HW_CHAR *requestId, HW_CHAR *object_device_id, HW_CHAR *service_id, void *context);
 
 /**
+ *@Description: used for m2m to send msg
+ *@param to: the target device id
+ *@param from: the source device id
+ *@param content: message content to send
+ *@param requestId: is optional
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+                   provide access to the context information in the callback.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_M2MSendMsg(HW_CHAR *to, HW_CHAR *from, HW_CHAR *content, HW_CHAR *requestId, void *context);
+
+/**
  *@Description: Reserved interface for transparent transmission
  *@param pcPayload: Load structure
  *@param context: A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
@@ -273,18 +293,28 @@ HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInf
 HW_API_FUNC SSL_CTX* IOTA_ssl_init(void);
 
 /**
- *@Description: get OTA packages
- *@param url: package download address
- *@param token: Temporary token of the download address of the package URL
- *@param timeout: The timeout for requesting to download the package, which needs to be greater than 300 seconds. Less than 24 hours is recommended
+ *@Description: get OTA packages and store it at where programs running
+ *@param url： package download address
+ *@param token： Temporary token of the download address of the package URL
+ *@param timeout： The timeout for requesting to download the package, which needs to be greater than 300 seconds. Less than 24 hours is recommended
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
 HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT timeout);
 
 /**
+ *@Description  get OTA packages and store it to the designated path, also.
+ *@param url ： package download address
+ *@param token ： Temporary token of the download address of the package URL
+ *@param timeout ： The timeout for requesting to download the package, which needs to be greater than 300 seconds. Less than 24 hours is recommended
+ *@param otaFilePath : The path to store the package
+ *@param otaFilename[out] ：The filename of the package 
+ *@return IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_GetOTAPackages_Ext(HW_CHAR *url, HW_CHAR *token, HW_INT timeout, const HW_CHAR *otaFilePath, HW_CHAR *otaFilename);
+/**
  *@Description: subscribe user topic
  *@param topicParas: customize the topic parameters, such as "devmsg" (do not add '/' or special characters in front of it)
- *@return: IOTA_SUCCESS represents success, others represent specific failure
+ *@return: IOTA_FAILURE represents failure, others mean success
  */
 HW_API_FUNC HW_INT IOTA_SubscribeUserTopic(HW_CHAR *topicParas);
 
@@ -336,19 +366,19 @@ HW_API_FUNC HW_INT IOTA_GetNTPTime(void *context);
  *@Description: get the access address
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_Bootstrap();
+HW_API_FUNC HW_INT IOTA_Bootstrap(void);
 
 /**
  *@Description: subscribe the V3 topic of json command . Not recommended
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_SubscribeJsonCmdV3();
+HW_API_FUNC HW_INT IOTA_SubscribeJsonCmdV3(void);
 
 /**
  *@Description: subscribe the V3 topic of binary command . Not recommended
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_SubsrcibeBinaryCmdV3();
+HW_API_FUNC HW_INT IOTA_SubsrcibeBinaryCmdV3(void);
 
 /**
  *@Description: report sub device satuses
@@ -364,7 +394,7 @@ HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_st
  *@Description: subscribe boostrap topic
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_SubscribeBoostrap();
+HW_API_FUNC HW_INT IOTA_SubscribeBoostrap(void);
 
 /**
  *@Description: gateway adds sub device
@@ -376,6 +406,16 @@ HW_API_FUNC HW_INT IOTA_SubscribeBoostrap();
  */
 HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW_INT deviceNum, void *context);
 
+ /**
+  *@Description: get newest soft bus info from the iotda
+  *@param bus_id: the bus id of the soft bus group.
+  *@param event_id: if the parameter is not used, it is automatically generated by the iot platform, and the generation rule is a 36 bit random string composed of numbers, letters and middle dashes
+  *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+     			   provide access to the context information in the callback.
+  *@return: IOTA_SUCCESS represents success, others represent specific failure
+  */
+ HW_API_FUNC HW_INT IOTA_GetLatestSoftBusInfo(HW_CHAR *busId, HW_CHAR *eventId, void *context);
+ 
 /**
  *@Description: gateway deletes sub device
  *@param delSubDevices: the pointer of ST_IOTA_DEL_SUB_DEVICE structure.
@@ -388,16 +428,34 @@ HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_I
 
 /**
  *@Description: report device log to the iot platform
- *@param type: the type of device log, it can only be as follows???
+ *@param type: the type of device log, it can only be as follows 
  	 	 	   DEVICE_STATUS, DEVICE_PROPERTY, DEVICE_MESSAGE, DEVICE_COMMAND
  *@param content: the log content
- *@param contentSiz: the log content length
  *@param timestamp: time stamp accurated to milliseconds
  *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
     			   provide access to the context information in the callback.
  *@return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, size_t contentSiz, HW_CHAR *timestamp, void *context);
+HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR *timestamp, void *context);
+
+/**
+ *@Description: report device info to the iot platform
+ *@param timestamp: ST_IOTA_DEVICE_INFO_REPORT structure
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or
+ failure callback functions to provide access to the context information in the callback.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_ReportDeviceInfo(ST_IOTA_DEVICE_INFO_REPORT *device_info_report, void *context);
+
+/**
+ *@Description: report device config result to the iot platform
+ *@param device_config_report: the pointer of ST_IOTA_DEVICE_CONFIG_RESULT structure. 
+ *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or failure callback functions to
+    			   provide access to the context information in the callback.
+ *@return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_RptDeviceConfigRst(const ST_IOTA_DEVICE_CONFIG_RESULT *device_config_report, void *context);
+
 #if defined(MQTTV5)
 /**
  *@Description: MQTTV5 response command
@@ -449,16 +507,21 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV5(ST_IOTA_SERVICE_DATA_INFO pServiceDat
 HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compressFlag, void *context, MQTTV5_DATA *mqttv5);
 #endif
 
-#define SDK_VERSION					 "C_v1.1.1"
+
+
+#define SDK_VERSION					 "C_v1.1.2"
 #define OTA_PORT 					 8943
 #define BUFSIZE 					 4096
-#define PKGNAME_MAX 				 20  // the max length of the package name
+#define PKGNAME_MAX 				 1024  // the max length of the package name
 #define HTTP_HEADER_LENGTH 			 500
 #define IP_LENGTH 					 50
+#define PORT_LENGTH					 6
 #define PKG_LENGTH 					 10
 #define OTA_TIMEOUT_MIN_LENGTH 		 300
 #define DOUBLE_OBLIQUE_LINE 		 "//"
 #define SINGLE_SLANT 				 "/"
+#define SINGLE_SLANT_CHAR 			 '/'
+#define HTTP_URL_QUERY_START_MARK 	 "?"
 #define COLON 						 ":"
 #define OTA_HTTP_GET 				 "GET "      // do not delete the blank space
 #define OTA_HTTP_VERSION 			 " HTTP/1.1\n"   // do not delete the blank space and '\n'
@@ -485,6 +548,7 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define RESULT      			 	 "result"
 #define TARGET_DEVICE_ID      		 "target_device_id"
 #define DEVICE_ID       			 "device_id"
+#define DEVICE_IP       			 "device_ip"
 #define SERVICE_ID       			 "service_id"
 #define EVENT_TIME      			 "event_time"
 #define EVENT_ID					 "event_id"
@@ -527,6 +591,8 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define ERROR_MSG					 "error_msg"
 #define FIRMWARE_UPGRADE			 "firmware_upgrade"
 #define SOFTWARE_UPGRADE			 "software_upgrade"
+#define FIRMWARE_UPGRADE_V2			 "firmware_upgrade_v2"
+#define SOFTWARE_UPGRADE_V2			 "software_upgrade_v2"
 #define URL							 "url"
 #define FILE_SIZE					 "file_size"
 #define ACCESS_TOKEN				 "access_token"
@@ -579,6 +645,16 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define SW_VERSION					 "sw_version"
 #define FW_VERSION					 "fw_version"
 
+#define DEVICE_RULE                  "$device_rule"
+#define CONFIG_REQUEST               "device_rule_config_request"
+#define CONFIG_RESPONSE              "device_rule_config_response"
+#define DEVICE_RULE_REQUEST_ID       "device_rule_request_id"
+#define RULE_ID	                     "ruleIds"
+#define REQUEST_ID                   "request_id"
+#define TO                           "to"
+#define FROM                         "from"
+#define DEVICE_RULE_FILE_PATH        "testdata.txt"
+
 #define TUNNEL_MGR                   "$tunnel_manager"
 #define TUNNEL_NTF                   "tunnel_notify"
 #define TUNNEL_URL                   "tunnel_uri"
@@ -597,12 +673,52 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define TUNNEL_SSH_OPTYPE_CMD        "command"
 #define TUNNEL_SSH_STATUS_CODE       "status_code"
 #define TUNNEL_SSH_STATUS_MSG        "status_msg"
+
+#define SOFT_BUS_EVENT_REQ 			 "soft_bus_config_request"
+#define SOFT_BUS_EVENT_RSP 			 "soft_bus_config_response"
+#define SOFT_BUS_SERVICEID			 "$oh_soft_bus"
+#define BUS_ID						 "bus_id"
+
+#define SECURITY_DETECTION_CONFIG                   "$security_detection_config"
+#define SECURITY_LOG_REPORT                         "security_log_report"
+#define MEMORY_REPORT                               "MEMORY_REPORT"
+#define PORT_REPORT                                 "PORT_REPORT"
+#define USED                                        "used"
+#define TOTAL                                       "total"
+#define LEAK_ALARM                                  "leak_alarm"
+#define MEMORY_CHECK                                "memoryCheck"
+#define MEMORY_THRESHOLD                            "memoryThreshold"
+#define PORT_CHECK                                  "portCheck"
+#define SECURITY_DETECTION_CONFIG_REQUEST_ID        "security_detection_config_request_id"
+#define CPU_USAGE_REPORT                            "CPU_USAGE_REPORT"
+#define CPU_USAGE_CHECK                             "cpuUsageCheck"
+#define CPU_USAGE_THRESHOLD                         "cpuUsageThreshold"
+#define CPU_USAGE                                   "cpu_usage"
+#define CPU_USAGE_ALARM                             "cpu_usage_alarm"
+#define DISK_SPACE_REPORT                           "DISK_SPACE_REPORT"
+#define DISK_SPACE_CHECK                            "diskSpaceCheck"
+#define DISK_SPACE_THRESHOLD                        "diskSpaceThreshold"
+#define DISK_SPACE_USED                             "disk_space_used"
+#define DISK_SPACE_TOTAL                            "disk_space_total"
+#define DISK_SPACE_ALARM                            "disk_space_alarm"
+#define BATTERY_REPORT                              "BATTERY_REPORT"
+#define BATTERY_PERCENTAGE_CHECK                    "batteryPercentageCheck"
+#define BATTERY_PERCENTAGE_THRESHOLD                "batteryPercentageThreshold"
+#define BATTERY_PERCENTAGE                          "battery_percentage"
+#define BATTERY_PERCENTAGE_ALARM                    "battery_percentage_alarm"
+#define DETECT_REPORT_FREQUENCY                     600   // the Reporting frequency, in seconds
+
+#define DEVICE_CONFIG                               "$device_config"
+#define DEVICE_CONFIG_UPDATE                        "config_update"
+#define DEVICE_CONFIG_CONTENT                       "config_content"
+#define DEVICE_CONFIG_UPDATE_RESPONSE               "config_update_response"
 /**
  * ----------------------------deprecated below------------------------------------->
  */
 #define IOTA_TOPIC_SERVICE_DATA_REPORT_RET    "IOTA_TOPIC_SERVICE_DATA_REPORT_RET"
 #define IOTA_TOPIC_SERVICE_COMMAND_RECEIVE    "IOTA_TOPIC_SERVICE_COMMAND_RECEIVE"
 #define IOTA_TOPIC_DATATRANS_REPORT_RSP       "IOTA_TOPIC_DATATRANS_REPORT_RSP"
+
 
 typedef enum enum_EN_IOTA_DATATRANS_IE_TYPE {
 	EN_IOTA_DATATRANS_IE_RESULT = 0,   // unsigned int  命令执行返回结果

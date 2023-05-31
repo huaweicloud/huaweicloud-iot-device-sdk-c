@@ -1,0 +1,90 @@
+# Copyright (c) 2022-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#import("//build/ohos.gni")
+#import("//build/lite/config/component/lite_component.gni")
+
+# 设置使用的demo 以文件名
+# 当为bootstrap_demo 编译 ./bootstrap_demo中的bootstrap_demo.c文件
+# gateway_demo 编译 ./gateway_demo 中.c文件
+declare_args() {
+    test_demo = "device_demo"
+}
+
+# 生成可执行文件 MQTT_Demo
+executable("mqtt_device_demo") {
+
+  deps = [
+    ":conf_copy",
+    ":lib_copy",
+    "src/util:util",
+    "src/third_party/cjson:cjson",
+    "src/service:service",
+    "src/base:base",
+    "src/agentlite:agentlite",
+    "src/tunnel:tunnel",
+    "src/service/device_rule:device_rule",
+    "src/service/sys_hal:sys_hal",
+    "src/service/detect_anomaly:detect_anomaly",
+  ]
+  
+  if(test_demo == "device_demo"){
+    deps += ["src/device_demo:device_demo",]
+  }
+  if(test_demo == "bootstrap_demo"){
+    deps += ["src/bootstrap_demo:bootstrap_demo",]
+  }
+  if(test_demo == "gateway_demo"){
+    deps += ["src/gateway_demo:gateway_demo",]
+  } 
+
+  #设置动态依赖
+  libs = [
+    "./lib/libboundscheck.so",
+    "./lib/libssl.so",
+    "./lib/libcrypto.so",
+    "./lib/libz.so",
+    "./lib/libpaho-mqtt3as.so",
+    "./lib/libssh.so",
+    "./lib/libnopoll.so",
+    "pthread",
+  ]
+ 
+  # 输出文件名
+  output_name = "MQTT_Demo"
+}
+
+copy("lib_copy") {
+  sources = [ "lib" ]
+  outputs = [ "$root_out_dir/{{source_file_part}}" ]
+}
+
+copy("conf_copy") {
+  sources = [ "conf" ]
+  outputs = [ "$root_out_dir/{{source_file_part}}"]
+}
+
+print("-----------------------> iot-device-sdk-c:$test_demo!")

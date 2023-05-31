@@ -33,6 +33,7 @@
 
 #include "stdarg.h"
 #include "hw_type.h"
+#include "json_util.h"
 
 typedef HW_VOID (*PFN_CALLBACK_HANDLER)(HW_VOID *context, HW_INT messageId, HW_INT code, HW_CHAR *message);
 typedef HW_VOID (*PFN_LOG_CALLBACK_HANDLER)(int level, char *format, va_list args);
@@ -47,6 +48,10 @@ typedef struct {
 	HW_INT messageId;
 	HW_INT code;
 } EN_IOTA_MQTT_MSG_INFO;
+
+typedef struct {
+	HW_CHAR *bus_infos;
+} EN_IOTA_SOFT_BUS_PARAS;
 
 typedef struct {
 	HW_CHAR *parent_device_id;
@@ -71,6 +76,10 @@ typedef struct {
 	HW_INT expires;
 	HW_CHAR *sign;
 } EN_IOTA_OTA_PARAS;
+
+typedef struct {
+	HW_CHAR *payload;
+} EN_IOTA_DEVICE_RULE_PARAS;
 
 typedef struct {
 	EN_IOTA_DEVICE_INFO *devices;
@@ -130,7 +139,9 @@ typedef struct {
 	EN_IOTA_GTW_ADD_DEVICE_PARAS *gtw_add_device_paras;
 	EN_IOTA_GTW_DEL_DEVICE_PARAS *gtw_del_device_paras;
 	EN_IOTA_DEVICE_LOG_PARAS *device_log_paras;
+	EN_IOTA_DEVICE_RULE_PARAS *device_rule_paras;
 	EN_IOTA_TUNNEL_MGR_PARAS *tunnel_mgr_paras;
+	EN_IOTA_SOFT_BUS_PARAS *soft_bus_paras;
 } EN_IOTA_SERVICE_EVENT;
 
 typedef struct {
@@ -170,6 +181,14 @@ typedef struct {
 	HW_CHAR *id;
 	HW_CHAR *content;
 } EN_IOTA_MESSAGE;
+
+typedef struct {
+	EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info;
+	HW_CHAR *request_id;
+	HW_CHAR *to;
+	HW_CHAR *from;
+	HW_CHAR *content;
+} EN_IOTA_M2M_MESSAGE;
 
 typedef struct {
 	HW_CHAR *service_id;
@@ -217,12 +236,24 @@ typedef struct {
 	HW_CHAR *topic_para;
 } EN_IOTA_USER_TOPIC_MESSAGE;
 
+typedef enum {
+	EN_IOTA_CALLBACK_CONNECT_SUCCESS = 0,
+	EN_IOTA_CALLBACK_CONNECT_FAILURE = 1,
+	EN_IOTA_CALLBACK_DISCONNECT_SUCCESS = 2,
+	EN_IOTA_CALLBACK_DISCONNECT_FAILURE = 3,
+	EN_IOTA_CALLBACK_CONNECTION_LOST = 4,
+	EN_IOTA_CALLBACK_PUBLISH_SUCCESS = 5,
+	EN_IOTA_CALLBACK_PUBLISH_FAILURE = 6,
+	EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS = 7,
+	EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE = 8
+} EN_IOTA_CALLBACK_SETTING;
+
 HW_API_FUNC HW_INT IOTA_Init(HW_CHAR *pcWorkPath);
 HW_API_FUNC HW_INT IOTA_Destroy(void);
 HW_API_FUNC HW_VOID IOTA_SetPrintLogCallback(PFN_LOG_CALLBACK_HANDLER pfnLogCallbackHandler);
 
 typedef HW_VOID (*PFN_PROTOCOL_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *message);
-HW_API_FUNC HW_VOID IOTA_SetProtocolCallback(HW_INT iItem, PFN_PROTOCOL_CALLBACK_HANDLER pfnCallbackHandler);
+HW_API_FUNC HW_VOID IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SETTING iItem, PFN_PROTOCOL_CALLBACK_HANDLER pfnCallbackHandler);
 
 typedef HW_VOID (*PFN_EVENT_CALLBACK_HANDLER)(EN_IOTA_EVENT *message);
 HW_API_FUNC HW_VOID IOTA_SetEventCallback(PFN_EVENT_CALLBACK_HANDLER pfnCallbackHandler);
@@ -233,7 +264,7 @@ HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER pfnCallbackHand
 typedef HW_VOID (*PFN_CMD_CALLBACK_HANDLER_V3)(EN_IOTA_COMMAND_V3 *message);
 HW_API_FUNC HW_VOID IOTA_SetCmdCallbackV3(PFN_CMD_CALLBACK_HANDLER_V3 pfnCallbackHandler);
 
-typedef HW_VOID (*PFN_MESSAGE_CALLBACK_HANDLER)(EN_IOTA_MESSAGE *message);
+typedef HW_VOID (*PFN_MESSAGE_CALLBACK_HANDLER)(EN_IOTA_MESSAGE *message, void *mqttv5);
 HW_API_FUNC HW_VOID IOTA_SetMessageCallback(PFN_MESSAGE_CALLBACK_HANDLER pfnCallbackHandler);
 
 typedef HW_VOID (*PFN_PROP_SET_CALLBACK_HANDLER)(EN_IOTA_PROPERTY_SET *message);
@@ -251,24 +282,25 @@ HW_API_FUNC HW_VOID IOTA_SetUserTopicMsgCallback(PFN_USER_TOPIC_MSG_CALLBACK_HAN
 typedef HW_VOID (*PFN_BOOTSTRAP_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *message);
 HW_API_FUNC HW_VOID IOTA_SetBootstrapCallback(PFN_BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler);
 
-typedef enum {
-	EN_IOTA_CALLBACK_CONNECT_SUCCESS = 0,
-	EN_IOTA_CALLBACK_CONNECT_FAILURE = 1,
-	EN_IOTA_CALLBACK_DISCONNECT_SUCCESS = 2,
-	EN_IOTA_CALLBACK_DISCONNECT_FAILURE = 3,
-	EN_IOTA_CALLBACK_CONNECTION_LOST = 4,
-	EN_IOTA_CALLBACK_PUBLISH_SUCCESS = 5,
-	EN_IOTA_CALLBACK_PUBLISH_FAILURE = 6,
-	EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS = 7,
-	EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE = 8,
-	EN_IOTA_CALLBACK_MESSAGE_DOWN = 9,
-	EN_IOTA_CALLBACK_COMMAND_REQUEST = 10,
-	EN_IOTA_CALLBACK_PROPERTIES_SET = 11,
-	EN_IOTA_CALLBACK_PROPERTIES_GET = 12,
-	EN_IOTA_CALLBACK_EVENT_DOWN = 14,
-	EN_IOTA_CALLBACK_USER_TOPIC = 16,
-	EN_IOTA_CALLBACK_DEVICE_SHADOW = 17
-} EN_IOTA_CALLBACK_SETTING;
+typedef HW_INT (*PFN_DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER)(char *deviceId, char *message);
+HW_API_FUNC HW_VOID IOTA_SetDeviceRuleSendMsgCallback(PFN_DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler);
+
+typedef HW_VOID (*PFN_M2M_CALLBACK_HANDLER)(EN_IOTA_M2M_MESSAGE *message);
+HW_API_FUNC HW_VOID IOTA_SetM2mCallback(PFN_M2M_CALLBACK_HANDLER pfnCallbackHandler);
+
+/**
+ * @Description: device configure callback function
+ * @param cfg: Configuration data in JSON format
+ * @param description: Output parameter. Configuration data processing result description, which is reported through event/up
+ */
+typedef int (*PFN_DEVICE_CONFIG_CALLBACK_HANDLER)(JSON *cfg, char *description);
+HW_API_FUNC HW_VOID IOTA_SetDeviceConfigCallback(PFN_DEVICE_CONFIG_CALLBACK_HANDLER pfnCallbackHandler);
+/**
+ * @Description: load rule from filepath
+ * @param filepath: the path of file to read the rule, also be saved for reading rule later
+ */
+HW_API_FUNC HW_VOID IOTA_EnableDeviceRuleStorage(const char *filepath);
+
 
 typedef enum {
 	EN_IOTA_EVENT_SUB_DEVICE_MANAGER = 0,
@@ -277,7 +309,10 @@ typedef enum {
 	EN_IOTA_EVENT_DEVICE_LOG = 3,
 //	EN_IOTA_EVENT_FILE_MANAGER = 4,
 //	EN_IOTA_EVENT_SDK_INFO = 5,
+	EN_IOTA_EVENT_DEVICE_RULE = 6,
 	EN_IOTA_EVENT_TUNNEL_MANAGER = 7,
+	EN_IOTA_EVENT_DEVICE_CONFIG = 8,
+	EN_IOTA_EVENT_SOFT_BUS = 9,
 	EN_IOTA_EVENT_ERROR = -1
 } EN_IOTA_EVENT_SERVICE_ID;
 
@@ -294,6 +329,9 @@ typedef enum {
 //	EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE = 9,
 //	EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE = 10,
 	EN_IOTA_EVENT_TUNNEL_NOTIFY = 11,
+	EN_IOTA_EVENT_DEVICE_CONFIG_UPDATE = 12,
+	EN_IOTA_EVENT_FIRMWARE_UPGRADE_V2 = 13,
+	EN_IOTA_EVENT_SOFTWARE_UPGRADE_V2 = 14,
 	EN_IOTA_EVENT_TYPE_ERROR = -1
 } EN_IOTA_EVENT_TYPE;
 
