@@ -169,7 +169,7 @@ $(OUT_PATH)/detect_anomaly.o: $(DETECT_ANOMOLY_SRC)/detect_anomaly.c $(OUT_PATH)
 
 ##-----------device rule-------------##
 DEVICE_RULE_HEADER_PATH = ./include/service/device_rule/
-DEVICE_RULE_INC = -I$(DEVICE_RULE_HEADER_PATH)  $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/third_party/libboundscheck/ $(HEADER_PATH)/agentlite $(HEADER_PATH)/util/ $(HEADER_PATH)/service/ $(HEADER_PATH)/base/
+DEVICE_RULE_INC = -I$(DEVICE_RULE_HEADER_PATH)  $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/third_party/libboundscheck/ $(HEADER_PATH)/agentlite $(HEADER_PATH)/util/ $(HEADER_PATH)/service/ $(HEADER_PATH)/base/ $(HEADER_PATH)
 
 $(DEVICE_RULE_OBJS):$(OUT_PATH)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(DEVICE_RULE_INC)
