@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,8 +28,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef INCLUDE_UTIL_STRING_UTIL_H_
-#define INCLUDE_UTIL_STRING_UTIL_H_
+#ifndef STRING_UTIL_H
+#define STRING_UTIL_H
 
 #include <stdlib.h>
 
@@ -48,6 +48,7 @@ void StringMalloc(char **str, int length);
 int CopyStrValue(char **dst, const char *src, int length);
 char *GetClientTimesStamp(void);
 char *GetEventTimesStamp(void);
+char *Timeval2Str(const struct timeval *tv);
 char *GetLocalTimeWithMs(void);
 char *PrependLocalTimeWithMs(const char *);
 int GetSubStrIndex(const char *str, const char *substr);
@@ -61,6 +62,6 @@ char *ReassignMemory(char *oldMemory, unsigned int resultLen);
 do {                    \
         free(*(ptr));   \
         *(ptr) = NULL;  \
-} while(0)
+} while (0)
 
-#endif /* INCLUDE_UTIL_STRING_UTIL_H_ */
+#endif /* STRING_UTIL_H */

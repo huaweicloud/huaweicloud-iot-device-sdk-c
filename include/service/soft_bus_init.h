@@ -28,8 +28,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SOFT_BUS_INIT_H_
-#define SOFT_BUS_INIT_H_
+#ifndef SOFT_BUS_INIT_H
+#define SOFT_BUS_INIT_H
 
 #define SOFT_BUS_INIT_SERVICE_ID "M2MService"
 #define SOFT_BUS_INIT_COMMAND_NAME "SET_THING_SWITCH"
@@ -38,6 +38,6 @@
 
 int InitServerKit(char *ipAry);
 int InitClientKit(char *ipAry);
-void DestroyKit();
+void DestroyKit(void);
 
-#endif /*SOFT_BUS_INIT_H_*/
+#endif /* SOFT_BUS_INIT_H */

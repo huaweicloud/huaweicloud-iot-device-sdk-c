@@ -28,8 +28,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _RULE_ACTION_H_
-#define _RULE_ACTION_H_
+#ifndef RULE_ACTION_H
+#define RULE_ACTION_H
 
 #include "rule_util.h"
 

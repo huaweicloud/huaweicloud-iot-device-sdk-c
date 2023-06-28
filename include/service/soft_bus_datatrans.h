@@ -28,12 +28,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+
+#ifndef SOFT_BUS_DATATRANS_H
+#define SOFT_BUS_DATATRANS_H
 #include <stdbool.h>
 
-#ifndef SOFT_BUS_DATATRANS_H_
-#define SOFT_BUS_DATATRANS_H_
-
-#define SOFT_BUS_OH  
+#define SOFT_BUS_OH
 #define SUCCESSSFUL_RESULT          "success"
 #define SUCCESSFUL_RET              0
 #define BUS_INFOS                   "bus_infos"
@@ -48,8 +48,8 @@
 #define DEVICE_COUNT                "device_count"
 #define DEVICES_INFO                "devices_info"
 #define BUS_KEY_LENGTH              20
-#define SOFTBUS_TOTAL_LEN           10       
-#define SOFTBUS_INFO_LEN            50    
+#define SOFTBUS_TOTAL_LEN           10
+#define SOFTBUS_INFO_LEN            50
 
 typedef struct {
     char *device_id;
@@ -57,8 +57,8 @@ typedef struct {
 } soft_bus_info;
 
 typedef struct {
-	int count;
-	char *bus_key;
+    int count;
+    char *bus_key;
     char *bus_id;
     soft_bus_info g_device_soft_bus_info[SOFTBUS_INFO_LEN];
     long version;
@@ -74,7 +74,7 @@ bool isValidIP(const char *ip_addr);
 bool isValidDeviceID(const char *device_id);
 char *getIpAddr(char *device_id);
 char *getAuthKey(const char *src_device_id, const char *target_device_id);
-char *getDeviceId();
-char *releaseSoftBusCache();
+char *getDeviceId(void);
+char *releaseSoftBusCache(void);
 
-#endif /*SOFT_BUS_DATATRANS_H_*/
+#endif /* SOFT_BUS_DATATRANS_H */

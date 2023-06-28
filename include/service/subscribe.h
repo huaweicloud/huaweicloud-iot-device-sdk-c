@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,8 +28,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef INCLUDE_SUBSCRIBE_H_
-#define INCLUDE_SUBSCRIBE_H_
+#ifndef SUBSCRIBE_H
+#define SUBSCRIBE_H
 
 int SubscribeM2m(void);
 int SubscribeCommand(void);
@@ -45,4 +45,4 @@ int SubscribeJsonCmdV3(void);
 int SubscribeBinaryCmdV3(void);
 int SubscribeBootstrap(void);
 
-#endif /* INCLUDE_SUBSCRIBE_H_ */
+#endif /* SUBSCRIBE_H */

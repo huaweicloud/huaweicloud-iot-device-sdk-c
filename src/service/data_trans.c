@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,12 +30,12 @@
 
 #include <string.h>
 #include "base.h"
-#include "data_trans.h"
 #include "log_util.h"
 #include "mqtt_base.h"
 #include "string_util.h"
 #include "cJSON.h"
 #include "iota_error_type.h"
+#include "data_trans.h"
 
 static int ReportCompressedData(char *topic, char *payload, void *context, void *properties)
 {
@@ -133,7 +133,7 @@ int ReportBatchDeviceProperties(char *payload, int compressFlag, void *context, 
     return ReportData(topic, payload, context, NULL);
 }
 
-int ReportCommandReponse(char *requestId, char *pcCommandRespense, void *context, void *properties)
+int ReportCommandReponse(char *requestId, char *commandResponse, void *context, void *properties)
 {
     char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (username == NULL) {
@@ -142,10 +142,10 @@ int ReportCommandReponse(char *requestId, char *pcCommandRespense, void *context
     }
     char *topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_COMMAND_RSP_REQ, requestId);
 
-    return ReportData(topic, pcCommandRespense, context, properties);
+    return ReportData(topic, commandResponse, context, properties);
 }
 
-int ReportPropSetReponse(char *requestId, char *pcCommandRespense, void *context)
+int ReportPropSetReponse(char *requestId, char *commandResponse, void *context)
 {
     char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (username == NULL) {
@@ -154,10 +154,10 @@ int ReportPropSetReponse(char *requestId, char *pcCommandRespense, void *context
     }
     char *topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_PROP_SET_RSP_REQ, requestId);
 
-    return ReportData(topic, pcCommandRespense, context, NULL);
+    return ReportData(topic, commandResponse, context, NULL);
 }
 
-int ReportPropGetReponse(char *requestId, char *pcCommandRespense, void *context)
+int ReportPropGetReponse(char *requestId, char *commandResponse, void *context)
 {
     char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (username == NULL) {
@@ -166,10 +166,10 @@ int ReportPropGetReponse(char *requestId, char *pcCommandRespense, void *context
     }
     char *topic = CombineStrings(4, TOPIC_PREFIX, username, TOPIC_SUFFIX_PROP_GET_RSP_REQ, requestId);
 
-    return ReportData(topic, pcCommandRespense, context, NULL);
+    return ReportData(topic, commandResponse, context, NULL);
 }
 
-int GetPropertiesRequest(char *requestId, char *pcCommandRespense, void *context)
+int GetPropertiesRequest(char *requestId, char *commandResponse, void *context)
 {
     char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (username == NULL) {
@@ -180,7 +180,7 @@ int GetPropertiesRequest(char *requestId, char *pcCommandRespense, void *context
 
     PrintfLog(EN_LOG_LEVEL_INFO, "DataTrans: topic is %s\n", topic);
 
-    return ReportData(topic, pcCommandRespense, context, NULL);
+    return ReportData(topic, commandResponse, context, NULL);
 }
 
 int EventUp(char *payload, void *context)
@@ -243,7 +243,7 @@ int ReportDevicePropertiesV3(char *payload, int codecMode, void *context)
     return ReportData(topic, payload, context, NULL);
 }
 
-int Bootstrap()
+int Bootstrap(void)
 {
     char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (username == NULL) {
@@ -263,16 +263,16 @@ int Bootstrap()
     return IOTA_SUCCESS;
 }
 
-int OCM2MSendMsg(char *to ,char *from, char *payload, char *requestId, char *context)
+int OCM2MSendMsg(char *to, char *from, char *payload, char *requestId, char *context)
 {
-	char *topic = CombineStrings(6, TOPIC_PREFIX_M2M, to, M2M_FROM, from, TOPIC_SUFFIX_M2M, requestId);
-	int ret = MqttBase_publish((const char*) topic, payload, (int)strlen(payload), context, NULL);
-	MemFree(&topic);
+    char *topic = CombineStrings(6, TOPIC_PREFIX_M2M, to, M2M_FROM, from, TOPIC_SUFFIX_M2M, requestId);
+    int ret = MqttBase_publish((const char*) topic, payload, (int)strlen(payload), context, NULL);
+    MemFree(&topic);
 
-	if (ret < 0) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: OCM2MSendMsg() error, publish failed, result %d\n", ret);
-		return IOTA_FAILURE;
-	}
+    if (ret < 0) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: OCM2MSendMsg() error, publish failed, result %d\n", ret);
+        return IOTA_FAILURE;
+    }
 
-	return IOTA_SUCCESS;
+    return IOTA_SUCCESS;
 }

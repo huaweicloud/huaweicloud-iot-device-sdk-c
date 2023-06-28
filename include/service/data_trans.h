@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,23 +28,23 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef INCLUDE_DATATRANS_H_
-#define INCLUDE_DATATRANS_H_
+#ifndef DATATRANS_H
+#define DATATRANS_H
 #include "mqttv5_util.h"
 
 int ReportDeviceData(char *payload, char *topicParas, int compressFlag, void *context, void *properties);
 int ReportDeviceProperties(char *payload, int compressFlag, void *context, void *properties);
-int ReportBatchDeviceProperties(char *payload, int compressFlag, void *context , void *properties);
+int ReportBatchDeviceProperties(char *payload, int compressFlag, void *context, void *properties);
 int ReportData(char *topic, char *payload, void *context, void *properties);
-int ReportCommandReponse(char *requestId, char *pcCommandRespense, void *context, void *properties);
-int ReportPropSetReponse(char *requestId, char *pcCommandRespense, void *context);
-int ReportPropGetReponse(char *requestId, char *pcCommandRespense, void *context);
-int GetPropertiesRequest(char *requestId, char *pcCommandRespense, void *context);
+int ReportCommandReponse(char *requestId, char *commandResponse, void *context, void *properties);
+int ReportPropSetReponse(char *requestId, char *commandResponse, void *context);
+int ReportPropGetReponse(char *requestId, char *commandResponse, void *context);
+int GetPropertiesRequest(char *requestId, char *commandResponse, void *context);
 int ReportSubDeviceInfo(char *payload, void *context);
-int EventUp(char *payload, void* context);
+int EventUp(char *payload, void *context);
 int ReportDevicePropertiesV3(char *payload, int codecMode, void *context);
 int BinaryReportV3(char *payload);
 int Bootstrap(void);
-int OCM2MSendMsg(char *to ,char *from, char *payload, char *requestId, char *context);
+int OCM2MSendMsg(char *to, char *from, char *payload, char *requestId, char *context);
 
-#endif /* INCLUDE_DATATRANS_H_ */
+#endif /* DATATRANS_H */

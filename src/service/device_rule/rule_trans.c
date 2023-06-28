@@ -28,13 +28,13 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "rule_trans.h"
 #include "rule_manager.h"
 #include "securec.h"
 #include "iota_datatrans.h"
 #include "log_util.h"
 #include "data_trans.h"
 #include "string_util.h"
+#include "rule_trans.h"
 
 static void DeviceRulePropertiesReply(cJSON *properties)
 {
@@ -50,9 +50,9 @@ static void DeviceRulePropertiesReply(cJSON *properties)
     char *msg = cJSON_Print(payload);
     cJSON_Delete(payload);
 
-     if (msg == NULL) {
+    if (msg == NULL) {
         return;
-    } 
+    }
     if (ReportDeviceProperties(msg, 0, NULL, NULL) < 0) {
         DEVICE_RULE_ERROR("DeviceRulePropertiesReply() failed!\n");
     }
@@ -61,11 +61,10 @@ static void DeviceRulePropertiesReply(cJSON *properties)
 
 static void DeviceRuleConfigReply(RuleInfo *reportList, int reportCount)
 {
-    cJSON *root, *services, *serviceEvent;
     int i;
-    root = cJSON_CreateObject();
-    services = cJSON_CreateArray();
-    serviceEvent = cJSON_CreateObject();
+    cJSON *root = cJSON_CreateObject();
+    cJSON *services = cJSON_CreateArray();
+    cJSON *serviceEvent = cJSON_CreateObject();
 
     cJSON_AddStringToObject(serviceEvent, SERVICE_ID, DEVICE_RULE);
     cJSON_AddStringToObject(serviceEvent, EVENT_TYPE, CONFIG_REQUEST);

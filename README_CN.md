@@ -319,9 +319,9 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 3. 修改配置信息：
 	需要修改src/device_demo/device_demo.c文件中的如下参数：  
-	servierIp_：平台南向IP，可在控制台的应用管理中查看。
-	username_：MQTT协议需要填写username，iot平台默认设备ID为username，设备ID是设备注册时返回的值。
-	password_：设备密钥，设备注册时返回的值。
+	g_serverIp：平台南向IP，可在控制台的应用管理中查看。
+	g_username：MQTT协议需要填写username，iot平台默认设备ID为username，设备ID是设备注册时返回的值。
+	g_password：设备密钥，设备注册时返回的值。
 	![](./doc/doc_cn/4_1.png)
 
 4. 执行命令进行编译：
@@ -435,13 +435,13 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
   - 4.测试Demo：
     将src/device_demo/device_demo.c中边缘节点IP等信息进行替换：
 
-  char *serverIp_ = "xx.xx.xx.xx"; // 边缘节点的IP
+  char *g_serverIp = "xx.xx.xx.xx"; // 边缘节点的IP
 
-  int port_ = 7883; // MQTTS端口号, 目前IoTEdge默认使用此端口号
+  int g_port = 7883; // MQTTS端口号, 目前IoTEdge默认使用此端口号
 
-  char *username_ = "tunnelDeviceA"; // 上述步骤1当中设置
+  char *g_username = "tunnelDeviceA"; // 上述步骤1当中设置
 
-  char *password_ = "xxxx"; // 上述步骤1中设置
+  char *g_password = "xxxx"; // 上述步骤1中设置
 
   假设源设备A和目标设备B的ID分别：tunnelDeviceA和tunnelDeviceB, 设备A向设备B发送"hello world"消息。
   在A设备当中调用如下代码（demo可在main函数中调用）:
@@ -450,7 +450,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
    {
 
      char *to = "deviceB";
-     char *from = username_;
+     char *from = username;
      char *content = "hello deviceB";
      char *requestId = "demoIdToDeviceB";
      int messageId = IOTA_M2MSendMsg(to, from, content, requestId, NULL);
@@ -511,7 +511,7 @@ SDK以日志回调函数的方式供开发者使用，开发者可以根据自�
 
 在发起业务前，需要先初始化Agent Lite相关资源，调用API接口IOTA_Init()，初始化Agent Lite资源。具体API接口的参数使用请参考Agent Lite API接口文档。可参考demo中main()方法对IOTA_Init()的调用。
 
-`IOTA_Init(HW_CHAR *pcWorkPath)`
+`IOTA_Init(HW_CHAR *workPath)`
 
 - **设备绑定配置**
 
@@ -520,10 +520,10 @@ SDK以日志回调函数的方式供开发者使用，开发者可以根据自�
 ```c
 
 void setAuthConfig(){
-  IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
-  IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
-  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
+  IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, g_serverIp);
+  IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, g_port);
+  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, g_username);
+  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, g_password);
   IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET); //密码模式
   IOTA_ConfigSetUint(EN_IOTA_CFG_CHECK_STAMP_METHOD, EN_IOTA_CFG_CHECK_STAMP_OFF);
 /**
@@ -613,20 +613,21 @@ void setMyCallbacks(){
   
   - 设备消息上报接口：
     
-    `HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content)`
+    `HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas, HW_INT compressFlag, void *context);`
     
     通过该接口上报的数据平台不解析，数据可以转发到其他服务或者推送到应用服务器。object_device_id为需要上报的设备，name为消息名称，id为消息ID，content为上报的内容，topicParas是自定义topic的参数，NULL是用平台默认的topic上报数据。具体参数说明请查看API文档，可以参考demo中Test_MessageReport函数对该接口的调用。
     
 ```c
- void Test_MessageReport() {
-  //default topic
-  // int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", NULL);
-  
-  //user topic
-  int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg");
-  if (messageId != 0) {
-  	  PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo:   Test_MessageReport() failed, messageId %d\n", messageId);
-	}
+static void Test_MessageReport()
+{
+    // default topic
+    int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello123123123123", NULL, 0, NULL);
+
+    // user topic
+    // int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg", 0, NULL);
+    if (messageId != 0) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+    }
 }
 ```
 
@@ -672,8 +673,8 @@ services[1].properties = service2;
   
   - 设备接收命令下发（profile中定义的命令）：
 
-    `HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandler)`
-    通过该接口设置命令回调函数，当云端下发命令或端侧规则触发执行命令时，`pfnCallbackHandler`会被调用。
+    `HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER callbackHandler)`
+    通过该接口设置命令回调函数，当云端下发命令或端侧规则触发执行命令时，`callbackHandler`会被调用。
     ```c
     void HandleCommandRequest(EN_IOTA_COMMAND *command)
     {
@@ -733,7 +734,7 @@ void Test_BatchPropertiesReport() {
   //	serviceList[1] = 1;		  //子设备二要上报一个服务
   char *device1_service1 = "{\"Load\":\"1\",\"ImbA_strVal\":\"3\"}";     //    service1要上报的属性数据，必须是json格式
   char *device1_service2 = "{\"PhV_phsA\":\"2\",\"PhV_phsB\":\"4\"}";//service2要上报的属性数据，必须是json格式
-  devices[0].device_id = subDeviceId;
+  devices[0].device_id = g_subDeviceId;
   devices[0].services[0].event_time = "20191209T081212Z";
   devices[0].services[0].service_id = "parameter";
   devices[0].services[0].properties = device1_service1;
@@ -761,10 +762,10 @@ void Test_BatchPropertiesReport() {
 	  - 设置设备为证书接入模式，请参考demo中的SetAuthConfig函数：
 ```c
 void SetAuthConfig() {
-	IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
-	IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
-	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-	//	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
+	IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, g_serverIp);
+	IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, g_port);
+	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, g_username);
+	//	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, g_password);
 	//	IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, 	EN_IOTA_CFG_AUTH_MODE_SECRET);
 	
 	 IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_CERT);
@@ -882,6 +883,9 @@ void SetAuthConfig() {
 - **远程配置功能**
 
   支持配置参数通过远程下发，SDK通过event/down接收相关信息，用户可通过IOTA_SetDeviceConfigCallback注册自定义的回调钩子函数，该回调函数会在接收到配置信息后进行处理相关数据。
+
+- **异常检测功能**
+  当用户使用异常检测功能时，若开启如下功能：内存泄漏检测、异常端口检测、CPU使用率检测、磁盘空间检测、电池电量检测，需要在文件src\service\sys_hal\sys_hal_imp.c中进行适配，获取所使用的检测项数据。检测数据上报周期可以在include\agentlite\iota_datatrans.h中对宏DETECT_REPORT_FREQUENCY进行调整，单位为秒。[云平台配置使用说明参考](https://support.huaweicloud.com/usermanual-iothub/iot_01_0030_5.html)。
 
 - **软总线功能**
 

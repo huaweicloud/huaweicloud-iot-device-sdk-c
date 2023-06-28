@@ -46,6 +46,8 @@ noPollMsg *g_PreviousMsg = NULL;
 URL_INFO g_UrlInfo = {NULL, NULL, NULL, NULL};
 char *g_rspMsg = NULL;
 
+void WssClientDestroyWsClient(void);
+
 void WssClientSaveConfigInfo(const URL_INFO *info)
 {
     MemFree(&g_UrlInfo.path);
@@ -59,12 +61,12 @@ void WssClientSaveConfigInfo(const URL_INFO *info)
 }
 
 /**
- *@Description: websocket message listener
- *@param ctx: websocket context
- *@param conn: websocket connection
- *@param msg: message content
- *@param user_data: user define data
- *@return: NULL
+ * @Description: websocket message listener
+ * @param ctx: websocket context
+ * @param conn: websocket connection
+ * @param msg: message content
+ * @param user_data: user define data
+ * @return: NULL
  */
 void WssClientListenerOnMsg(noPollCtx *ctx, noPollConn *conn, noPollMsg *msg, noPollPtr user_data)
 {
@@ -113,12 +115,12 @@ void WssClientListenerOnMsg(noPollCtx *ctx, noPollConn *conn, noPollMsg *msg, no
         if (strcmp(opType, TUNNEL_SSH_OPTYPE_CONN) == 0) {
             WssClientSendRsp(reqId, TUNNEL_SSH_OPTYPE_CONNRSP, NULL, 0);
             if (SSHClientCreate(root) != IOTA_SUCCESS) {
-               WssClientSendDisConn(reqId, "400", "WssClientListenerOnMsg: Create SSH channel failed");
+                WssClientSendDisConn(reqId, "400", "WssClientListenerOnMsg: Create SSH channel failed");
             }
         } else if (strcmp(opType, TUNNEL_SSH_OPTYPE_CMD) == 0) {
             SSHClientRunCmd(root);
         }
-    } while(0);
+    } while (0);
 
     /* release reference */
     JSON_Delete(root);
@@ -168,8 +170,10 @@ void WssClientListenerOnClose(noPollCtx *ctx, noPollConn *conn, noPollPtr user_d
         // close ssh channel
         SSHClientSessionDestroy();
         // doesn't try to reconnect when it's normal close, auth failure or reestablish connection
-        if ((closeStatus == TUNNEL_WSSCLIENT_CLOSE_NORMAL) || (closeStatus == TUNNEL_WSSCLIENT_AUTH_FAILED) || (closeStatus == TUNNEL_WSSCLIENT_REPEAT_CONN))
+        if ((closeStatus == TUNNEL_WSSCLIENT_CLOSE_NORMAL) || (closeStatus == TUNNEL_WSSCLIENT_AUTH_FAILED) ||
+            (closeStatus == TUNNEL_WSSCLIENT_REPEAT_CONN)) {
             break;
+        }
 
         // after disconnection, delay a few seconds to reconnection
         for (i = 1; i <= TUNNEL_WSSCLIENT_CONN_RETRY_TIMES; ++i) {
@@ -183,7 +187,7 @@ void WssClientListenerOnClose(noPollCtx *ctx, noPollConn *conn, noPollPtr user_d
                 return;
             }
         }
-    } while(0);
+    } while (0);
 
     g_Conn = NULL;
     MemFree(&g_rspMsg);
@@ -195,9 +199,9 @@ void WssClientListenerOnClose(noPollCtx *ctx, noPollConn *conn, noPollPtr user_d
 }
 
 /**
- *@Description: establish connection of websocket
- *@param isRetry: true represents that the current program is in the reconnection process, otherwise it's false 
- *@return: IOTA_SUCCESS represents success, others represent specific failure
+ * @Description: establish connection of websocket
+ * @param isRetry: true represents that the current program is in the reconnection process, otherwise it's false
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
  */
 int WssClientConnect(nopoll_bool isRetry)
 {
@@ -217,16 +221,16 @@ int WssClientConnect(nopoll_bool isRetry)
         SSHClientSessionDestroy();
     }
     g_Conn = nopoll_conn_tls_new(g_Ctx, opts, g_UrlInfo.site, g_UrlInfo.port, NULL, g_UrlInfo.path, NULL, NULL);
-    
     if (!g_Conn) {
-         return IOTA_RESOURCE_NOT_AVAILABLE;
+        return IOTA_RESOURCE_NOT_AVAILABLE;
     }
-    // if the current program is in the reconnection process, the callback function will not be set in case of the non-reentrant
+    // if the current program is in the reconnection process,
+    // the callback function will not be set in case of the non-reentrant
     if (!isRetry) {
         nopoll_conn_set_on_close(g_Conn, WssClientListenerOnClose, NULL);
     }
     /* check connection, connection timeout 5 seconds */
-    if (!nopoll_conn_wait_until_connection_ready(g_Conn, TUNNEL_WSSCLIENT_CONN_TIMEOUT)) { 
+    if (!nopoll_conn_wait_until_connection_ready(g_Conn, TUNNEL_WSSCLIENT_CONN_TIMEOUT)) {
         if (!isRetry) {
             pthread_create(&threadClose, NULL, WssClientCloseConn, (void *)g_Conn);
         }
@@ -244,9 +248,9 @@ int WssClientConnect(nopoll_bool isRetry)
 }
 
 /**
- *@Description: try to create websocket
- *@param urlInfo: config data of websocket
- *@return: NULL
+ * @Description: try to create websocket
+ * @param urlInfo: config data of websocket
+ * @return: NULL
  */
 void WssClientCreate(const URL_INFO *urlInfo)
 {
@@ -280,21 +284,21 @@ void WssClientCreate(const URL_INFO *urlInfo)
         WssClientSaveConfigInfo(urlInfo);
         ret = WssClientConnect(HW_FALSE);
         if (ret != IOTA_SUCCESS) {
-            PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientCreate: Websocket connect failed, ErrorNO:%d!\n", ret);            
+            PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientCreate: Websocket connect failed, ErrorNO:%d!\n", ret);
         }
         return;
-    } while(0);
+    } while (0);
 
     PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientCreate: Websocket created failed, and would not retry, errorNO:%d\n", ret);
     WssClientDestroyWsClient();
 }
 
 /**
- *@Description: clear the config data of websocket
- *@param NULL
- *@return: void
+ * @Description: clear the config data of websocket
+ * @param NULL
+ * @return: void
  */
-void WssClientDestroyWsClient()
+void WssClientDestroyWsClient(void)
 {
     /* close the connection */
     if (g_Conn != NULL) {
@@ -311,11 +315,12 @@ void WssClientDestroyWsClient()
 }
 
 /**
- *@Description: parse the url and token to get url_info; if return IOTA_SUCCESS, caller must memfree info outside, otherwise the memory frees inside.
- *@param info: config data of websocket
- *@param url: websocket url.
- *@param token: websocket token.
- *@return: IOTA_SUCCESS represents success, others represent specific failure
+ * @Description: parse the url and token to get url_info; if return IOTA_SUCCESS,
+ *     caller must memfree info outside, otherwise the memory frees inside.
+ * @param info: config data of websocket
+ * @param url: websocket url.
+ * @param token: websocket token.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
  */
 int WssClientSplitUrl(URL_INFO *info, const char* url, const char* token)
 {
@@ -325,7 +330,9 @@ int WssClientSplitUrl(URL_INFO *info, const char* url, const char* token)
     char *protocolHead = NULL;
     char *portHead = NULL;
     char *pathHead = NULL;
-    int pathLen, siteLen, portLen;
+    int pathLen;
+    int siteLen;
+    int portLen;
     int tokenLen = strlen(header) + strlen(token) + 1;
     int ret = 0;
 
@@ -336,25 +343,27 @@ int WssClientSplitUrl(URL_INFO *info, const char* url, const char* token)
 
     pathHead = strchr(siteHead, '/');
     if (!pathHead) {
-         return IOTA_PARAMETER_ERROR;
+        return IOTA_PARAMETER_ERROR;
     }
     do {
         pathLen = strlen(pathHead);
-        if (CopyStrValue(&info->path, pathHead, pathLen) != IOTA_SUCCESS) break;
-
+        if (CopyStrValue(&info->path, pathHead, pathLen) != IOTA_SUCCESS) {
+            break;
+        }
         portHead = strchr(siteHead, ':');
         if (portHead == NULL) {
             siteLen = pathHead - siteHead;
             portHead = TUNNEL_WSSCLIENT_DEFAULT_PORT;
-            portLen = 3;
+            portLen = TUNNEL_WSSCLIENT_DEFAULT_PORT_LEN;
         } else {
             siteLen = portHead - siteHead;
             portHead++;
             portLen = pathHead - portHead;
         }
 
-        if (CopyStrValue(&info->site, siteHead, siteLen) != IOTA_SUCCESS || CopyStrValue(&info->port, portHead, portLen) != IOTA_SUCCESS) {
-             break;
+        if (CopyStrValue(&info->site, siteHead, siteLen) != IOTA_SUCCESS ||
+            CopyStrValue(&info->port, portHead, portLen) != IOTA_SUCCESS) {
+            break;
         }
 
         info->token = malloc(tokenLen);
@@ -366,7 +375,7 @@ int WssClientSplitUrl(URL_INFO *info, const char* url, const char* token)
             break;
         }
         return IOTA_SUCCESS;
-    } while(0);
+    } while (0);
 
     MemFree(&info->path);
     MemFree(&info->port);
@@ -376,12 +385,12 @@ int WssClientSplitUrl(URL_INFO *info, const char* url, const char* token)
 }
 
 /**
- *@Description: send message via websocket
- *@param reqId: request id
- *@param opType:  operation type.
- *@param buff:  message content.
- *@param len:  message length.
- *@return: NULL
+ * @Description: send message via websocket
+ * @param reqId: request id
+ * @param opType:  operation type.
+ * @param buff:  message content.
+ * @param len:  message length.
+ * @return: NULL
  */
 void WssClientSendRsp(const char *reqId, const char *opType, char *buff, int len)
 {
@@ -394,15 +403,18 @@ void WssClientSendRsp(const char *reqId, const char *opType, char *buff, int len
     }
     json2Send = cJSON_CreateObject();
     if (buff) {
-        buff[len]='\0';
+        buff[len] = '\0';
     }
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_OPTYPE, opType);
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_SERTYPE, TUNNEL_SSH_SERTYPE_SSH);
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_REQID, reqId);
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_DATA, buff);
-    cJSON_PrintPreallocated(json2Send, g_rspMsg, TUNNEL_WSSCLIENT_RSPMSG_LEN, cJSON_True);
+    if (cJSON_PrintPreallocated(json2Send, g_rspMsg, TUNNEL_WSSCLIENT_RSPMSG_LEN, cJSON_True) == cJSON_False) {
+        cJSON_Delete(json2Send);
+        return; 
+    }
     bytes = nopoll_conn_send_text(g_Conn, g_rspMsg, (int)strlen(g_rspMsg));
-    PrintfLog(EN_LOG_LEVEL_INFO, "bytes:%d\n", bytes);
+    PrintfLog(EN_LOG_LEVEL_INFO, "WssClientSendRsp: bytes:%d\n", bytes);
     if (bytes != strlen(g_rspMsg)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientSendRsp: WssClient send message failed!\n");
     }
@@ -411,11 +423,11 @@ void WssClientSendRsp(const char *reqId, const char *opType, char *buff, int len
 }
 
 /**
- *@Description: send disconnect message
- *@param reqId: request id
- *@param code:  error code.
- *@param msg:  error message.
- *@return: NULL
+ * @Description: send disconnect message
+ * @param reqId: request id
+ * @param code:  error code.
+ * @param msg:  error message.
+ * @return: NULL
  */
 void WssClientSendDisConn(const char *reqId, const char *code, const char *msg)
 {

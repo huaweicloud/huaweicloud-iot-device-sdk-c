@@ -30,11 +30,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "soft_bus_init.h"
 #include "dconncaseone_interface.h"
+#include "soft_bus_init.h"
 
 // 初始化服务端
-int InitServerKit(char *ipAry) 
+int InitServerKit(char *ipAry)
 {
     if (ipAry == NULL) {
         return -1;
@@ -43,7 +43,7 @@ int InitServerKit(char *ipAry)
 }
 
 // 初始化客户端
-int InitClientKit(char *ipAry) 
+int InitClientKit(char *ipAry)
 {
     if (ipAry == NULL) {
         return -1;
@@ -52,7 +52,7 @@ int InitClientKit(char *ipAry)
 }
 
 // 销毁服务端/客户端
-void DestroyKit()
+void DestroyKit(void)
 {
     CloseDConnCaseOne();
 }

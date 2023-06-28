@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2022-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,8 +28,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _SSH_CLIENT_H_
-#define _SSH_CLIENT_H_
+#ifndef SSH_CLIENT_H
+#define SSH_CLIENT_H
 
 #include "json_util.h"
 
@@ -38,6 +38,6 @@
 
 int SSHClientCreate(const JSON *root);
 void SSHClientRunCmd(const JSON *tunnelCmdData);
-void SSHClientSessionDestroy();
+void SSHClientSessionDestroy(void);
 
 #endif

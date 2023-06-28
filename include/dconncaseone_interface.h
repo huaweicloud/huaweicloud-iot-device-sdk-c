@@ -35,8 +35,8 @@
  * @date 2022-06-21
  */
 
-#ifndef __DCONN_CASE_ONE_H__
-#define __DCONN_CASE_ONE_H__
+#ifndef DCONNCASEONE_INTERFACE_H
+#define DCONNCASEONE_INTERFACE_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -221,4 +221,4 @@ DCONN_API_PUBLIC const char *GetDConnVersion(void);
 #endif
 #endif /* __cplusplus */
 
-#endif /* __DCONN_CASE_ONE_H__ */
+#endif /* DCONNCASEONE_INTERFACE_H */

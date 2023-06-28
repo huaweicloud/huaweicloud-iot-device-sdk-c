@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2022-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,8 +28,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _WSS_CLIENT_H_
-#define _WSS_CLIENT_H_
+#ifndef WSS_CLIENT_H
+#define WSS_CLIENT_H
 
 #include <nopoll.h>
 
@@ -45,12 +45,13 @@
 #define TUNNEL_WSSCLIENT_RSPMSG_LEN             2304
 
 #define TUNNEL_WSSCLIENT_DEFAULT_PORT           "443"
+#define TUNNEL_WSSCLIENT_DEFAULT_PORT_LEN       3
 
 typedef struct {
-	char *site;
-	char *port;
-	char *path;
-	char *token;
+    char *site;
+    char *port;
+    char *path;
+    char *token;
 } URL_INFO;
 
 int WssClientSplitUrl(URL_INFO *info, const char *url, const char *token);

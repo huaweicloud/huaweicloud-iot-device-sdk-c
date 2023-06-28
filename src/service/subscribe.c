@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,10 +32,10 @@
 #include "log_util.h"
 #include "mqtt_base.h"
 #include "string_util.h"
-#include "subscribe.h"
 #include "iota_error_type.h"
+#include "subscribe.h"
 
-int SubscribeMessageDown()
+int SubscribeMessageDown(void)
 {
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
@@ -46,7 +46,7 @@ int SubscribeMessageDown()
     return SubsribeTopic(topic, 0);
 }
 
-int SubscribeCommand()
+int SubscribeCommand(void)
 {
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
@@ -57,7 +57,7 @@ int SubscribeCommand()
     return SubsribeTopic(topic, 0);
 }
 
-int SubscribePropSet()
+int SubscribePropSet(void)
 {
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
@@ -68,7 +68,7 @@ int SubscribePropSet()
     return SubsribeTopic(topic, 0);
 }
 
-int SubscribePropget()
+int SubscribePropget(void)
 {
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
@@ -79,7 +79,7 @@ int SubscribePropget()
     return SubsribeTopic(topic, 0);
 }
 
-int SubscribePropResp()
+int SubscribePropResp(void)
 {
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
@@ -90,7 +90,7 @@ int SubscribePropResp()
     return SubsribeTopic(topic, 0);
 }
 
-int SubscribeSubDeviceEvent()
+int SubscribeSubDeviceEvent(void)
 {
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
@@ -116,7 +116,6 @@ int SubscribeUserTopic(char *topicParas)
     return SubsribeTopic(topic, 0);
 }
 
-
 int SubsribeTopic(char *topic, const int qos)
 {
     if (topic == NULL) {
@@ -133,7 +132,7 @@ int SubsribeTopic(char *topic, const int qos)
     return ret;
 }
 
-int SubscribeJsonCmdV3()
+int SubscribeJsonCmdV3(void)
 {
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
@@ -144,7 +143,7 @@ int SubscribeJsonCmdV3()
     return SubsribeTopic(topic, 0);
 }
 
-int SubscribeBinaryCmdV3()
+int SubscribeBinaryCmdV3(void)
 {
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
@@ -155,7 +154,7 @@ int SubscribeBinaryCmdV3()
     return SubsribeTopic(topic, 0);
 }
 
-int SubscribeBootstrap()
+int SubscribeBootstrap(void)
 {
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
@@ -166,17 +165,18 @@ int SubscribeBootstrap()
     return SubsribeTopic(topic, 0);
 }
 
-int SubscribeM2m() {
-	char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-	if (userName == NULL) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() getUserName failed.\n");
-		return IOTA_FAILURE;
-	}
-	char *topic = CombineStrings(4, TOPIC_PREFIX_M2M, userName, FORWARD_SLASH, WILDCARD);
-	return SubsribeTopic(topic, 0);
+int SubscribeM2m(void)
+{
+    char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
+    if (userName == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() getUserName failed.\n");
+        return IOTA_FAILURE;
+    }
+    char *topic = CombineStrings(4, TOPIC_PREFIX_M2M, userName, FORWARD_SLASH, WILDCARD);
+    return SubsribeTopic(topic, 0);
 }
 
-void SubscribeAll()
+void SubscribeAll(void)
 {
     if (SubscribeMessageDown() < IOTA_SUCCESS) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeMessageDown failed.\n");

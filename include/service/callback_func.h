@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,10 +28,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef INCLUDE_SERVICE_CALLBACK_FUNC_H_
-#define INCLUDE_SERVICE_CALLBACK_FUNC_H_
+#ifndef CALLBACK_FUNC_H
+#define CALLBACK_FUNC_H
 
-#include "stdarg.h"
+#include <stdarg.h>
 #include "iota_init.h"
 #include "json_util.h"
 #include "base.h"
@@ -46,42 +46,42 @@ typedef void (*LOG_CALLBACK_HANDLER)(int level, char *format, va_list args);
 void SetLogCallback(LOG_CALLBACK_HANDLER logCallbackHandler);
 
 typedef void (*EVENT_CALLBACK_HANDLER)(EN_IOTA_EVENT *message);
-void SetEventCallback(EVENT_CALLBACK_HANDLER pfnCallbackHandler);
+void SetEventCallback(EVENT_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*CMD_CALLBACK_HANDLER)(EN_IOTA_COMMAND *message);
-void SetCmdCallback(CMD_CALLBACK_HANDLER pfnCallbackHandler);
+void SetCmdCallback(CMD_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*CMD_CALLBACK_HANDLER_V3)(EN_IOTA_COMMAND_V3 *message);
-void SetCmdCallbackV3(CMD_CALLBACK_HANDLER_V3 pfnCallbackHandler);
+void SetCmdCallbackV3(CMD_CALLBACK_HANDLER_V3 callbackHandler);
 
 typedef void (*PROTOCOL_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp);
-void SetProtocolCallback(EN_CALLBACK_SETTING item, PROTOCOL_CALLBACK_HANDLER pfnCallbackHandler);
+void SetProtocolCallback(EN_CALLBACK_SETTING item, PROTOCOL_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*MESSAGE_CALLBACK_HANDLER)(EN_IOTA_MESSAGE *protocolRsp, void *mqttv5);
-void SetMessageCallback(MESSAGE_CALLBACK_HANDLER pfnCallbackHandler);
+void SetMessageCallback(MESSAGE_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*PROP_SET_CALLBACK_HANDLER)(EN_IOTA_PROPERTY_SET *rsp);
-void SetPropSetCallback(PROP_SET_CALLBACK_HANDLER pfnCallbackHandler);
+void SetPropSetCallback(PROP_SET_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*PROP_GET_CALLBACK_HANDLER)(EN_IOTA_PROPERTY_GET *rsp);
-void SetPropGetCallback(PROP_GET_CALLBACK_HANDLER pfnCallbackHandler);
+void SetPropGetCallback(PROP_GET_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*SHADOW_GET_CALLBACK_HANDLER)(EN_IOTA_DEVICE_SHADOW *rsp);
-void SetShadowGetCallback(SHADOW_GET_CALLBACK_HANDLER pfnCallbackHandler);
+void SetShadowGetCallback(SHADOW_GET_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*USER_TOPIC_MSG_CALLBACK_HANDLER)(EN_IOTA_USER_TOPIC_MESSAGE *rsp);
-void SetUserTopicMsgCallback(USER_TOPIC_MSG_CALLBACK_HANDLER pfnCallbackHandler);
+void SetUserTopicMsgCallback(USER_TOPIC_MSG_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*BOOTSTRAP_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
-void SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler);
+void SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER callbackHandler);
 
 typedef HW_INT (*DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER)(char *deviceId, char *cmd);
-void SetDeviceRuleSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler);
+void SetDeviceRuleSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*M2M_CALLBACK_HANDLER)(EN_IOTA_M2M_MESSAGE *rsp);
-void SetM2mCallback(M2M_CALLBACK_HANDLER pfnCallbackHandler);
+void SetM2mCallback(M2M_CALLBACK_HANDLER callbackHandler);
 
 typedef int (*DEVICE_CONFIG_CALLBACK_HANDLER)(JSON *cfg, char *description);
-void SetDeviceConfigCallback(DEVICE_CONFIG_CALLBACK_HANDLER pfnCallbackHandler);
+void SetDeviceConfigCallback(DEVICE_CONFIG_CALLBACK_HANDLER callbackHandler);
 
-#endif /* INCLUDE_SERVICE_CALLBACK_FUNC_H_ */
+#endif /* CALLBACK_FUNC_H */

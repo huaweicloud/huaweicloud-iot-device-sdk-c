@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,52 +29,52 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef INCLUDE_UTIL_MQTTV5_UTIL_H_
-#define INCLUDE_UTIL_MQTTV5_UTIL_H_
+#ifndef MQTTV5_UTIL_H
+#define MQTTV5_UTIL_H
 
-//#define MQTTV5  // If not defined, use MQTT3, else MQTT5.0
+// #define MQTTV5  // If not defined, use MQTT3, else MQTT5.0
 #if defined(MQTTV5)
 // ------------------------ Create Connection -------------------------------------
 #define TOPIC_ALIAS_MAX 20 // MQTT v5 Maximum number of subject aliases
 
 // ------------------------ Mqttv5 Publish ----------------------------------------
-typedef struct{
-	char *key;
-	char *Value;
-	void *nex;
-}MQTTV5_USER_PRO; // user propeties
+typedef struct {
+    char *key;
+    char *Value;
+    void *nex;
+} MQTTV5_USER_PRO; // user propeties
 
 typedef struct {
-	/*
-	 *It consists of a user-defined UTF-8 key/value pair array.
-	 *You can use user attributes to add metadata to mqtt 
-	 *messages and transfer information between publishers,
-	 *mqtt servers and subscribers.
-	*/
-	MQTTV5_USER_PRO *properties;
-	/*
-	 *The content type contained in the mqtt5.0 variable header 
-	 *is a UTF-8 encoded string, which is used to describe the 
-	 *contents of a will message or a publish message. 
-	 *A typical application of content type is to store MIME types, 
-	 *such as text/plain for text files and audio/AAC for audio files.
-	*/
-	char *contnt_type; 
-	/*
-	 *The responder will take appropriate actions according to the 
-	 *request message, and then publish the response message to the 
-	 *subject specified by the response subject attribute.
-	*/
-	char *response_topic;
-	/*
-	 *The request response of mqtt is asynchronous. 
-	 *comparison_data can be used to correlate 
-	 *the response message with the request message
-	*/
-	char *correlation_data;
-}MQTTV5_DATA;
+    /*
+     * It consists of a user-defined UTF-8 key/value pair array.
+     * You can use user attributes to add metadata to mqtt
+     * messages and transfer information between publishers,
+     * mqtt servers and subscribers.
+    */
+    MQTTV5_USER_PRO *properties;
+    /*
+     * The content type contained in the mqtt5.0 variable header
+     * is a UTF-8 encoded string, which is used to describe the
+     * contents of a will message or a publish message.
+     * A typical application of content type is to store MIME types,
+     * such as text/plain for text files and audio/AAC for audio files.
+    */
+    char *contnt_type;
+    /*
+     * The responder will take appropriate actions according to the
+     * request message, and then publish the response message to the
+     * subject specified by the response subject attribute.
+    */
+    char *response_topic;
+    /*
+     * The request response of mqtt is asynchronous.
+     * comparison_data can be used to correlate
+     * the response message with the request message
+    */
+    char *correlation_data;
+} MQTTV5_DATA;
 
-int mqttV5_listFree(MQTTV5_USER_PRO *mqtt_data);
+void mqttV5_listFree(MQTTV5_USER_PRO *mqttData);
 
 #define mqttv5_initializer {NULL, NULL, NULL, NULL }
 #endif

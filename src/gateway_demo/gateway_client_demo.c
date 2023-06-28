@@ -28,24 +28,21 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
 #include <netdb.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <unistd.h>
+#include "securec.h"
+#include "log_util.h"
 
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 15623
 #define MAX_MESSAGE_BUF_LEN 30
 
-int main()
+int main(void)
 {
     struct sockaddr_in serverAddr;
     int clientSocket;
@@ -70,7 +67,11 @@ int main()
 
     while (1) {
         printf("Input the messages you want to send, input \"quit\" to exit:");
-        scanf("%s", sendbuf);
+        if (scanf_s("%s", sendbuf, MAX_MESSAGE_BUF_LEN) == -1) {
+            printf("get messages error");
+            break;
+        }
+
         printf("\n");
         send(clientSocket, sendbuf, strlen(sendbuf), 0);
 
@@ -78,7 +79,7 @@ int main()
             break;
         }
 
-        printf("Recive messages:");
+        printf("Receive messages:");
 
         recvbuf[0] = '\0';
         iDataNum = recv(clientSocket, recvbuf, MAX_MESSAGE_BUF_LEN, 0);

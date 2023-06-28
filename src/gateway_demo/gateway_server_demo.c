@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,29 +28,28 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <log_util.h>
+#include <json_util.h>
+#include <string_util.h>
 #include "stdio.h"
 #include "signal.h"
 #include "hw_type.h"
 #include "iota_init.h"
 #include "iota_cfg.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include "errno.h"
 #include "iota_error_type.h"
 #include "iota_login.h"
 #include "iota_datatrans.h"
 #include "cJSON.h"
-#include <hw_type.h>
-#include <log_util.h>
-#include <json_util.h>
-#include <string_util.h>
 #include "generic_tcp_protocol.h"
 
 char *gIoTPlatformIp = "iot-mqtts.cn-north-4.myhuaweicloud.com";
 int gIoTPlatformPort = 8883;
 int gClientSocket = -1;
-char *gUserName =
-    "XXXX"; // deviceId，The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username
+// deviceId，The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username
+char *gUserName = "XXXX"; 
 char *gPassWord = "XXXX";
 int gIoTPlatformStatus = DISCONNECTED;
 char *gatewayId = NULL;
@@ -235,7 +234,7 @@ void MyPrintLog(int level, char *format, va_list args)
      *  */
 }
 
-void SetAuthConfig()
+void SetAuthConfig(void)
 {
     IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, gIoTPlatformIp);
     IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, gIoTPlatformPort);
@@ -249,7 +248,7 @@ void SetAuthConfig()
 #endif
 }
 
-void SetMyCallbacks()
+void SetMyCallbacks(void)
 {
     IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
     IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
@@ -271,12 +270,12 @@ void SetMyCallbacks()
 int main(int argc, char **argv)
 {
 #if defined(_DEBUG)
-    setvbuf(stdout, NULL, _IONBF, 0); // in order to make the console log printed immediately at debug mode
+    (void)setvbuf(stdout, NULL, _IONBF, 0); // in order to make the console log printed immediately at debug mode
 #endif
 
     IOTA_SetPrintLogCallback(MyPrintLog);
 
-    printf("gateway_demo: start test ===================>\n");
+    PrintfLog(EN_LOG_LEVEL_INFO, "gateway_demo: start test ===================>\n");
 
     if (IOTA_Init(WORK_PATH) < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "gateway_demo: call IOTA_Init() error, init failed\n");
@@ -289,7 +288,7 @@ int main(int argc, char **argv)
     // Connect to HuaweiCloud IoT service, do what you want in function HandleConnectSuccess
     int ret = IOTA_Connect();
     if (ret != 0) {
-        printf("gateway_demo: connect to IoT platform error, result %d\n", ret);
+        PrintfLog(EN_LOG_LEVEL_INFO, "gateway_demo: connect to IoT platform error, result %d\n", ret);
         return -1;
     }
 
@@ -330,7 +329,7 @@ int main(int argc, char **argv)
     close(server_socket);
     server_socket = -1;
 
-    printf("gateway_demo: test has ended ===================>\n");
+    PrintfLog(EN_LOG_LEVEL_INFO, "gateway_demo: test has ended ===================>\n");
 
     return 0;
 }

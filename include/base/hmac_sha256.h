@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,21 +28,22 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __HMACSHA256_H__
-#define __HMACSHA256_H__
+#ifndef HAMC_SHA256_H
+#define HAMC_SHA256_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* failed return -1, success return 0 */
+int EncryptWithHMac(const char *inputData, char **inputKey, int inEncryDataLen, char *outData, int checkTimestamp);
+
+#define TIME_STAMP_LENGTH            10
+#define TRY_MAX_TIME                 100
+#define SHA256_ENCRYPTION_LENGRH     32
+
 #ifdef __cplusplus
 }
 #endif
 
-/*failed return -1, success return 0*/
-int EncryWithHMacSha256(const char *inputData, char **inputKey, int inEncryDataLen, char *outData);
-
-#define TIME_STAMP_LENGTH 			10
-#define TRY_MAX_TIME 				100
-#define SHA256_ENCRYPTION_LENGRH 	32
-
-#endif /* __UBIND_H__ */
+#endif /* HAMC_SHA256_H */

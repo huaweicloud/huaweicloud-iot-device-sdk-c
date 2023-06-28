@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,68 +28,73 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "hmac_sha256.h"
+#include <string.h>
+#include "openssl/ossl_typ.h"
+#include "openssl/hmac.h"
 #include "log_util.h"
 #include "securec.h"
 #include "string_util.h"
-#include "string.h"
-#include <openssl/ossl_typ.h>
-#include <openssl/hmac.h>
 #include "iota_error_type.h"
 #include "iota_cfg.h"
+#include "hmac_sha256.h"
 
-int EncryWithHMac(const char *inputData, char **inputKey, int inEncryDataLen, char *outData, int checkTimestamp)
+int EncryptWithHMac(const char *inputData, char **inputKey, int inEncryDataLen, char *outData, int checkTimestamp)
 {
-    if (inputData == NULL || (*inputKey) == NULL) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "encryWithHMacSha256(): the input is invalid.\n");
+    if ((inputData == NULL) || ((*inputKey) == NULL)) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "EncryptWithHMac(): the input is invalid.\n");
         return IOTA_FAILURE;
     }
 
     if (TIME_STAMP_LENGTH != strlen(*inputKey)) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "encryWithHMacSha256(): the length of inputKey is invalid.\n");
+        PrintfLog(EN_LOG_LEVEL_ERROR, "EncryptWithHMac(): the length of inputKey is invalid.\n");
         return IOTA_FAILURE;
     }
 
     char *end = NULL;
-    unsigned int mac_length = 0;
+    unsigned int macLength = 0;
     unsigned int tryTime = 1;
     size_t lenData = strlen(inputData);
     long timeTmp = strtol(*inputKey, &end, 10);
     unsigned char *temp = NULL;
     if (checkTimestamp <= EN_IOTA_CFG_CHECK_STAMP_SHA256) {
-        temp = HMAC(EVP_sha256(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char *)inputData, lenData, NULL, &mac_length);
+        temp = HMAC(EVP_sha256(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char *)inputData, lenData,
+            NULL, &macLength);
     } else {
-        temp = HMAC(EVP_sm3(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char *)inputData, lenData, NULL, &mac_length);
+        temp = HMAC(EVP_sm3(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char *)inputData, lenData,
+            NULL, &macLength);
     }
 
     while (strlen(temp) != SHA256_ENCRYPTION_LENGRH) {
         tryTime++;
         if (tryTime > TRY_MAX_TIME) {
-            PrintfLog(EN_LOG_LEVEL_ERROR, "encryWithHMacSha256(): Encryption failed after max times attempts.\n");
+            PrintfLog(EN_LOG_LEVEL_ERROR, "EncryptWithHMac(): Encryption failed after max times attempts.\n");
             return IOTA_FAILURE;
         }
 
         timeTmp++;
-        snprintf_s(*inputKey, TIME_STAMP_LENGTH + 1, TIME_STAMP_LENGTH, "%ld", timeTmp);
+        (void)snprintf_s(*inputKey, TIME_STAMP_LENGTH + 1, TIME_STAMP_LENGTH, "%ld", timeTmp);
         if (checkTimestamp <= EN_IOTA_CFG_CHECK_STAMP_SHA256) {
-            temp = HMAC(EVP_sha256(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char *)inputData, lenData, NULL, &mac_length);
+            temp = HMAC(EVP_sha256(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char *)inputData, lenData,
+                NULL, &macLength);
         } else {
-            temp = HMAC(EVP_sm3(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char *)inputData, lenData, NULL, &mac_length);
+            temp = HMAC(EVP_sm3(), *inputKey, TIME_STAMP_LENGTH, (const unsigned char *)inputData, lenData,
+                NULL, &macLength);
         }
     }
 
-    int uiIndex, uiLoop;
-    char ucHex;
+    int index;
+    int loop;
+    char hexChar;
 
-    for (uiIndex = 0, uiLoop = 0; uiLoop < inEncryDataLen; uiLoop++) {
-        ucHex = (temp[uiLoop] >> 4) & 0x0F;
-        outData[uiIndex++] = (ucHex <= 9) ? (ucHex + '0') : (ucHex + 'a' - 10);
+    for (index = 0, loop = 0; loop < inEncryDataLen; loop++) {
+        hexChar = (temp[loop] >> 4) & 0x0F;
+        outData[index++] = (hexChar <= 9) ? (hexChar + '0') : (hexChar + 'a' - 10);
 
-        ucHex = temp[uiLoop] & 0x0F;
-        outData[uiIndex++] = (ucHex <= 9) ? (ucHex + '0') : (ucHex + 'a' - 10);
+        hexChar = temp[loop] & 0x0F;
+        outData[index++] = (hexChar <= 9) ? (hexChar + '0') : (hexChar + 'a' - 10);
     }
 
-    outData[uiIndex] = '\0';
+    outData[index] = '\0';
 
     return IOTA_SUCCESS;
 }

@@ -35,7 +35,6 @@
 #include "log_util.h"
 #include "mqtt_base.h"
 #include "base.h"
-#include "callback_func.h"
 #include "subscribe.h"
 #include "iota_error_type.h"
 #include "json_util.h"
@@ -45,12 +44,13 @@
 #include "rule_manager.h"
 #include "detect_anomaly.h"
 #include "sys_hal.h"
+#include "callback_func.h"
 
 #if defined(SOFT_BUS_OPTION2)
 #include "soft_bus_datatrans.h"
 #include "soft_bus_init.h"
-#include "data_trans.h" 
-#endif	
+#include "data_trans.h"
+#endif
 
 EVENT_CALLBACK_HANDLER onEventDown;
 CMD_CALLBACK_HANDLER onCmd;
@@ -77,8 +77,8 @@ static void OnLoginSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 
     // report device log
     unsigned long long timestamp = getTime();
-    char timeStampStr[14];
-    sprintf_s(timeStampStr, sizeof(timeStampStr), "%llu", timestamp);
+    char timeStampStr[TIMESTAMP_STR_LEN] = {0};
+    (void)sprintf_s(timeStampStr, sizeof(timeStampStr), "%llu", timestamp);
     char *log = "login success";
     IOTA_ReportDeviceLog("DEVICE_STATUS", log, timeStampStr, NULL);
 
@@ -90,12 +90,13 @@ static void OnLoginSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
     deviceInfo.fw_version = NULL;
     deviceInfo.event_time = NULL;
     deviceInfo.object_device_id = NULL;
+    deviceInfo.device_ip = NULL;
 
     IOTA_ReportDeviceInfo(&deviceInfo, NULL);
     IOTA_GetDeviceShadow(DEVICE_RULE_REQUEST_ID, NULL, NULL, NULL);
 }
 
-static void OnBootstrapDownArrived(void *context, int token, int code, char *message)
+static void OnBootstrapDownArrived(void *context, int token, int code, const char *message)
 {
     EN_IOTA_MQTT_PROTOCOL_RSP *bootstrap_msg = (EN_IOTA_MQTT_PROTOCOL_RSP *)malloc(sizeof(EN_IOTA_MQTT_PROTOCOL_RSP));
     if (bootstrap_msg == NULL) {
@@ -124,7 +125,7 @@ static void OnBootstrapDownArrived(void *context, int token, int code, char *mes
     return;
 }
 
-static void OnMessagesDownArrived(void *context, int token, int code, char *message, void *mqttv5)
+static void OnMessagesDownArrived(void *context, int token, int code, const char *message, void *mqttv5)
 {
     EN_IOTA_MESSAGE *msg = (EN_IOTA_MESSAGE *)malloc(sizeof(EN_IOTA_MESSAGE));
     if (msg == NULL) {
@@ -165,39 +166,39 @@ static void OnMessagesDownArrived(void *context, int token, int code, char *mess
     return;
 }
 
-static void OnM2mMessagesDownArrived(void *context, int token, int code, char *message)
+static void OnM2mMessagesDownArrived(void *context, int token, int code, const char *message)
 {
-    EN_IOTA_M2M_MESSAGE *m2m_msg  = (EN_IOTA_M2M_MESSAGE*)malloc(sizeof(EN_IOTA_M2M_MESSAGE));
-    if (m2m_msg == NULL) {
+    EN_IOTA_M2M_MESSAGE *m2mMsg = (EN_IOTA_M2M_MESSAGE *)malloc(sizeof(EN_IOTA_M2M_MESSAGE));
+    if (m2mMsg == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnM2mMessagesDownArrived(): there is not enough memory here.\n");
         return;
     }
-    m2m_msg->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO*)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
-    if (m2m_msg->mqtt_msg_info == NULL) {
+    m2mMsg->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO *)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+    if (m2mMsg->mqtt_msg_info == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnM2mMessagesDownArrived(): there is not enough memory here.\n");
-        free(m2m_msg);
+        free(m2mMsg);
         return;
     }
-    m2m_msg->mqtt_msg_info->context = context;
-    m2m_msg->mqtt_msg_info->messageId = token;
-    m2m_msg->mqtt_msg_info->code = code;
+    m2mMsg->mqtt_msg_info->context = context;
+    m2mMsg->mqtt_msg_info->messageId = token;
+    m2mMsg->mqtt_msg_info->code = code;
 
     JSON *root = JSON_Parse(message);
-    m2m_msg->request_id = JSON_GetStringFromObject(root, REQUEST_ID, NULL);
-    m2m_msg->to = JSON_GetStringFromObject(root, TO, NULL);
-    m2m_msg->from = JSON_GetStringFromObject(root, FROM, NULL);
-    m2m_msg->content = JSON_GetStringFromObject(root, CONTENT, NULL);
+    m2mMsg->request_id = JSON_GetStringFromObject(root, REQUEST_ID, NULL);
+    m2mMsg->to = JSON_GetStringFromObject(root, TO, NULL);
+    m2mMsg->from = JSON_GetStringFromObject(root, FROM, NULL);
+    m2mMsg->content = JSON_GetStringFromObject(root, CONTENT, NULL);
     if (onM2mMessage) {
-        (onM2mMessage)(m2m_msg);
+        (onM2mMessage)(m2mMsg);
     }
 
     JSON_Delete(root);
-    MemFree(&m2m_msg->mqtt_msg_info);
-    MemFree(&m2m_msg);
+    MemFree(&m2mMsg->mqtt_msg_info);
+    MemFree(&m2mMsg);
     return;
 }
 
-static void OnV1DevicesArrived(void *context, int token, int code, char *message)
+static void OnV1DevicesArrived(void *context, int token, int code, const char *message)
 {
     EN_IOTA_COMMAND_V3 *command_v3 = (EN_IOTA_COMMAND_V3 *)malloc(sizeof(EN_IOTA_COMMAND));
     if (command_v3 == NULL) {
@@ -218,16 +219,16 @@ static void OnV1DevicesArrived(void *context, int token, int code, char *message
 
     JSON *root = JSON_Parse(message);
 
-    char *serviceId = JSON_GetStringFromObject(root, SERVICE_ID_V3, "-1"); // get value of serviceId
+    char *serviceId = JSON_GetStringFromObject(root, SERVICE_ID_V3, "-1");
     command_v3->serviceId = serviceId;
 
-    char *cmd = JSON_GetStringFromObject(root, CMD, "-1"); // get value of cmd
+    char *cmd = JSON_GetStringFromObject(root, CMD, "-1");
     command_v3->cmd = cmd;
 
-    int mid = JSON_GetIntFromObject(root, MID, -1); // get value of mid
+    int mid = JSON_GetIntFromObject(root, MID, -1);
     command_v3->mid = mid;
 
-    JSON *paras = JSON_GetObjectFromObject(root, PARAS); // get value of paras
+    JSON *paras = JSON_GetObjectFromObject(root, PARAS);
 
     char *paras_obj = cJSON_Print(paras);
     command_v3->paras = paras_obj;
@@ -243,7 +244,7 @@ static void OnV1DevicesArrived(void *context, int token, int code, char *message
     return;
 }
 
-static void OnCommandsArrived(void *context, int token, int code, const char *topic, char *message)
+static void OnCommandsArrived(void *context, int token, int code, const char *topic, const char *message)
 {
     char *requestId_value = strstr(topic, "=");
     char *request_id = strstr(requestId_value + 1, "");
@@ -268,16 +269,16 @@ static void OnCommandsArrived(void *context, int token, int code, const char *to
 
     JSON *root = JSON_Parse(message);
 
-    char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1"); // get value of object_device_id
+    char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1");
     command->object_device_id = object_device_id;
 
-    char *service_id = JSON_GetStringFromObject(root, SERVICE_ID, "-1"); // get value of service_id
+    char *service_id = JSON_GetStringFromObject(root, SERVICE_ID, "-1");
     command->service_id = service_id;
 
-    char *command_name = JSON_GetStringFromObject(root, COMMAND_NAME, "-1"); // get value of command_name
+    char *command_name = JSON_GetStringFromObject(root, COMMAND_NAME, "-1");
     command->command_name = command_name;
 
-    JSON *paras = JSON_GetObjectFromObject(root, PARAS); // get value of data
+    JSON *paras = JSON_GetObjectFromObject(root, PARAS);
 
     char *paras_obj = cJSON_Print(paras);
     command->paras = paras_obj;
@@ -293,7 +294,7 @@ static void OnCommandsArrived(void *context, int token, int code, const char *to
     return;
 }
 
-static void OnPropertiesSetArrived(void *context, int token, int code, const char *topic, char *message)
+static void OnPropertiesSetArrived(void *context, int token, int code, const char *topic, const char *message)
 {
     char *requestId_value = strstr(topic, "=");
     char *request_id = strstr(requestId_value + 1, "");
@@ -318,13 +319,12 @@ static void OnPropertiesSetArrived(void *context, int token, int code, const cha
 
     JSON *root = JSON_Parse(message);
 
-    // get value of object_device_id
-    char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1"); 
+    char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1");
     prop_set->object_device_id = object_device_id;
 
-    JSON *services = JSON_GetObjectFromObject(root, SERVICES); // get  services array
+    JSON *services = JSON_GetObjectFromObject(root, SERVICES);
 
-    int services_count = JSON_GetArraySize(services); // get length of services array
+    int services_count = JSON_GetArraySize(services);
     prop_set->services_count = 0;
 
     if (services_count >= MAX_SERVICE_COUNT) {
@@ -355,11 +355,11 @@ static void OnPropertiesSetArrived(void *context, int token, int code, const cha
             JSON *properties = JSON_GetObjectFromObject(service, PROPERTIES);
             prop[i] = cJSON_Print(properties);
             prop_set->services[i].properties = prop[i];
-            if(strcmp(service_id, DEVICE_RULE) == 0) {
+            if (strcmp(service_id, DEVICE_RULE) == 0) {
                 RuleTrans_DeviceRuleUpdate(prop[i]);
                 MemFree(&prop[i]);
                 i--;
-            } else if(strcmp(service_id, SECURITY_DETECTION_CONFIG) == 0) {
+            } else if (strcmp(service_id, SECURITY_DETECTION_CONFIG) == 0) {
                 Detect_ParseShadowGetOrPropertiesSet(prop[i]);
                 MemFree(&prop[i]);
                 i--;
@@ -399,7 +399,7 @@ static void OnPropertiesSetArrived(void *context, int token, int code, const cha
     return;
 }
 
-static void OnPropertiesGetArrived(void *context, int token, int code, const char *topic, char *message)
+static void OnPropertiesGetArrived(void *context, int token, int code, const char *topic, const char *message)
 {
     char *requestId_value = strstr(topic, "=");
     char *request_id = strstr(requestId_value + 1, "");
@@ -424,11 +424,10 @@ static void OnPropertiesGetArrived(void *context, int token, int code, const cha
 
     JSON *root = JSON_Parse(message);
 
-    // get value of object_device_id
-    char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1"); 
+    char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1");
     prop_get->object_device_id = object_device_id;
 
-    char *service_id = JSON_GetStringFromObject(root, SERVICE_ID, "-1"); // get value of object_device_id
+    char *service_id = JSON_GetStringFromObject(root, SERVICE_ID, "-1");
     prop_get->service_id = service_id;
 
     if (onPropertiesGet) {
@@ -492,6 +491,8 @@ static void OnShadowGetResponseArrived(void *context, int token, int code, const
         MemFree(&device_shadow);
         return;
     }
+    (void)memset_s(device_shadow->shadow, sizeof(EN_IOTA_SHADOW_DATA) * shadow_data_count, 0,
+        sizeof(EN_IOTA_SHADOW_DATA) * shadow_data_count);
     int i = 0;
     char *desired_str[MAX_SERVICE_COUNT] = {0};
     char *reported_str[MAX_SERVICE_COUNT] = {0};
@@ -553,11 +554,10 @@ static void OnShadowGetResponseArrived(void *context, int token, int code, const
     return;
 }
 
-static void OnUserTopicArrived(void *context, int token, int code, const char *topic, char *message)
+static void OnUserTopicArrived(void *context, int token, int code, const char *topic, const char *message)
 {
     char *topic_paras_value = strstr(topic, "user/");
     char *topic_paras = strstr(topic_paras_value + 5, "");
-
 
     EN_IOTA_USER_TOPIC_MESSAGE *user_topic_msg =
         (EN_IOTA_USER_TOPIC_MESSAGE *)malloc(sizeof(EN_IOTA_USER_TOPIC_MESSAGE));
@@ -602,21 +602,19 @@ static void OnUserTopicArrived(void *context, int token, int code, const char *t
 }
 
 // if it is the platform inform the gateway to add or delete the sub device
-static int OnEventsGatewayAddOrDelete(int i, char *event_type, EN_IOTA_EVENT *event, JSON *paras, char *message)
+static int OnEventsGatewayAddOrDelete(int i, char *event_type, EN_IOTA_EVENT *event, JSON *paras, const char *message)
 {
     event->services[i].paras = (EN_IOTA_DEVICE_PARAS *)malloc(sizeof(EN_IOTA_DEVICE_PARAS));
     if (event->services[i].paras == NULL) {
         return -1;
     }
 
-    JSON *devices = JSON_GetObjectFromObject(paras, DEVICES); // get object of devices
+    JSON *devices = JSON_GetObjectFromObject(paras, DEVICES);
 
-    int devices_count = JSON_GetArraySize(devices); // get size of devicesSize
-
+    int devices_count = JSON_GetArraySize(devices);
     if (devices_count > MAX_EVENT_DEVICE_COUNT) {
         // you can increase the  MAX_EVENT_DEVICE_COUNT in iota_init.h
-        PrintfLog(EN_LOG_LEVEL_ERROR, "messageArrivaled: OnEventsGatewayAddOrDelete(), devices_count is too large.\n"); 
-        // JSON_Delete(root);
+        PrintfLog(EN_LOG_LEVEL_ERROR, "messageArrivaled: OnEventsGatewayAddOrDelete(), devices_count is too large.\n");
         return 0;
     }
 
@@ -647,41 +645,40 @@ static int OnEventsGatewayAddOrDelete(int i, char *event_type, EN_IOTA_EVENT *ev
         event->services[i].event_type = EN_IOTA_EVENT_ADD_SUB_DEVICE_NOTIFY;
         JSON *deviceInfo = NULL;
         cJSON_ArrayForEach(deviceInfo, devices) {
-            char *parent_device_id = JSON_GetStringFromObject(deviceInfo, PARENT_DEVICE_ID, NULL); // get value of parent_device_id
+            char *parent_device_id = JSON_GetStringFromObject(deviceInfo, PARENT_DEVICE_ID, NULL);
             event->services[i].paras->devices[j].parent_device_id = parent_device_id;
 
-            char *node_id = JSON_GetStringFromObject(deviceInfo, NODE_ID, NULL); // get value of node_id
+            char *node_id = JSON_GetStringFromObject(deviceInfo, NODE_ID, NULL);
             event->services[i].paras->devices[j].node_id = node_id;
 
-            char *device_id = JSON_GetStringFromObject(deviceInfo, DEVICE_ID, NULL); // get value of device_id
+            char *device_id = JSON_GetStringFromObject(deviceInfo, DEVICE_ID, NULL);
             event->services[i].paras->devices[j].device_id = device_id;
 
-            char *name = JSON_GetStringFromObject(deviceInfo, NAME, NULL); // get value of name
+            char *name = JSON_GetStringFromObject(deviceInfo, NAME, NULL);
             event->services[i].paras->devices[j].name = name;
 
-            char *description = JSON_GetStringFromObject(deviceInfo, DESCRIPTION, NULL); // get value of description
+            char *description = JSON_GetStringFromObject(deviceInfo, DESCRIPTION, NULL);
             event->services[i].paras->devices[j].description = description;
 
-            char *manufacturer_id = JSON_GetStringFromObject(deviceInfo, MANUFACTURER_ID,
-                NULL); // get value of manufacturer_id
+            char *manufacturer_id = JSON_GetStringFromObject(deviceInfo, MANUFACTURER_ID, NULL);
             event->services[i].paras->devices[j].manufacturer_id = manufacturer_id;
 
-            char *model = JSON_GetStringFromObject(deviceInfo, MODEL, NULL); // get value of model
+            char *model = JSON_GetStringFromObject(deviceInfo, MODEL, NULL);
             event->services[i].paras->devices[j].model = model;
 
-            char *product_id = JSON_GetStringFromObject(deviceInfo, PRODUCT_ID, NULL); // get value of product_id
+            char *product_id = JSON_GetStringFromObject(deviceInfo, PRODUCT_ID, NULL);
             event->services[i].paras->devices[j].product_id = product_id;
 
-            char *fw_version = JSON_GetStringFromObject(deviceInfo, FW_VERSION, NULL); // get value of fw_version
+            char *fw_version = JSON_GetStringFromObject(deviceInfo, FW_VERSION, NULL);
             event->services[i].paras->devices[j].fw_version = fw_version;
 
-            char *sw_version = JSON_GetStringFromObject(deviceInfo, SW_VERSION, NULL); // get value of sw_version
+            char *sw_version = JSON_GetStringFromObject(deviceInfo, SW_VERSION, NULL);
             event->services[i].paras->devices[j].sw_version = sw_version;
 
-            char *status = JSON_GetStringFromObject(deviceInfo, STATUS, NULL); // get value of status
+            char *status = JSON_GetStringFromObject(deviceInfo, STATUS, NULL);
             event->services[i].paras->devices[j].status = status;
 
-            char *extension_info = JSON_GetStringFromObject(deviceInfo, EXTENSION_INFO, NULL); // get value of status
+            char *extension_info = JSON_GetStringFromObject(deviceInfo, EXTENSION_INFO, NULL);
             event->services[i].paras->devices[j].extension_info = extension_info;
 
             j++;
@@ -694,14 +691,13 @@ static int OnEventsGatewayAddOrDelete(int i, char *event_type, EN_IOTA_EVENT *ev
         event->services[i].event_type = EN_IOTA_EVENT_DELETE_SUB_DEVICE_NOTIFY;
         JSON *deviceInfo = NULL;
         cJSON_ArrayForEach(deviceInfo, devices) {
-            // get value of parent_device_id
-            char *parent_device_id = JSON_GetStringFromObject(deviceInfo, PARENT_DEVICE_ID, NULL); 
+            char *parent_device_id = JSON_GetStringFromObject(deviceInfo, PARENT_DEVICE_ID, NULL);
             event->services[i].paras->devices[j].parent_device_id = parent_device_id;
 
-            char *node_id = JSON_GetStringFromObject(deviceInfo, NODE_ID, NULL); // get value of node_id
+            char *node_id = JSON_GetStringFromObject(deviceInfo, NODE_ID, NULL);
             event->services[i].paras->devices[j].node_id = node_id;
 
-            char *device_id = JSON_GetStringFromObject(deviceInfo, DEVICE_ID, NULL); // get value of device_id
+            char *device_id = JSON_GetStringFromObject(deviceInfo, DEVICE_ID, NULL);
             event->services[i].paras->devices[j].device_id = device_id;
 
             j++;
@@ -711,10 +707,9 @@ static int OnEventsGatewayAddOrDelete(int i, char *event_type, EN_IOTA_EVENT *ev
     return 1;
 }
 
-static int OnEventsAddSubDeviceResponse(int i, char *event_type, EN_IOTA_EVENT *event, JSON *paras, JSON *serviceEvent)
+static int OnEventsAddSubDeviceResponse(int i, EN_IOTA_EVENT *event, JSON *paras, JSON *serviceEvent)
 {
-    // get value of event_id
-    char *event_id = JSON_GetStringFromObject(serviceEvent, EVENT_ID, NULL); 
+    char *event_id = JSON_GetStringFromObject(serviceEvent, EVENT_ID, NULL);
     event->services[i].event_id = event_id;
     event->services[i].event_type = EN_IOTA_EVENT_ADD_SUB_DEVICE_RESPONSE;
 
@@ -725,7 +720,6 @@ static int OnEventsAddSubDeviceResponse(int i, char *event_type, EN_IOTA_EVENT *
         return -1;
     }
 
-
     JSON *successful_devices = JSON_GetObjectFromObject(paras, SUCCESSFUL_DEVICES);
     int successful_devices_count = JSON_GetArraySize(successful_devices);
     event->services[i].gtw_add_device_paras->successful_devices_count = successful_devices_count;
@@ -733,7 +727,8 @@ static int OnEventsAddSubDeviceResponse(int i, char *event_type, EN_IOTA_EVENT *
     event->services[i].gtw_add_device_paras->successful_devices =
         (EN_IOTA_DEVICE_INFO *)malloc(sizeof(EN_IOTA_DEVICE_INFO) * successful_devices_count);
     if (event->services[i].gtw_add_device_paras->successful_devices == NULL) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsAddSubDeviceResponse(): successful_devices is not enough memory here.\n");
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsAddSubDeviceResponse(): "
+            "successful_devices is not enough memory here.\n");
         while (i >= 0) {
             MemFree(&event->services[i].gtw_add_device_paras);
             i--;
@@ -744,46 +739,45 @@ static int OnEventsAddSubDeviceResponse(int i, char *event_type, EN_IOTA_EVENT *
     int j = 0;
     JSON *deviceInfo = NULL;
     cJSON_ArrayForEach(deviceInfo, successful_devices) {
-        char *parent_device_id = JSON_GetStringFromObject(deviceInfo, PARENT_DEVICE_ID, NULL); // get value of parent_device_id
+        char *parent_device_id = JSON_GetStringFromObject(deviceInfo, PARENT_DEVICE_ID, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].parent_device_id = parent_device_id;
 
-        char *node_id = JSON_GetStringFromObject(deviceInfo, NODE_ID, NULL); // get value of node_id
+        char *node_id = JSON_GetStringFromObject(deviceInfo, NODE_ID, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].node_id = node_id;
 
-        char *device_id = JSON_GetStringFromObject(deviceInfo, DEVICE_ID, NULL); // get value of device_id
+        char *device_id = JSON_GetStringFromObject(deviceInfo, DEVICE_ID, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].device_id = device_id;
 
-        char *name = JSON_GetStringFromObject(deviceInfo, NAME, NULL); // get value of name
+        char *name = JSON_GetStringFromObject(deviceInfo, NAME, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].name = name;
 
-        char *description = JSON_GetStringFromObject(deviceInfo, DESCRIPTION, NULL); // get value of description
+        char *description = JSON_GetStringFromObject(deviceInfo, DESCRIPTION, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].description = description;
 
-        char *manufacturer_id = JSON_GetStringFromObject(deviceInfo, MANUFACTURER_ID, NULL); // get value of manufacturer_id
+        char *manufacturer_id = JSON_GetStringFromObject(deviceInfo, MANUFACTURER_ID, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].manufacturer_id = manufacturer_id;
 
-        char *model = JSON_GetStringFromObject(deviceInfo, MODEL, NULL); // get value of model
+        char *model = JSON_GetStringFromObject(deviceInfo, MODEL, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].model = model;
 
-        char *product_id = JSON_GetStringFromObject(deviceInfo, PRODUCT_ID, NULL); // get value of product_id
+        char *product_id = JSON_GetStringFromObject(deviceInfo, PRODUCT_ID, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].product_id = product_id;
 
-        char *fw_version = JSON_GetStringFromObject(deviceInfo, FW_VERSION, NULL); // get value of fw_version
+        char *fw_version = JSON_GetStringFromObject(deviceInfo, FW_VERSION, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].fw_version = fw_version;
 
-        char *sw_version = JSON_GetStringFromObject(deviceInfo, SW_VERSION, NULL); // get value of sw_version
+        char *sw_version = JSON_GetStringFromObject(deviceInfo, SW_VERSION, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].sw_version = sw_version;
 
-        char *status = JSON_GetStringFromObject(deviceInfo, STATUS, NULL); // get value of status
+        char *status = JSON_GetStringFromObject(deviceInfo, STATUS, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].status = status;
 
-        char *extension_info = JSON_GetStringFromObject(deviceInfo, EXTENSION_INFO, NULL); // get value of status
+        char *extension_info = JSON_GetStringFromObject(deviceInfo, EXTENSION_INFO, NULL);
         event->services[i].gtw_add_device_paras->successful_devices[j].extension_info = extension_info;
 
         j++;
         successful_devices_count--;
     }
-
 
     JSON *failed_devices = JSON_GetObjectFromObject(paras, FAILED_DEVICES);
     int failed_devices_count = JSON_GetArraySize(failed_devices);
@@ -800,10 +794,10 @@ static int OnEventsAddSubDeviceResponse(int i, char *event_type, EN_IOTA_EVENT *
     int k = 0;
     JSON *reason = NULL;
     cJSON_ArrayForEach(reason, failed_devices) {
-        char *node_id = JSON_GetStringFromObject(reason, NODE_ID, NULL); // get value of parent_device_id
+        char *node_id = JSON_GetStringFromObject(reason, NODE_ID, NULL);
         event->services[i].gtw_add_device_paras->failed_devices[k].node_id = node_id;
 
-        char *product_id = JSON_GetStringFromObject(reason, PRODUCT_ID, NULL); // get value of parent_device_id
+        char *product_id = JSON_GetStringFromObject(reason, PRODUCT_ID, NULL);
         event->services[i].gtw_add_device_paras->failed_devices[k].product_id = product_id;
 
         char *error_code = JSON_GetStringFromObject(reason, ERROR_CODE, NULL);
@@ -818,10 +812,9 @@ static int OnEventsAddSubDeviceResponse(int i, char *event_type, EN_IOTA_EVENT *
     return 1;
 }
 
-static int OnEventsDeleteSubDeviceResponse(int i, char *event_type, EN_IOTA_EVENT *event, JSON *paras, JSON *serviceEvent)
+static int OnEventsDeleteSubDeviceResponse(int i, EN_IOTA_EVENT *event, JSON *paras, JSON *serviceEvent)
 {
-    char *event_id = JSON_GetStringFromObject(serviceEvent, EVENT_ID, NULL); // get value of
-                                                                             // event_id
+    char *event_id = JSON_GetStringFromObject(serviceEvent, EVENT_ID, NULL);
     event->services[i].event_id = event_id;
     event->services[i].event_type = EN_IOTA_EVENT_DEL_SUB_DEVICE_RESPONSE;
 
@@ -832,15 +825,15 @@ static int OnEventsDeleteSubDeviceResponse(int i, char *event_type, EN_IOTA_EVEN
         return -1;
     }
 
-
     JSON *successful_devices = JSON_GetObjectFromObject(paras, SUCCESSFUL_DEVICES);
     int successful_devices_count = JSON_GetArraySize(successful_devices);
     event->services[i].gtw_del_device_paras->successful_devices_count = successful_devices_count;
 
     event->services[i].gtw_del_device_paras->successful_devices =
-        (HW_CHAR **)malloc(sizeof(HW_CHAR *) * successful_devices_count);
+        (HW_CHAR **)malloc(sizeof(HW_CHAR) * successful_devices_count);
     if (event->services[i].gtw_del_device_paras->successful_devices == NULL) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsDeleteSubDeviceResponse(): successful_devices is not enough memory here.\n");
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsDeleteSubDeviceResponse(): "
+            "successful_devices is not enough memory here.\n");
         return -1;
     }
 
@@ -851,7 +844,6 @@ static int OnEventsDeleteSubDeviceResponse(int i, char *event_type, EN_IOTA_EVEN
         j++;
         successful_devices_count--;
     }
-
 
     JSON *failed_devices = JSON_GetObjectFromObject(paras, FAILED_DEVICES);
     int failed_devices_count = JSON_GetArraySize(failed_devices);
@@ -880,23 +872,24 @@ static int OnEventsDeleteSubDeviceResponse(int i, char *event_type, EN_IOTA_EVEN
     return 1;
 }
 
-static int OnEventsDownManagerArrived(int i, char *event_type, EN_IOTA_EVENT *event, JSON *paras, char *message, JSON *serviceEvent)
+static int OnEventsDownManagerArrived(int i, char *event_type, EN_IOTA_EVENT *event,
+    JSON *paras, const char *message, JSON *serviceEvent)
 {
     // if it is the platform inform the gateway to add or delete the sub device
-    if (!strcmp(event_type, DELETE_SUB_DEVICE_NOTIFY) || !strcmp(event_type, ADD_SUB_DEVICE_NOTIFY)) {
+    if ((!strcmp(event_type, DELETE_SUB_DEVICE_NOTIFY)) || (!strcmp(event_type, ADD_SUB_DEVICE_NOTIFY))) {
         int ret = OnEventsGatewayAddOrDelete(i, event_type, event, paras, message);
         return ret;
     }
 
     // the response of gateway adding a sub device
     if (!strcmp(event_type, ADD_SUB_DEVICE_RESPONSE)) {
-        int ret = OnEventsAddSubDeviceResponse(i, event_type, event, paras, serviceEvent);
+        int ret = OnEventsAddSubDeviceResponse(i, event, paras, serviceEvent);
         return ret;
     }
 
     // the response of gateway deleting a sub device
     if (!strcmp(event_type, DEL_SUB_DEVICE_RESPONSE)) {
-        int ret = OnEventsDeleteSubDeviceResponse(i, event_type, event, paras, serviceEvent);
+        int ret = OnEventsDeleteSubDeviceResponse(i, event, paras, serviceEvent);
         return ret;
     }
     return 1;
@@ -923,32 +916,32 @@ static int OnEventsDownOtaArrived(EN_IOTA_SERVICE_EVENT *services, char *event_t
     }
 
     // firmware_upgrade or software_upgrade
-    if (services->event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE ||
-        services->event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE ||
-        services->event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE_V2 ||
-        services->event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE_V2) {
-        char *version = JSON_GetStringFromObject(paras, VERSION, NULL); // get value of version
+    if ((services->event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE) ||
+        (services->event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE) ||
+        (services->event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE_V2) ||
+        (services->event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE_V2)) {
+        char *version = JSON_GetStringFromObject(paras, VERSION, NULL);
         services->ota_paras->version = version;
 
-        char *url = JSON_GetStringFromObject(paras, URL, NULL); // get value of url
+        char *url = JSON_GetStringFromObject(paras, URL, NULL);
         services->ota_paras->url = url;
 
-        int file_size = JSON_GetIntFromObject(paras, FILE_SIZE, -1); // get value of file_size
+        int file_size = JSON_GetIntFromObject(paras, FILE_SIZE, -1);
         services->ota_paras->file_size = file_size;
 
-        char *access_token = JSON_GetStringFromObject(paras, ACCESS_TOKEN, NULL); // get value of access_token
+        char *access_token = JSON_GetStringFromObject(paras, ACCESS_TOKEN, NULL);
         services->ota_paras->access_token = access_token;
 
-        int expires = JSON_GetIntFromObject(paras, EXPIRES, -1); // get value of expires
+        int expires = JSON_GetIntFromObject(paras, EXPIRES, -1);
         services->ota_paras->expires = expires;
 
-        char *sign = JSON_GetStringFromObject(paras, SIGN, NULL); // get value of sign
+        char *sign = JSON_GetStringFromObject(paras, SIGN, NULL);
         services->ota_paras->sign = sign;
     }
     return 1;
 }
 
-static int OnEventsDownNtpArrived(EN_IOTA_SERVICE_EVENT *services, char *event_type, char *message)
+static int OnEventsDownNtpArrived(EN_IOTA_SERVICE_EVENT *services, char *event_type, const char *message)
 {
     services->ntp_paras = (EN_IOTA_NTP_PARAS *)malloc(sizeof(EN_IOTA_NTP_PARAS));
     if (services->ntp_paras == NULL) {
@@ -962,7 +955,7 @@ static int OnEventsDownNtpArrived(EN_IOTA_SERVICE_EVENT *services, char *event_t
         long long device_send_time = getLLongValueFromStr(message, DEVICE_SEND_TIME_JSON);
         long long server_recv_time = getLLongValueFromStr(message, SERVER_RECV_TIME_JSON);
         long long server_send_time = getLLongValueFromStr(message, SERVER_SEND_TIME_JSON);
-        if (device_send_time < 0 || server_recv_time < 0 || server_send_time < 0) {
+        if ((device_send_time < 0) || (server_recv_time < 0) || (server_send_time < 0)) {
             PrintfLog(EN_LOG_LEVEL_ERROR,
                 "getLLongValueFromStr(), Length out of bounds. Modifiable value LONG_LONG_MAX_LENGTH\n");
             return -1;
@@ -995,13 +988,13 @@ static int OnEventsDownLogArrived(EN_IOTA_SERVICE_EVENT *services, char *event_t
 
 static int OnEventsDownSoftBus(EN_IOTA_SERVICE_EVENT *services, char *event_type, JSON *paras)
 {
-   services->soft_bus_paras = (EN_IOTA_SOFT_BUS_PARAS*)malloc(sizeof(EN_IOTA_SOFT_BUS_PARAS));
+    services->soft_bus_paras = (EN_IOTA_SOFT_BUS_PARAS *)malloc(sizeof(EN_IOTA_SOFT_BUS_PARAS));
     if (services->soft_bus_paras == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsDownSoftBus(): is not enough memory here.\n");
         return -1;
     }
-   services->soft_bus_paras->bus_infos = cJSON_Print(paras);
-   
+    services->soft_bus_paras->bus_infos = cJSON_Print(paras);
+
 #if defined(SOFT_BUS_OPTION2)
     // 获取g_soft_bus_total地址
     soft_bus_total *softBusTotal = getSoftBusTotal();
@@ -1040,7 +1033,7 @@ static int OnEventsDownSoftBus(EN_IOTA_SERVICE_EVENT *services, char *event_type
         softBusInfos->bus_key = CombineStrings(1, busKey);
     }
     softBusTotal->count = i;
-#endif   
+#endif
     return 1;
 }
 
@@ -1064,7 +1057,8 @@ static int OnEventsDownTunnelArrived(EN_IOTA_SERVICE_EVENT *services, const char
     return 1;
 }
 
-static int OnEventsDownRemoteCfgArrived(EN_IOTA_SERVICE_EVENT *services, const char *event_type, JSON *paras, char *object_device_id)
+static int OnEventsDownRemoteCfgArrived(EN_IOTA_SERVICE_EVENT *services, const char *event_type,
+    JSON *paras, char *object_device_id)
 {
     ST_IOTA_DEVICE_CONFIG_RESULT deviceCfgRpt = {0};
     JSON *cfg = NULL;
@@ -1122,7 +1116,7 @@ static void OnEventsDownMemFree(EN_IOTA_EVENT *event, int services_count)
 }
 
 
-static void OnEventsDownArrived(void *context, int token, int code, char *message)
+static void OnEventsDownArrived(void *context, int token, int code, const char *message)
 {
     EN_IOTA_EVENT *event = (EN_IOTA_EVENT *)malloc(sizeof(EN_IOTA_EVENT));
     if (event == NULL) {
@@ -1140,24 +1134,21 @@ static void OnEventsDownArrived(void *context, int token, int code, char *messag
     event->mqtt_msg_info->messageId = token;
     event->mqtt_msg_info->code = code;
 
-
     JSON *root = JSON_Parse(message);
     if (root == NULL) {
         MemFree(&event->mqtt_msg_info);
         return;
     }
-    // get value of object_device_id
-    char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1"); 
+    char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1");
     event->object_device_id = object_device_id;
 
-    JSON *services = JSON_GetObjectFromObject(root, SERVICES); // get object of services
+    JSON *services = JSON_GetObjectFromObject(root, SERVICES);
 
     int services_count = 0;
-    services_count = JSON_GetArraySize(services); // get size of services
-
+    services_count = JSON_GetArraySize(services);
     if (services_count > MAX_EVENT_COUNT) {
         // you can increase the MAX_EVENT_COUNT in iota_init.h
-        PrintfLog(EN_LOG_LEVEL_ERROR, "messageArrivaled: services_count is too large.\n"); 
+        PrintfLog(EN_LOG_LEVEL_ERROR, "messageArrivaled: services_count is too large.\n");
         JSON_Delete(root);
         MemFree(&event);
         return;
@@ -1172,22 +1163,21 @@ static void OnEventsDownArrived(void *context, int token, int code, char *messag
         return;
     }
 
-
     int i = 0;
     JSON *serviceEvent = NULL;
     cJSON_ArrayForEach(serviceEvent, services) {
         if (serviceEvent) {
-            char *service_id = JSON_GetStringFromObject(serviceEvent, SERVICE_ID, NULL); // get value of service_id
-            event->services[i].servie_id = EN_IOTA_EVENT_ERROR;                          // init service id
+            char *service_id = JSON_GetStringFromObject(serviceEvent, SERVICE_ID, NULL); 
+            event->services[i].servie_id = EN_IOTA_EVENT_ERROR;
 
             char *event_type = NULL; // To determine whether to add or delete a sub device
-            event_type = JSON_GetStringFromObject(serviceEvent, EVENT_TYPE, NULL); // get value of event_type
-            event->services[i].event_type = EN_IOTA_EVENT_TYPE_ERROR;              // init event type
+            event_type = JSON_GetStringFromObject(serviceEvent, EVENT_TYPE, NULL);
+            event->services[i].event_type = EN_IOTA_EVENT_TYPE_ERROR;
 
-            char *event_time = JSON_GetStringFromObject(serviceEvent, EVENT_TIME, NULL); // get value of event_time
+            char *event_time = JSON_GetStringFromObject(serviceEvent, EVENT_TIME, NULL);
             event->services[i].event_time = event_time;
 
-            JSON *paras = JSON_GetObjectFromObject(serviceEvent, PARAS); // get object of paras
+            JSON *paras = JSON_GetObjectFromObject(serviceEvent, PARAS);
 
             // sub device manager
             if (!strcmp(service_id, SUB_DEVICE_MANAGER)) {
@@ -1251,10 +1241,10 @@ static void OnEventsDownArrived(void *context, int token, int code, char *messag
                     MemFree(&event->mqtt_msg_info);
                     MemFree(&event);
                     return;
-                }		
+                }
             }
 
-			// tunnel manager
+            // tunnel manager
             if (!strcmp(service_id, TUNNEL_MGR)) {
                 event->services[i].servie_id = EN_IOTA_EVENT_TUNNEL_MANAGER;
                 int ret = OnEventsDownTunnelArrived(&event->services[i], event_type, paras);
@@ -1268,7 +1258,7 @@ static void OnEventsDownArrived(void *context, int token, int code, char *messag
             // device rule
             if (!strcmp(service_id, DEVICE_RULE)) {
                 char *payload = cJSON_Print(paras);
-                if(payload == NULL) {
+                if (payload == NULL) {
                     return;
                 }
                 RuleMgr_Parse(payload);
@@ -1353,7 +1343,6 @@ static void OnMessageArrived(void *context, int token, int code, const char *top
         OnM2mMessagesDownArrived(context, token, code, message);
         return;
     }
-
 }
 
 void SetLogCallback(LOG_CALLBACK_HANDLER logCallbackHandler)
@@ -1361,54 +1350,54 @@ void SetLogCallback(LOG_CALLBACK_HANDLER logCallbackHandler)
     SetPrintfLogCallback(logCallbackHandler);
 }
 
-void SetEventCallback(EVENT_CALLBACK_HANDLER pfnCallbackHandler)
+void SetEventCallback(EVENT_CALLBACK_HANDLER callbackHandler)
 {
-    onEventDown = pfnCallbackHandler;
+    onEventDown = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
-void SetCmdCallback(CMD_CALLBACK_HANDLER pfnCallbackHandler)
+void SetCmdCallback(CMD_CALLBACK_HANDLER callbackHandler)
 {
-    onCmd = pfnCallbackHandler;
+    onCmd = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
-void SetCmdCallbackV3(CMD_CALLBACK_HANDLER_V3 pfnCallbackHandler)
+void SetCmdCallbackV3(CMD_CALLBACK_HANDLER_V3 callbackHandler)
 {
-    onCmdV3 = pfnCallbackHandler;
+    onCmdV3 = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
-void SetProtocolCallback(EN_CALLBACK_SETTING item, PROTOCOL_CALLBACK_HANDLER pfnCallbackHandler)
+void SetProtocolCallback(EN_CALLBACK_SETTING item, PROTOCOL_CALLBACK_HANDLER callbackHandler)
 {
     switch (item) {
         case EN_CALLBACK_CONNECT_SUCCESS:
-            onConnSuccess = pfnCallbackHandler;
+            onConnSuccess = callbackHandler;
             MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_CONNECT_SUCCESS, OnLoginSuccess);
             break;
         case EN_CALLBACK_CONNECT_FAILURE:
-            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_CONNECT_FAILURE, pfnCallbackHandler);
+            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_CONNECT_FAILURE, callbackHandler);
             break;
         case EN_CALLBACK_DISCONNECT_SUCCESS:
-            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_DISCONNECT_SUCCESS, pfnCallbackHandler);
+            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_DISCONNECT_SUCCESS, callbackHandler);
             break;
         case EN_CALLBACK_DISCONNECT_FAILURE:
-            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_DISCONNECT_FAILURE, pfnCallbackHandler);
+            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_DISCONNECT_FAILURE, callbackHandler);
             break;
         case EN_CALLBACK_CONNECTION_LOST:
-            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_CONNECTION_LOST, pfnCallbackHandler);
+            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_CONNECTION_LOST, callbackHandler);
             break;
         case EN_CALLBACK_PUBLISH_SUCCESS:
-            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_PUBLISH_SUCCESS, pfnCallbackHandler);
+            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_PUBLISH_SUCCESS, callbackHandler);
             break;
         case EN_CALLBACK_PUBLISH_FAILURE:
-            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_PUBLISH_FAILURE, pfnCallbackHandler);
+            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_PUBLISH_FAILURE, callbackHandler);
             break;
         case EN_CALLBACK_SUBSCRIBE_SUCCESS:
-            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_SUBSCRIBE_SUCCESS, pfnCallbackHandler);
+            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_SUBSCRIBE_SUCCESS, callbackHandler);
             break;
         case EN_CALLBACK_SUBSCRIBE_FAILURE:
-            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_SUBSCRIBE_FAILURE, pfnCallbackHandler);
+            MqttBase_SetCallback(EN_MQTT_BASE_CALLBACK_SUBSCRIBE_FAILURE, callbackHandler);
             break;
         default:
             PrintfLog(EN_LOG_LEVEL_WARNING,
@@ -1416,52 +1405,54 @@ void SetProtocolCallback(EN_CALLBACK_SETTING item, PROTOCOL_CALLBACK_HANDLER pfn
     }
 }
 
-void SetMessageCallback(MESSAGE_CALLBACK_HANDLER pfnCallbackHandler)
+void SetMessageCallback(MESSAGE_CALLBACK_HANDLER callbackHandler)
 {
-    onMessage = pfnCallbackHandler;
+    onMessage = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
-void SetPropSetCallback(PROP_SET_CALLBACK_HANDLER pfnCallbackHandler)
+void SetPropSetCallback(PROP_SET_CALLBACK_HANDLER callbackHandler)
 {
-    onPropertiesSet = pfnCallbackHandler;
+    onPropertiesSet = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
-void SetPropGetCallback(PROP_GET_CALLBACK_HANDLER pfnCallbackHandler)
+void SetPropGetCallback(PROP_GET_CALLBACK_HANDLER callbackHandler)
 {
-    onPropertiesGet = pfnCallbackHandler;
+    onPropertiesGet = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
-void SetShadowGetCallback(SHADOW_GET_CALLBACK_HANDLER pfnCallbackHandler)
+void SetShadowGetCallback(SHADOW_GET_CALLBACK_HANDLER callbackHandler)
 {
-    onDeviceShadow = pfnCallbackHandler;
+    onDeviceShadow = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
-void SetUserTopicMsgCallback(USER_TOPIC_MSG_CALLBACK_HANDLER pfnCallbackHandler)
+void SetUserTopicMsgCallback(USER_TOPIC_MSG_CALLBACK_HANDLER callbackHandler)
 {
-    onUserTopicMessage = pfnCallbackHandler;
+    onUserTopicMessage = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
-void SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler)
+void SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER callbackHandler)
 {
-    onBootstrap = pfnCallbackHandler;
+    onBootstrap = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
-void SetDeviceRuleSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler)
+void SetDeviceRuleSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER callbackHandler)
 {
-    RuleMgr_SetSendMsgCallback(pfnCallbackHandler);
+    RuleMgr_SetSendMsgCallback(callbackHandler);
 }
 
-void SetM2mCallback(M2M_CALLBACK_HANDLER pfnCallbackHandler) {
-    onM2mMessage = pfnCallbackHandler;
+void SetM2mCallback(M2M_CALLBACK_HANDLER callbackHandler)
+{
+    onM2mMessage = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
-void SetDeviceConfigCallback(DEVICE_CONFIG_CALLBACK_HANDLER pfnCallbackHandler) {
-    onDeviceConfig = pfnCallbackHandler;
+void SetDeviceConfigCallback(DEVICE_CONFIG_CALLBACK_HANDLER callbackHandler)
+{
+    onDeviceConfig = callbackHandler;
 }

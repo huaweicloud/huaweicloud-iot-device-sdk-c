@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,13 +34,13 @@
 
 #if defined(MQTTV5)
 // Linked list deletion
-int mqttV5_listFree(MQTTV5_USER_PRO *mqtt_data)
+void mqttV5_listFree(MQTTV5_USER_PRO *mqttData)
 {
-    if (mqtt_data == NULL) {
-        return 0;
+    if (mqttData == NULL) {
+        return;
     }
-    MQTTV5_USER_PRO *propertiesA = mqtt_data;
-    MQTTV5_USER_PRO *propertiesB = mqtt_data->nex;
+    MQTTV5_USER_PRO *propertiesA = mqttData;
+    MQTTV5_USER_PRO *propertiesB = mqttData->nex;
 
     while (propertiesA != NULL) {
         free(propertiesA);
@@ -49,6 +49,5 @@ int mqttV5_listFree(MQTTV5_USER_PRO *mqtt_data)
             propertiesB = propertiesA->nex;
         }
     }
-    return 0;
 }
 #endif

@@ -177,8 +177,9 @@ HW_BOOL ConvertTimeStrToSeconds(int *secondInDay, const char *s)
     if (s == NULL) {
         return HW_FALSE;
     }
-    int hour, min, sec;
-    sec = 0;
+    int hour = 0;
+    int min = 0;
+    int sec = 0;
     if ((sscanf_s(s, "%d:%d:%d", &hour, &min, &sec) != -1) || (sscanf_s(s, "%d:%d", &hour, &min) != -1)) {
         *secondInDay = HHMMSStoSecond(hour, min, sec);
         return HW_TRUE;

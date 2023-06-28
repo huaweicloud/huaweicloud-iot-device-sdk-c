@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,24 +28,25 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdio.h>
 #include "base.h"
 #include "callback_func.h"
-#include "stdio.h"
-#include "iota_init.h"
 #include "iota_cfg.h"
 #include "iota_error_type.h"
 #include "securec.h"
 #include "rule_trans.h"
 #include "rule_manager.h"
 #include "log_util.h"
+#include "iota_init.h"
 
-HW_API_FUNC HW_INT IOTA_Init(HW_CHAR *pcWorkPath)
+#define MAX_UINT_DIGIT_LENGTH 10
+HW_API_FUNC HW_INT IOTA_Init(HW_CHAR *workPath)
 {
-    if(!RuleMgr_Init()) {
-		PrintfLog(EN_LOG_LEVEL_ERROR, "can't create rule info list\n");
-	}
+    if (!RuleMgr_Init()) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "can't create rule info list\n");
+    }
 
-    return init(pcWorkPath);
+    return init(workPath);
 }
 
 HW_API_FUNC HW_INT IOTA_Destroy()
@@ -53,19 +54,19 @@ HW_API_FUNC HW_INT IOTA_Destroy()
     return destory();
 }
 
-HW_API_FUNC HW_INT IOTA_ConfigSetStr(HW_INT iItem, HW_CHAR *pValue)
+HW_API_FUNC HW_INT IOTA_ConfigSetStr(HW_INT item, HW_CHAR *value)
 {
-    if(iItem == EN_IOTA_CFG_DEVICEID) {
-        RuleMgr_SetCurrentUserName(pValue);
+    if (item == EN_IOTA_CFG_DEVICEID) {
+        RuleMgr_SetCurrentUserName(value);
     }
-    return SetConfig(iItem, pValue);
+    return SetConfig(item, value);
 }
 
-HW_API_FUNC HW_INT IOTA_ConfigSetUint(HW_INT iItem, HW_UINT uiValue)
+HW_API_FUNC HW_INT IOTA_ConfigSetUint(HW_INT item, HW_UINT value)
 {
-    char str[10];
-    sprintf_s(str, sizeof(str), "%u", uiValue);
-    return SetConfig(iItem, str);
+    char str[MAX_UINT_DIGIT_LENGTH] = {0};
+    (void)sprintf_s(str, sizeof(str), "%u", value);
+    return SetConfig(item, str);
 }
 
 HW_API_FUNC HW_VOID IOTA_SetPrintLogCallback(PFN_LOG_CALLBACK_HANDLER pfnLogCallbackHandler)
@@ -73,51 +74,52 @@ HW_API_FUNC HW_VOID IOTA_SetPrintLogCallback(PFN_LOG_CALLBACK_HANDLER pfnLogCall
     SetLogCallback(pfnLogCallbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetEventCallback(PFN_EVENT_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetEventCallback(PFN_EVENT_CALLBACK_HANDLER callbackHandler)
 {
-    SetEventCallback(pfnCallbackHandler);
+    SetEventCallback(callbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER callbackHandler)
 {
-    RuleMgr_SetCommandCallbackHandler(pfnCallbackHandler);
-    SetCmdCallback(pfnCallbackHandler);
+    RuleMgr_SetCommandCallbackHandler(callbackHandler);
+    SetCmdCallback(callbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetCmdCallbackV3(PFN_CMD_CALLBACK_HANDLER_V3 pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetCmdCallbackV3(PFN_CMD_CALLBACK_HANDLER_V3 callbackHandler)
 {
-    SetCmdCallbackV3(pfnCallbackHandler);
+    SetCmdCallbackV3(callbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SETTING item, PFN_PROTOCOL_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SETTING item,
+    PFN_PROTOCOL_CALLBACK_HANDLER callbackHandler)
 {
-     switch (item) {
+    switch (item) {
         case EN_IOTA_CALLBACK_CONNECT_SUCCESS:
-            SetProtocolCallback(EN_CALLBACK_CONNECT_SUCCESS, pfnCallbackHandler);
+            SetProtocolCallback(EN_CALLBACK_CONNECT_SUCCESS, callbackHandler);
             break;
         case EN_IOTA_CALLBACK_CONNECT_FAILURE:
-            SetProtocolCallback(EN_CALLBACK_CONNECT_FAILURE, pfnCallbackHandler);
+            SetProtocolCallback(EN_CALLBACK_CONNECT_FAILURE, callbackHandler);
             break;
         case EN_IOTA_CALLBACK_DISCONNECT_SUCCESS:
-            SetProtocolCallback(EN_CALLBACK_DISCONNECT_SUCCESS, pfnCallbackHandler);
+            SetProtocolCallback(EN_CALLBACK_DISCONNECT_SUCCESS, callbackHandler);
             break;
         case EN_IOTA_CALLBACK_DISCONNECT_FAILURE:
-            SetProtocolCallback(EN_CALLBACK_DISCONNECT_FAILURE, pfnCallbackHandler);
+            SetProtocolCallback(EN_CALLBACK_DISCONNECT_FAILURE, callbackHandler);
             break;
         case EN_IOTA_CALLBACK_CONNECTION_LOST:
-            SetProtocolCallback(EN_CALLBACK_CONNECTION_LOST, pfnCallbackHandler);
+            SetProtocolCallback(EN_CALLBACK_CONNECTION_LOST, callbackHandler);
             break;
         case EN_IOTA_CALLBACK_PUBLISH_SUCCESS:
-            SetProtocolCallback(EN_CALLBACK_PUBLISH_SUCCESS, pfnCallbackHandler);
+            SetProtocolCallback(EN_CALLBACK_PUBLISH_SUCCESS, callbackHandler);
             break;
         case EN_IOTA_CALLBACK_PUBLISH_FAILURE:
-            SetProtocolCallback(EN_CALLBACK_PUBLISH_FAILURE, pfnCallbackHandler);
+            SetProtocolCallback(EN_CALLBACK_PUBLISH_FAILURE, callbackHandler);
             break;
         case EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS:
-            SetProtocolCallback(EN_CALLBACK_SUBSCRIBE_SUCCESS, pfnCallbackHandler);
+            SetProtocolCallback(EN_CALLBACK_SUBSCRIBE_SUCCESS, callbackHandler);
             break;
         case EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE:
-            SetProtocolCallback(EN_CALLBACK_SUBSCRIBE_FAILURE, pfnCallbackHandler);
+            SetProtocolCallback(EN_CALLBACK_SUBSCRIBE_FAILURE, callbackHandler);
             break;
         default:
             PrintfLog(EN_LOG_LEVEL_WARNING,
@@ -125,44 +127,44 @@ HW_API_FUNC HW_VOID IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SETTING item, PFN_
     }
 }
 
-HW_API_FUNC HW_VOID IOTA_SetMessageCallback(PFN_MESSAGE_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetMessageCallback(PFN_MESSAGE_CALLBACK_HANDLER callbackHandler)
 {
-    SetMessageCallback(pfnCallbackHandler);
+    SetMessageCallback(callbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetPropSetCallback(PFN_PROP_SET_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetPropSetCallback(PFN_PROP_SET_CALLBACK_HANDLER callbackHandler)
 {
-    SetPropSetCallback(pfnCallbackHandler);
+    SetPropSetCallback(callbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetPropGetCallback(PFN_PROP_GET_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetPropGetCallback(PFN_PROP_GET_CALLBACK_HANDLER callbackHandler)
 {
-    SetPropGetCallback(pfnCallbackHandler);
+    SetPropGetCallback(callbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetShadowGetCallback(PFN_SHADOW_GET_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetShadowGetCallback(PFN_SHADOW_GET_CALLBACK_HANDLER callbackHandler)
 {
-    SetShadowGetCallback(pfnCallbackHandler);
+    SetShadowGetCallback(callbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetUserTopicMsgCallback(PFN_USER_TOPIC_MSG_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetUserTopicMsgCallback(PFN_USER_TOPIC_MSG_CALLBACK_HANDLER callbackHandler)
 {
-    SetUserTopicMsgCallback(pfnCallbackHandler);
+    SetUserTopicMsgCallback(callbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetBootstrapCallback(PFN_BOOTSTRAP_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetBootstrapCallback(PFN_BOOTSTRAP_CALLBACK_HANDLER callbackHandler)
 {
-    SetBootstrapCallback(pfnCallbackHandler);
+    SetBootstrapCallback(callbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetDeviceRuleSendMsgCallback(PFN_DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetDeviceRuleSendMsgCallback(PFN_DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER callbackHandler)
 {
-    SetDeviceRuleSendMsgCallback(pfnCallbackHandler);
+    SetDeviceRuleSendMsgCallback(callbackHandler);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetM2mCallback(PFN_M2M_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetM2mCallback(PFN_M2M_CALLBACK_HANDLER callbackHandler)
 {
-	SetM2mCallback(pfnCallbackHandler);
+    SetM2mCallback(callbackHandler);
 }
 
 HW_API_FUNC HW_VOID IOTA_EnableDeviceRuleStorage(const char *filepath)
@@ -170,7 +172,7 @@ HW_API_FUNC HW_VOID IOTA_EnableDeviceRuleStorage(const char *filepath)
     RuleMgr_EnableDeviceRuleStorage(filepath);
 }
 
-HW_API_FUNC HW_VOID IOTA_SetDeviceConfigCallback(PFN_DEVICE_CONFIG_CALLBACK_HANDLER pfnCallbackHandler)
+HW_API_FUNC HW_VOID IOTA_SetDeviceConfigCallback(PFN_DEVICE_CONFIG_CALLBACK_HANDLER callbackHandler)
 {
-    SetDeviceConfigCallback(pfnCallbackHandler);
+    SetDeviceConfigCallback(callbackHandler);
 }
