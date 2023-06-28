@@ -28,10 +28,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _RULE_TRANS_H_
-#define _RULE_TRANS_H_
+#ifndef RULE_TRANS_H
+#define RULE_TRANS_H
 
-#include <cJSON.h>
+#include "cJSON.h"
 
 void RuleTrans_DeviceRuleUpdate(char *props);
 void RuleTrans_DeviceRuleUpdateByJSON(cJSON *properties);

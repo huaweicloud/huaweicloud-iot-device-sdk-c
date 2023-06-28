@@ -31,9 +31,9 @@
 #include <pthread.h>
 #include <time.h>
 #include <stdlib.h>
-#include <linux/limits.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <linux/limits.h>
 
 #include "securec.h"
 #include "mqtt_base.h"
@@ -42,11 +42,11 @@
 #include "string_util.h"
 #include "mqtt_base.h"
 #include "rule_util.h"
-#include "rule_manager.h"
 #include "iota_datatrans.h"
 #include "rule_execution.h"
+#include "rule_manager.h"
 
-#ifdef DEVIC_ERULE_ENALBE
+#ifdef DEVICE_RULE_ENALBE
 
 typedef struct {
     char *str;
@@ -204,10 +204,12 @@ RELEASE:
 static void executeCommandCallback(const char *deviceId, const Command *commandIn)
 {
     ExeucutionThreadArg *args = malloc(sizeof(ExeucutionThreadArg));
-    if (args == NULL || memset_s(args, sizeof(ExeucutionThreadArg), 0, sizeof(ExeucutionThreadArg)) != EOK) {
-        DEVICE_RULE_ERROR("memset_s ExeucutionThreadArg error");
+    if (args == NULL) {
+        DEVICE_RULE_ERROR("ExeucutionThreadArg allocation error");
         return;
     }
+    (void)memset_s(args, sizeof(ExeucutionThreadArg), 0, sizeof(ExeucutionThreadArg));
+
     if (!CStrDuplicate(&args->deviceId, deviceId)) {
         DEVICE_RULE_ERROR("can't copy serviceId name");
         goto ERROR_RELEASE;
@@ -244,9 +246,9 @@ void RuleMgr_SetSendMsgCallback(PFN_DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER cb)
     g_deviceRuleSendMsgCallBack = cb;
 }
 
-void RuleMgr_SetCommandCallbackHandler(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandler)
+void RuleMgr_SetCommandCallbackHandler(PFN_CMD_CALLBACK_HANDLER callbackHandler)
 {
-    g_commandCallbackHandler = pfnCallbackHandler;
+    g_commandCallbackHandler = callbackHandler;
 }
 
 HW_BOOL RuleMgr_SetCurrentUserName(const char *username)
@@ -410,7 +412,7 @@ static void RuleJSONObjSaveToFile(const char *filePath)
     DEVICE_RULE_DEBUG("%s", content);
 
     char realFilePath[PATH_MAX] = {0};
-    if(realpath(filePath, realFilePath) == NULL) {
+    if (realpath(filePath, realFilePath) == NULL) {
         DEVICE_RULE_ERROR("realpath can't reslove path");
         free(content);
         return;
@@ -576,7 +578,7 @@ void RuleMgr_EnableDeviceRuleStorage(const char *filePath)
     FILE *fp = NULL;
     char realFilePath[PATH_MAX] = {0};
 
-    if(realpath(filePath, realFilePath) == NULL) {
+    if (realpath(filePath, realFilePath) == NULL) {
         DEVICE_RULE_WARN("realpath can't resolve path");
         goto FAIL;
     }

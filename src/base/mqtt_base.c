@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -41,10 +41,10 @@
 #include "securec.h"
 #include "string_util.h"
 #include "log_util.h"
-#include "mqtt_base.h"
 #include "hmac_sha256.h"
 #include "iota_error_type.h"
 #include "mqttv5_util.h"
+#include "mqtt_base.h"
 
 #if defined(WIN32) || defined(WIN64)
 
@@ -73,83 +73,89 @@ typedef int (*pMQTTProperty_getType)(enum MQTTPropertyCodes value);
 typedef const char *(*pMQTTPropertyName)(enum MQTTPropertyCodes value);
 #endif
 
-pthread_mutex_t login_locker = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t g_loginLocker = PTHREAD_MUTEX_INITIALIZER;
 
-int gQOS = DEFAULT_QOS;                              // default value of qos is 1
-int keepAliveInterval = DEFAULT_KEEP_ALIVE_INTERVAL; // default value of keepAliveInterval is 120s
-int connectTimeout = DEFAULT_CONNECT_TIME_OUT;       // default value of connect timeout is 30s
-int retryInterval = DEFAULT_RETRYINTERVAL;           // default value of connect retryInterval is 10s
+static int g_QoS = DEFAULT_QOS;                              // default value of qos is 1
+static int g_keepAliveInterval = DEFAULT_KEEP_ALIVE_INTERVAL; // default value of g_keepAliveInterval is 120s
+static int g_connectTimeout = DEFAULT_CONNECT_TIME_OUT;       // default value of connect timeout is 30s
+static int g_retryInterval = DEFAULT_RETRYINTERVAL;           // default value of connect g_retryInterval is 10s
 
-char *serverIp = NULL;
-char *port = NULL;
-char *username = NULL; // deviceId
-char *password = NULL;
-int authMode = 0;
-char *urlPrefix = TCP_URL_PREFIX;
-char *bs_scope_id = NULL;
-int bs_reg_mode = 0;
+static char *g_serverIp = NULL;
+static char *g_port = NULL;
+static char *g_username = NULL; // deviceId
+static char *g_password = NULL;
+static int g_authMode = 0;
+static char *g_urlPrefix = TCP_URL_PREFIX;
+static char *g_bsScopeId = NULL;
+static int g_bsRegMode = 0;
 
-char *workDir = NULL;
-char *logDir = NULL;
+static char *g_workDir = NULL;
 
-int verifyCert = 0;
-int initFlag = 0;
-int checkTimestamp = 0;       // checking timestamp, 0 is not checking㏒? others are checking.The default value is 1;
-int mqttClientCreateFlag = 0; // this mqttClientCreateFlag is used to control the invocation of MQTTAsync_create,
-                              // otherwise, there would be message leak.
+static int g_verifyCert = 0;
+static int g_initFlag = 0;
+static int g_checkTimestamp = 0;         // checking timestamp, 0 is not checking, others are checking.The default value is 0;
+static int g_mqttClientCreateFlag = 0;   // this mqttClientCreateFlag is used to control the invocation of MQTTAsync_create,
+// otherwise, there would be message leak.
 
-char *ca_path = NULL;
-char *cert_path = NULL;
-char *key_path = NULL;
-char *privateKeyPassword = NULL; // privateKeyPassword in cert mode device
+static char *g_caPath = NULL;
+static char *g_certPath = NULL;
+static char *g_keyPath = NULL;
+static char *g_privateKeyPassword = NULL; // privateKeyPassword in cert mode device
 
-MQTTAsync client = NULL;
+static MQTTAsync g_client = NULL;
 
 #if defined(WIN32) || defined(WIN64)
 HMODULE mqttdll = NULL;
 #endif
 
-char *encrypted_password = NULL;
+static  char *g_encryptedPassword = NULL;
 
 int GetEncryptedPassword(char **timestamp, char **encryptedPwd)
 {
-    if (password == NULL) {
+    if (g_password == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR,
             "MqttBase: GetEncryptedPassword() error, password is NULL, please set the required parameters properly\n");
         return IOTA_PARAMETER_EMPTY;
     }
 
-    char *temp_pwd = NULL;
-    if (CopyStrValue(&temp_pwd, (const char *)password, StringLength(password)) < 0) {
+    char *tempPwd = NULL;
+    if (CopyStrValue(&tempPwd, (const char *)g_password, StringLength(g_password)) < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "GetEncryptedPassword(): there is not enough memory here.\n");
         return IOTA_FAILURE;
     }
 
-    char *temp_encrypted_pwd = NULL;
-    StringMalloc(&temp_encrypted_pwd, PASSWORD_ENCRYPT_LENGTH + 1);
-    if (temp_encrypted_pwd == NULL) {
+    char *tempEncryptedPwd = NULL;
+    StringMalloc(&tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH + 1);
+    if (tempEncryptedPwd == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: GetEncryptedPassword() error, there is not enough memory here.\n");
-        MemFree(&temp_pwd);
+        (void)memset_s(tempPwd, StringLength(tempPwd), 0, StringLength(tempPwd));
+        MemFree(&tempPwd);
         return IOTA_FAILURE;
     }
 
-    int ret = EncryWithHMac(temp_pwd, timestamp, ENCRYPT_LENGTH, temp_encrypted_pwd, checkTimestamp);
+    int ret = EncryptWithHMac(tempPwd, timestamp, ENCRYPT_LENGTH, tempEncryptedPwd, g_checkTimestamp);
     if (ret != IOTA_SUCCESS) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: GetEncryptedPassword() error, encrypt failed %d\n", ret);
-        MemFree(&temp_pwd);
-        MemFree(&temp_encrypted_pwd);
+        (void)memset_s(tempPwd, StringLength(tempPwd), 0, StringLength(tempPwd));
+        (void)memset_s(tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH, 0, PASSWORD_ENCRYPT_LENGTH);
+        MemFree(&tempPwd);
+        MemFree(&tempEncryptedPwd);
         return IOTA_SECRET_ENCRYPT_FAILED;
     }
 
-    if (CopyStrValue(encryptedPwd, (const char *)temp_encrypted_pwd, PASSWORD_ENCRYPT_LENGTH) < 0) {
+    if (CopyStrValue(encryptedPwd, (const char *)tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH) < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "GetEncryptedPassword(): there is not enough memory here.\n");
-        MemFree(&temp_pwd);
-        MemFree(&temp_encrypted_pwd);
+        (void)memset_s(tempPwd, StringLength(tempPwd), 0, StringLength(tempPwd));
+        (void)memset_s(tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH, 0, PASSWORD_ENCRYPT_LENGTH);
+        MemFree(&tempPwd);
+        MemFree(&tempEncryptedPwd);
         return IOTA_FAILURE;
     }
-
-    MemFree(&temp_pwd);
-    MemFree(&temp_encrypted_pwd);
+    // clear sensitive password info
+    (void)memset_s(tempPwd, StringLength(tempPwd), 0, StringLength(tempPwd));
+    (void)memset_s(tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH, 0, PASSWORD_ENCRYPT_LENGTH);
+    MemFree(&tempPwd);
+    MemFree(&tempEncryptedPwd);
     return IOTA_SUCCESS;
 }
 
@@ -219,7 +225,6 @@ static void HandleCallbackFailure5(const char *currentFunctionName, MQTT_BASE_CA
     } else {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: %s error, response is NULL\n", currentFunctionName);
 
-
         protocolRsp->mqtt_msg_info->context = context;
         protocolRsp->mqtt_msg_info->messageId = 0;
         protocolRsp->mqtt_msg_info->code = IOTA_FAILURE;
@@ -272,13 +277,13 @@ static void HandleCallbackSuccess5(const char *currentFunctionName, MQTT_BASE_CA
 
 static MQTTV5_DATA DataConversionArrived(MQTTProperties *props)
 {
-    MQTTV5_DATA mqttv5_por = mqttv5_initializer;
+    MQTTV5_DATA mqttv5Porperties = mqttv5_initializer;
     if (props->count == 0) {
-        return mqttv5_por;
+        return mqttv5Porperties;
     }
     int i = 0;
-    int user_identification = 0;
-    MQTTV5_USER_PRO *user_head;
+    int userIdentification = 0;
+    MQTTV5_USER_PRO *userHead;
     MQTTV5_USER_PRO *p = NULL;
 
     for (i = 0; i < props->count; ++i) {
@@ -290,23 +295,23 @@ static MQTTV5_DATA DataConversionArrived(MQTTProperties *props)
             user->Value = props->array[i].value.value.data;
             user->nex = NULL;
 
-            if (user_identification == 0) {
-                user_identification = 1;
-                user_head = user;
+            if (userIdentification == 0) {
+                userIdentification = 1;
+                userHead = user;
             } else {
                 p->nex = user;
             }
             p = user;
         } else if (id == MQTTPROPERTY_CODE_CONTENT_TYPE) {
-            mqttv5_por.contnt_type = props->array[i].value.data.data;
+            mqttv5Porperties.contnt_type = props->array[i].value.data.data;
         } else if (id == MQTTPROPERTY_CODE_RESPONSE_TOPIC) {
-            mqttv5_por.response_topic = props->array[i].value.data.data;
+            mqttv5Porperties.response_topic = props->array[i].value.data.data;
         } else if (id == MQTTPROPERTY_CODE_CORRELATION_DATA) {
-            mqttv5_por.correlation_data = props->array[i].value.data.data;
+            mqttv5Porperties.correlation_data = props->array[i].value.data.data;
         }
     }
-    mqttv5_por.properties = user_head;
-    return mqttv5_por;
+    mqttv5Porperties.properties = userHead;
+    return mqttv5Porperties;
 }
 
 static MQTTProperties DataConversion(MQTTV5_DATA *properties)
@@ -657,16 +662,16 @@ void MqttBase_SetMessageArrivedCallback(MQTT_BASE_CALLBACK_HANDLER_WITH_TOPIC ha
 
 int MqttBase_init(char *workPath)
 {
-    serverIp = NULL;
-    port = NULL;
-    username = NULL; // deviceId
-    password = NULL;
-    client = NULL;
-    bs_scope_id = NULL;
-    authMode = 0;
-    bs_reg_mode = 0;
-    privateKeyPassword = NULL;
-    if (initFlag) {
+    g_serverIp = NULL;
+    g_port = NULL;
+    g_username = NULL; // deviceId
+    g_password = NULL;
+    g_client = NULL;
+    g_bsScopeId = NULL;
+    g_authMode = 0;
+    g_bsRegMode = 0;
+    g_privateKeyPassword = NULL;
+    if (g_initFlag) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_init() error, DO NOT init again\n");
         return IOTA_INITIALIZATION_REPEATED;
     }
@@ -681,17 +686,17 @@ int MqttBase_init(char *workPath)
         return IOTA_RESOURCE_NOT_AVAILABLE;
     }
 
-    initFlag = 1;
+    g_initFlag = 1;
 
-    pthread_mutex_init(&login_locker, NULL);
+    pthread_mutex_init(&g_loginLocker, NULL);
 
-    if (CopyStrValue(&workDir, (const char *)workPath, StringLength(workPath)) < 0) {
+    if (CopyStrValue(&g_workDir, (const char *)workPath, StringLength(workPath)) < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase_init(): there is not enough memory here.\n");
         return IOTA_FAILURE;
     }
     // ca_path cannot be released until the programe is destoried,must replace with "/conf/bsrootcert.pem" for
     // bootstraping
-    ca_path = CombineStrings(2, workDir, "/conf/rootcert.pem");
+    g_caPath = CombineStrings(2, g_workDir, "/conf/rootcert.pem");
 
 #if defined(WIN32) || defined(WIN64)
     char *libPath = CombineStrings(2, workDir, "/lib/paho-mqtt3as.dll");
@@ -711,13 +716,13 @@ int MqttBase_init(char *workPath)
 
 static void MqttBase_SetPort(char *value, int valueLen)
 {
-    MemFree(&port);
+    MemFree(&g_port);
     // port should not be free until the program finishes.
-    CopyStrValue(&port, (const char *)value, valueLen);
-    if (StrInStr(port, MQTT_PORT)) {
-        urlPrefix = TCP_URL_PREFIX;
+    CopyStrValue(&g_port, (const char *)value, valueLen);
+    if (StrInStr(g_port, MQTT_PORT)) {
+        g_urlPrefix = TCP_URL_PREFIX;
     } else {
-        urlPrefix = SSL_URL_PREFIX;
+        g_urlPrefix = SSL_URL_PREFIX;
     }
     return;
 }
@@ -725,18 +730,17 @@ static void MqttBase_SetPort(char *value, int valueLen)
 int MqttBase_SetConfig(ENUM_MQTT_BASE_CONFIG item, char *value)
 {
     int len = StringLength(value);
-
     if (value == NULL || len == 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_SetConfig() error, the value to be set is NULL or empty\n");
         return IOTA_PARAMETER_EMPTY;
     }
 
-    pthread_mutex_lock(&login_locker);
+    pthread_mutex_lock(&g_loginLocker);
     switch (item) {
         case EN_MQTT_BASE_CONFIG_SERVER_IP:
-            MemFree(&serverIp);
-            // serverIp should not be free until the program finishes.
-            CopyStrValue(&serverIp, (const char *)value, len);
+            MemFree(&g_serverIp);
+            // g_serverIp should not be free until the program finishes.
+            CopyStrValue(&g_serverIp, (const char *)value, len);
             break;
 
         case EN_MQTT_BASE_CONFIG_SERVER_PORT:
@@ -744,17 +748,17 @@ int MqttBase_SetConfig(ENUM_MQTT_BASE_CONFIG item, char *value)
             break;
 
         case EN_MQTT_BASE_CONFIG_USERNAME:
-            MemFree(&username);
+            MemFree(&g_username);
             // username should not be free until the program finishes.
-            CopyStrValue(&username, (const char *)value, len);
+            CopyStrValue(&g_username, (const char *)value, len);
             break;
         case EN_MQTT_BASE_CONFIG_PASSWORD:
-            MemFree(&password);
+            MemFree(&g_password);
             // password should not be free until the program finishes.
-            CopyStrValue(&password, (const char *)value, len);
+            CopyStrValue(&g_password, (const char *)value, len);
             break;
         case EN_MQTT_BASE_CONFIG_AUTH_MODE:
-            authMode = atoi(value);
+            g_authMode = atoi(value);
             break;
         case EN_MQTT_BASE_CONFIG_LOG_LOCAL_NUMBER: {
 #ifdef _SYS_LOG
@@ -777,21 +781,21 @@ int MqttBase_SetConfig(ENUM_MQTT_BASE_CONFIG item, char *value)
         case EN_MQTT_BASE_CONFIG_KEEP_ALIVE_TIME: {
             int tValue = String2Int((const char *)value);
             if (tValue > 0) {
-                keepAliveInterval = String2Int(value);
+                g_keepAliveInterval = String2Int(value);
             }
             break;
         }
         case EN_MQTT_BASE_CONFIG_CONNECT_TIMEOUT: {
             int tValue = String2Int(value);
             if (tValue > 0) {
-                connectTimeout = String2Int(value);
+                g_connectTimeout = String2Int(value);
             }
             break;
         }
         case EN_MQTT_BASE_CONFIG_RETRY_INTERVAL: {
             int tValue = String2Int(value);
             if (tValue > 0) {
-                retryInterval = String2Int(value);
+                g_retryInterval = String2Int(value);
             }
             break;
         }
@@ -799,7 +803,7 @@ int MqttBase_SetConfig(ENUM_MQTT_BASE_CONFIG item, char *value)
             int tValue = String2Int(value);
             // value from the app should be 0, thus make sure the encryptedPassword and
             // loginTimestamp will be created again
-            mqttClientCreateFlag = tValue;
+            g_mqttClientCreateFlag = tValue;
             if (tValue) {
                 PrintfLog(EN_LOG_LEVEL_WARNING, "MqttBase: MqttBase_SetConfig() warning, the value to be set should be "
                     "zero for RESET_SECRET_IN_PROGRESS\n");
@@ -808,33 +812,33 @@ int MqttBase_SetConfig(ENUM_MQTT_BASE_CONFIG item, char *value)
         }
         case EN_MQTT_BASE_CONFIG_QOS: {
             int tValue = String2Int(value);
-            gQOS = tValue;
-            PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_SetConfig(), QOS is changed to %d\n", gQOS);
+            g_QoS = tValue;
+            PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_SetConfig(), QOS is changed to %d\n", g_QoS);
             break;
         }
         case EN_MQTT_BASE_PRIVATE_KEY_PASSWORD: {
-            MemFree(&privateKeyPassword);
-            CopyStrValue(&privateKeyPassword, (const char *)value, len); // private key password in cert mode device
+            MemFree(&g_privateKeyPassword);
+            CopyStrValue(&g_privateKeyPassword, (const char *)value, len); // private key password in cert mode device
             break;
         }
         case EN_MQTT_BASE_BS_SCOPE_ID:
-            MemFree(&bs_scope_id);
-            CopyStrValue(&bs_scope_id, (const char *)value, len);
+            MemFree(&g_bsScopeId);
+            CopyStrValue(&g_bsScopeId, (const char *)value, len);
             break;
         case EN_MQTT_BASE_BS_MODE:
-            bs_reg_mode = atoi(value);
+            g_bsRegMode = atoi(value);
             break;
         case EN_MQTT_BASE_CHECK_STAMP:
-            checkTimestamp = atoi(value);
+            g_checkTimestamp = atoi(value);
             break;
         default:
             PrintfLog(EN_LOG_LEVEL_WARNING,
                 "MqttBase: MqttBase_SetConfig() warning, the item to be set is not available\n");
-            pthread_mutex_unlock(&login_locker);
+            pthread_mutex_unlock(&g_loginLocker);
             return IOTA_RESOURCE_NOT_AVAILABLE;
     }
 
-    pthread_mutex_unlock(&login_locker);
+    pthread_mutex_unlock(&g_loginLocker);
 
     return IOTA_SUCCESS;
 }
@@ -843,11 +847,11 @@ char *MqttBase_GetConfig(ENUM_MQTT_BASE_CONFIG item)
 {
     switch (item) {
         case EN_MQTT_BASE_CONFIG_SERVER_IP:
-            return serverIp;
+            return g_serverIp;
         case EN_MQTT_BASE_CONFIG_SERVER_PORT:
-            return port;
+            return g_port;
         case EN_MQTT_BASE_CONFIG_USERNAME:
-            return username;
+            return g_username;
         case EN_MQTT_BASE_CONFIG_PASSWORD:
             PrintfLog(EN_LOG_LEVEL_WARNING, "MqttBase: MqttBase_GetConfig() Can't get password from here\n");
             return NULL;
@@ -865,7 +869,7 @@ int MqttBase_subscribe(const char *topic, const int qos)
 #endif
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 
-    if (client == NULL) {
+    if (g_client == NULL) {
         return IOTA_FAILURE;
     }
     int ret;
@@ -878,11 +882,9 @@ int MqttBase_subscribe(const char *topic, const int qos)
     opts.onFailure = MqttBase_OnSubscribeFailure;
 #endif
 
-
-    ret = MQTTAsync_subscribe(client, topic, qos,
-        &opts); // this qos must be 1, otherwise if subscribe failed, the downlink message cannot arrive.
-
-    if (MQTTASYNC_SUCCESS != ret) {
+    // this qos must be 1, otherwise if subscribe failed, the downlink message cannot arrive.
+    ret = MQTTAsync_subscribe(g_client, topic, qos, &opts);
+    if (ret != MQTTASYNC_SUCCESS) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_subscribe() error, subscribe failed, ret code %d, topic %s\n",
             ret, topic);
         return IOTA_FAILURE;
@@ -904,7 +906,7 @@ int MqttBase_publish(const char *topic, void *payload, int len, void *context, v
 #endif
 #endif
 
-    if (client == NULL) {
+    if (g_client == NULL) {
         return IOTA_FAILURE;
     }
 
@@ -915,7 +917,7 @@ int MqttBase_publish(const char *topic, void *payload, int len, void *context, v
 
     pubmsg.payload = payload;
     pubmsg.payloadlen = len;
-    pubmsg.qos = gQOS;
+    pubmsg.qos = g_QoS;
     pubmsg.retained = 0;
 
 #if defined(MQTTV5)
@@ -925,15 +927,13 @@ int MqttBase_publish(const char *topic, void *payload, int len, void *context, v
 
     printf("-------------------------->>\n");
     LogProperties(&pubmsg.properties);
-    // PrintfLog(EN_LOG_LEVEL_DEBUG, "topic = %s\n", topic);
-    int ret = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts);
+    int ret = MQTTAsync_sendMessage(g_client, topic, &pubmsg, &opts);
 
 #else
     opts.onSuccess = MqttBase_OnPublishSuccess;
     opts.onFailure = MqttBase_OnPublishFailure;
-    int ret = MQTTAsync_sendMessage(client, topic, &pubmsg, &opts);
+    int ret = MQTTAsync_sendMessage(g_client, topic, &pubmsg, &opts);
 #endif
-
     if (ret != 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_publish() error, publish result %d\n", ret);
         return IOTA_FAILURE;
@@ -943,74 +943,80 @@ int MqttBase_publish(const char *topic, void *payload, int len, void *context, v
 }
 
 #if defined(MQTTV5)
-MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer5;
+static MQTTAsync_connectOptions g_connOpts = MQTTAsync_connectOptions_initializer5;
 #else
-MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
+static MQTTAsync_connectOptions g_connOpts = MQTTAsync_connectOptions_initializer;
 #endif
-MQTTAsync_SSLOptions ssl_opts = MQTTAsync_SSLOptions_initializer;
+static MQTTAsync_SSLOptions g_sslOpts = MQTTAsync_SSLOptions_initializer;
 
-static char *MqttBase_gitClientId(char *temp_authMode, char *loginTimestamp)
+static char *MqttBase_getClientId(char *authMode, int authModeLength, char *loginTimestamp)
 {
+    /*
+     * DO NOT remove the seemingly useless parameter authModeLength because
+     * rule "数组作为函数参数时，必须同时将其长度作为函数的参数"
+     */
     char *clientId = NULL;
-    if (bs_reg_mode) {
-        clientId = CombineStrings(3, username, "_0_", bs_scope_id);
+    PrintfLog(EN_LOG_LEVEL_INFO, "username: %s, auth mode: %.*s, timestamp: %s\n",
+        g_username, authModeLength, authMode, loginTimestamp);
+    if (g_bsRegMode) {
+        clientId = CombineStrings(3, g_username, "_0_", g_bsScopeId);
     } else {
-        clientId = CombineStrings(3, username, temp_authMode, loginTimestamp);
+        clientId = CombineStrings(3, g_username, authMode, loginTimestamp);
     }
     return clientId;
 }
 
 static int MqttBase_setSslOpts(void)
 {
-    if (verifyCert == 0) {
-        ssl_opts.trustStore = NULL;
-        ssl_opts.enableServerCertAuth = FALSE; // TRUE: enable server certificate authentication, FALSE: disable
-        ssl_opts.sslVersion = 3;
+    if (g_verifyCert == 0) {
+        g_sslOpts.trustStore = NULL;
+        g_sslOpts.enableServerCertAuth = FALSE; // TRUE: enable server certificate authentication, FALSE: disable
+        g_sslOpts.sslVersion = MQTT_SSL_VERSION_TLS_1_2;
     } else {
-        if (access(ca_path, 0)) {
+        if (access(g_caPath, 0)) {
             PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_setSslOpts() error, ca file is NOT accessible\n");
             return IOTA_CERTIFICATE_NOT_FOUND;
         }
-        ssl_opts.trustStore = ca_path;
-        ssl_opts.enableServerCertAuth = TRUE; // TRUE: enable server certificate authentication, FALSE: disable
-        ssl_opts.sslVersion = 3;
+        g_sslOpts.trustStore = g_caPath;
+        g_sslOpts.enableServerCertAuth = TRUE; // TRUE: enable server certificate authentication, FALSE: disable
+        g_sslOpts.sslVersion = MQTT_SSL_VERSION_TLS_1_2;
         // ssl_opts.verify = 0; // 0 for no verifying the hostname, 1 for verifying the hostname
     }
 
-    if (authMode) {
-        if (access(cert_path, 0) || access(key_path, 0)) {
+    if (g_authMode) {
+        if (access(g_certPath, 0) || access(g_keyPath, 0)) {
             PrintfLog(EN_LOG_LEVEL_ERROR,
                 "MqttBase: MqttBase_setSslOpts() error, cert file or key file is NOT accessible\n");
             return IOTA_CERTIFICATE_NOT_FOUND;
         }
 
-        ssl_opts.keyStore = cert_path;
-        ssl_opts.privateKey = key_path;
-        ssl_opts.privateKeyPassword = privateKeyPassword;
+        g_sslOpts.keyStore = g_certPath;
+        g_sslOpts.privateKey = g_keyPath;
+        g_sslOpts.privateKeyPassword = g_privateKeyPassword;
     }
     return IOTA_SUCCESS;
 }
 
 static int MqttBase_setConnOptsByClientCreate(char *loginTimestamp)
 {
-    conn_opts.cleansession = 1;
-    conn_opts.keepAliveInterval = keepAliveInterval;
-    conn_opts.connectTimeout = connectTimeout;
-    conn_opts.retryInterval = retryInterval;
+    g_connOpts.cleansession = 1;
+    g_connOpts.keepAliveInterval = g_keepAliveInterval;
+    g_connOpts.connectTimeout = g_connectTimeout;
+    g_connOpts.retryInterval = g_retryInterval;
 #if defined(MQTTV5)
-    conn_opts.cleansession = 0;
-    conn_opts.cleanstart = 1;
-    conn_opts.onSuccess5 = MqttBase_OnConnectSuccess5;
-    conn_opts.onFailure5 = MqttBase_OnConnectFailure5;
-    conn_opts.MQTTVersion = MQTTVERSION_5;
+    g_connOpts.cleansession = 0;
+    g_connOpts.cleanstart = 1;
+    g_connOpts.onSuccess5 = MqttBase_OnConnectSuccess5;
+    g_connOpts.onFailure5 = MqttBase_OnConnectFailure5;
+    g_connOpts.MQTTVersion = MQTTVERSION_5;
 #else
-    conn_opts.onSuccess = MqttBase_OnConnectSuccess;
-    conn_opts.onFailure = MqttBase_OnConnectFailure;
+    g_connOpts.onSuccess = MqttBase_OnConnectSuccess;
+    g_connOpts.onFailure = MqttBase_OnConnectFailure;
 #endif
 
-    if (!authMode) {
+    if (!g_authMode) {
         PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_setConnOptsByClientCreate() secret mode.\n");
-        int encryptedRet = GetEncryptedPassword(&loginTimestamp, &encrypted_password);
+        int encryptedRet = GetEncryptedPassword(&loginTimestamp, &g_encryptedPassword);
         if (encryptedRet != IOTA_SUCCESS) {
             PrintfLog(EN_LOG_LEVEL_ERROR,
                 "MqttBase: MqttBase_setConnOptsByClientCreate() error, GetEncryptedPassword failed\n");
@@ -1020,12 +1026,12 @@ static int MqttBase_setConnOptsByClientCreate(char *loginTimestamp)
         PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_setConnOptsByClientCreate() cert mode.\n");
     }
 
-    if (StrInStr(port, MQTTS_PORT)) {
+    if (StrInStr(g_port, MQTTS_PORT)) {
         int ret = MqttBase_setSslOpts();
         if (ret < 0) {
             return ret;
         }
-        conn_opts.ssl = &ssl_opts;
+        g_connOpts.ssl = &g_sslOpts;
     }
     return IOTA_SUCCESS;
 }
@@ -1044,7 +1050,7 @@ void MqttBase_DeBugInit()
 }
 #endif
 
-int MqttBase_CreateConnection()
+int MqttBase_CreateConnection(void)
 {
 #if defined(WIN32) || defined(WIN64)
     pMQTTAsync_create MQTTAsync_create = (pMQTTAsync_create)GetProcAddress(mqttdll, "MQTTAsync_create");
@@ -1062,40 +1068,40 @@ int MqttBase_CreateConnection()
     MQTTProperty proprrty;
     MQTTAsync_createOptions creatOpts = MQTTAsync_createOptions_initializer;
 #endif
-    if (workDir == NULL) {
+    if (g_workDir == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_CreateConnection() error, workPath can not be NULL.\n");
         return IOTA_FAILURE;
     }
-    if (authMode) {
+    if (g_authMode) {
         // cert_path cannot be released until the programe is destoried
-        cert_path = CombineStrings(2, workDir, "/conf/deviceCert.pem");
+        g_certPath = CombineStrings(2, g_workDir, "/conf/deviceCert.pem");
         // key_path cannot be released until the programe is destoried
-        key_path = CombineStrings(2, workDir, "/conf/deviceCert.key"); 
+        g_keyPath = CombineStrings(2, g_workDir, "/conf/deviceCert.key");
     }
 #if MQTT_TRACE_ON
     MqttBase_DeBugInit();
 #endif
-    pthread_mutex_lock(&login_locker);
+    pthread_mutex_lock(&g_loginLocker);
 
-    char temp_authMode[CHECK_STAMP_LENGTH] = "_0_0_";
-    temp_authMode[CHECK_STAMP_INDEX] = '0' + checkTimestamp;
+    char tempAuthMode[CHECK_STAMP_LENGTH] = "_0_0_";
+    tempAuthMode[CHECK_STAMP_INDEX] = '0' + g_checkTimestamp;
 
-    if (!mqttClientCreateFlag) {
-        if (serverIp == NULL || port == NULL || username == NULL) {
+    if (!g_mqttClientCreateFlag) {
+        if ((g_serverIp == NULL) || (g_port == NULL) || (g_username == NULL)) {
             PrintfLog(EN_LOG_LEVEL_ERROR,
                 "MqttBase: MqttBase_CreateConnection() error, parameters serverIp/port/username can not be NULL.\n");
-            pthread_mutex_unlock(&login_locker);
+            pthread_mutex_unlock(&g_loginLocker);
             return IOTA_PARAMETER_EMPTY;
         }
         char *loginTimestamp = GetClientTimesStamp();
         int ret = MqttBase_setConnOptsByClientCreate(loginTimestamp);
         if (ret < 0) {
             MemFree(&loginTimestamp);
-            pthread_mutex_unlock(&login_locker);
+            pthread_mutex_unlock(&g_loginLocker);
             return ret;
         }
-        char *server_address = CombineStrings(4, urlPrefix, serverIp, ":", port);
-        char *clientId = MqttBase_gitClientId(temp_authMode, loginTimestamp);
+        char *serverAddress = CombineStrings(4, g_urlPrefix, g_serverIp, ":", g_port);
+        char *clientId = MqttBase_getClientId(tempAuthMode, CHECK_STAMP_LENGTH, loginTimestamp);
 
         MemFree(&loginTimestamp);
 
@@ -1103,68 +1109,69 @@ int MqttBase_CreateConnection()
 #if defined(MQTTV5)
         creatOpts.MQTTVersion = MQTTVERSION_5;
         creatOpts.struct_version = 1;
-        PrintfLog(EN_LOG_LEVEL_INFO, "server_address = %s\n clientId = %s", server_address, clientId);
-        int createRet = MQTTAsync_createWithOptions(&client, server_address, clientId, MQTTCLIENT_PERSISTENCE_NONE,
+        PrintfLog(EN_LOG_LEVEL_INFO, "server_address = %s\n clientId = %s", serverAddress, clientId);
+        int createRet = MQTTAsync_createWithOptions(&g_client, serverAddress, clientId, MQTTCLIENT_PERSISTENCE_NONE,
             NULL, &creatOpts);
 #else
-        int createRet = MQTTAsync_create(&client, server_address, clientId, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+        int createRet = MQTTAsync_create(&g_client, serverAddress, clientId, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 #endif
-        MemFree(&server_address);
+        MemFree(&serverAddress);
         MemFree(&clientId);
         if (createRet) {
             PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_CreateConnection() MQTTAsync_create error, result %d\n",
                 createRet);
         } else {
-            mqttClientCreateFlag = 1;
+            g_mqttClientCreateFlag = 1;
             PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_CreateConnection() mqttClientCreateFlag = 1.\n");
         }
 
-        MQTTAsync_setCallbacks(client, NULL, MqttBase_OnConnectionLost, MqttBase_OnMessageArrived, NULL);
+        MQTTAsync_setCallbacks(g_client, NULL, MqttBase_OnConnectionLost, MqttBase_OnMessageArrived, NULL);
     }
 
-    char *temp_username = NULL;
-    if (CopyStrValue(&temp_username, (const char *)username, StringLength(username)) < 0) {
+    char *tempUsername = NULL;
+    if (CopyStrValue(&tempUsername, (const char *)g_username, StringLength(g_username)) < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase_CreateConnection(): there is not enough memory here.\n");
-        pthread_mutex_unlock(&login_locker);
+        pthread_mutex_unlock(&g_loginLocker);
         return IOTA_FAILURE;
     }
-    conn_opts.username = temp_username;
+    g_connOpts.username = tempUsername;
 
     int ret = 0;
-    if (!authMode) {
-        char *temp_pwd = NULL;
-        if (CopyStrValue(&temp_pwd, (const char *)encrypted_password, PASSWORD_ENCRYPT_LENGTH) < 0) {
+    if (!g_authMode) {
+        char *tempPwd = NULL;
+        if (CopyStrValue(&tempPwd, (const char *)g_encryptedPassword, PASSWORD_ENCRYPT_LENGTH) < 0) {
             PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase_CreateConnection(): there is not enough memory here.\n");
-            pthread_mutex_unlock(&login_locker);
-            MemFree(&temp_username);
+            pthread_mutex_unlock(&g_loginLocker);
+            MemFree(&tempUsername);
             return IOTA_FAILURE;
         }
-        conn_opts.password = temp_pwd;
+        g_connOpts.password = tempPwd;
         PrintfLog(EN_LOG_LEVEL_DEBUG,
             "MqttBase: MqttBase_CreateConnection() MQTTAsync_connect begin, serverAddrUrl %s%s:%s, user %s mode %s\n",
-            urlPrefix, serverIp, port, username, temp_authMode);
-        ret = MQTTAsync_connect(client, &conn_opts);
-        MemFree(&temp_pwd);
+            g_urlPrefix, g_serverIp, g_port, g_username, tempAuthMode);
+        ret = MQTTAsync_connect(g_client, &g_connOpts);
+        (void)memset_s(tempPwd, PASSWORD_ENCRYPT_LENGTH, 0, PASSWORD_ENCRYPT_LENGTH);
+        MemFree(&tempPwd);
     } else {
         PrintfLog(EN_LOG_LEVEL_DEBUG,
             "MqttBase: MqttBase_CreateConnection() MQTTAsync_connect begin, serverAddrUrl %s%s:%s, user %s mode %s\n",
-            urlPrefix, serverIp, port, username, temp_authMode);
-        ret = MQTTAsync_connect(client, &conn_opts);
+            g_urlPrefix, g_serverIp, g_port, g_username, tempAuthMode);
+        ret = MQTTAsync_connect(g_client, &g_connOpts);
     }
 
-    MemFree(&temp_username);
+    MemFree(&tempUsername);
     if (ret) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_CreateConnection() login error, result %d\n", ret);
-        pthread_mutex_unlock(&login_locker);
+        pthread_mutex_unlock(&g_loginLocker);
         return IOTA_MQTT_CONNECT_FAILED;
     }
 
-    pthread_mutex_unlock(&login_locker);
+    pthread_mutex_unlock(&g_loginLocker);
 
     return IOTA_SUCCESS;
 }
 
-int MqttBase_ReleaseConnection()
+int MqttBase_ReleaseConnection(void)
 {
 #if defined(WIN32) || defined(WIN64)
     pMQTTAsync_disconnect MQTTAsync_disconnect = (pMQTTAsync_disconnect)GetProcAddress(mqttdll, "MQTTAsync_disconnect");
@@ -1174,13 +1181,13 @@ int MqttBase_ReleaseConnection()
     MQTTProperties props = MQTTProperties_initializer;
     MQTTProperty proprrty;
 #endif
-    MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
+    MQTTAsync_disconnectOptions discOpts = MQTTAsync_disconnectOptions_initializer;
 #if defined(MQTTV5)
-    disc_opts.onSuccess5 = MqttBase_OnDisconnectSuccess5;
-    disc_opts.onFailure5 = MqttBase_OnDisconnectFailure5;
+    discOpts.onSuccess5 = MqttBase_OnDisconnectSuccess5;
+    discOpts.onFailure5 = MqttBase_OnDisconnectFailure5;
 #else
-    disc_opts.onSuccess = MqttBase_OnDisconnectSuccess;
-    disc_opts.onFailure = MqttBase_OnDisconnectFailure;
+    discOpts.onSuccess = MqttBase_OnDisconnectSuccess;
+    discOpts.onFailure = MqttBase_OnDisconnectFailure;
 #endif
     PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_ReleaseConnection()\n");
 
@@ -1188,11 +1195,10 @@ int MqttBase_ReleaseConnection()
     proprrty.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
     proprrty.value.integer2 = 0;
     MQTTProperties_add(&props, &proprrty);
-    disc_opts.properties = props;
+    discOpts.properties = props;
 #endif
 
-    int ret = MQTTAsync_disconnect(client, &disc_opts);
-
+    int ret = MQTTAsync_disconnect(g_client, &discOpts);
     if (ret != MQTTASYNC_SUCCESS) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_ReleaseConnection() error, release result %d\n", ret);
         return IOTA_MQTT_DISCONNECT_FAILED;
@@ -1202,7 +1208,7 @@ int MqttBase_ReleaseConnection()
     return IOTA_SUCCESS;
 }
 
-int MqttBase_destory()
+int MqttBase_destory(void)
 {
 #if defined(WIN32) || defined(WIN64)
     pMQTTAsync_isConnected MQTTAsync_isConnected =
@@ -1212,36 +1218,36 @@ int MqttBase_destory()
 
     PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_destory() in\n");
 
-    if (client && MQTTAsync_isConnected(client)) {
+    if (g_client && MQTTAsync_isConnected(g_client)) {
         MqttBase_ReleaseConnection();
     }
 
-    initFlag = 0;
+    g_initFlag = 0;
 
     usleep(1000 * 1000); // wait connection released
 
-    MemFree(&serverIp);
-    MemFree(&port);
-    MemFree(&username);
-    MemFree(&password);
-    MemFree(&workDir);
-    MemFree(&encrypted_password);
-    MemFree(&ca_path);
-    MemFree(&bs_scope_id);
+    MemFree(&g_serverIp);
+    MemFree(&g_port);
+    MemFree(&g_username);
+    MemFree(&g_password);
+    MemFree(&g_workDir);
+    MemFree(&g_encryptedPassword);
+    MemFree(&g_caPath);
+    MemFree(&g_bsScopeId);
 
-    if (authMode) {
-        MemFree(&cert_path);
-        MemFree(&key_path);
+    if (g_authMode) {
+        MemFree(&g_certPath);
+        MemFree(&g_keyPath);
     }
-    MemFree(&privateKeyPassword);
+    MemFree(&g_privateKeyPassword);
 
-    mqttClientCreateFlag = 0;
+    g_mqttClientCreateFlag = 0;
 
-    MQTTAsync_destroy(&client);
+    MQTTAsync_destroy(&g_client);
     return IOTA_SUCCESS;
 }
 
-int MqttBase_IsConnected()
+int MqttBase_IsConnected(void)
 {
-    return MQTTAsync_isConnected(client);
+    return MQTTAsync_isConnected(g_client);
 }

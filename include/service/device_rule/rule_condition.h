@@ -28,11 +28,11 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _RULE_CONDITION_H_
-#define _RULE_CONDITION_H_
+#ifndef RULE_CONDITION_H
+#define RULE_CONDITION_H
 
+#include <time.h>
 #include "hw_type.h"
-#include "time.h"
 
 typedef struct {
     char *deviceId;

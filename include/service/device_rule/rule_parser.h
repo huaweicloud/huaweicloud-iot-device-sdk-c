@@ -28,15 +28,15 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _RULE_PARSE_H_
-#define _RULE_PARSE_H_
+#ifndef RULE_PARSE_H
+#define RULE_PARSE_H
 
 #include "rule_info.h"
 
 typedef void (*ParseDeviceRuleHook)(void *target, HW_BOOL isRemove, const cJSON *rule);
 void ParseDeviceRuleWithHook(RuleInfoList *rules, const cJSON *paras, void *hookTarget, ParseDeviceRuleHook hook);
 void ParseDeviceRule(RuleInfoList *rules, const cJSON *paras);
-HW_BOOL GetRuleInfoList(RuleInfoList *list, const cJSON * const propertiesCJSON, RuleInfoList *delList,
+HW_BOOL GetRuleInfoList(RuleInfoList *list, const cJSON *const propertiesCJSON, RuleInfoList *delList,
     RuleInfoList *addList);
 void DeletRulesFromList(RuleInfoList *list, const RuleInfoList *targetRuleIds);
 void PrintRuleInfoList(const RuleInfoList *list, int indent);

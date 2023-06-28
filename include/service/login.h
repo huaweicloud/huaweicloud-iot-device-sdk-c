@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,12 +28,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOGIN_H_
-#define LOGIN_H_
+#ifndef LOGIN_H
+#define LOGIN_H
 
 void onConnectionLost(void *context, char *cause);
 int CreateConnection(void);
 int ReleaseConnection(void);
 int IsConnected(void);
 
-#endif /*LOGIN_H_*/
+#endif /* LOGIN_H */

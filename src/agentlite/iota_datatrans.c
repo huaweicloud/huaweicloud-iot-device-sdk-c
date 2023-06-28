@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -43,26 +43,25 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <string.h>
 #include <linux/limits.h>
-#include "string.h"
 #include "securec.h"
 #include "string_util.h"
 #include "log_util.h"
 #include "base.h"
 #include "hw_type.h"
 #include "data_trans.h"
-#include "iota_datatrans.h"
 #include "cJSON.h"
 #include "iota_error_type.h"
 #include "subscribe.h"
 #include "limits.h"
 #include "rule_trans.h"
 #include "rule_manager.h"
+#include "iota_datatrans.h"
 
 static char *IOTA_MessageReportPayload(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content)
 {
-    cJSON *root;
-    root = cJSON_CreateObject();
+    cJSON *root = cJSON_CreateObject();
 
     cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, object_device_id);
     cJSON_AddStringToObject(root, NAME, name);
@@ -120,14 +119,13 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 
 static char *IOTA_PropertiesReportPayload(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum)
 {
-    if (serviceNum == 0 || pServiceData == NULL) {
+    if ((serviceNum == 0) || (pServiceData == NULL)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
         return NULL;
     }
-    
-    cJSON *root, *serviceDatas;
-    root = cJSON_CreateObject();
-    serviceDatas = cJSON_CreateArray();
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON *serviceDatas = cJSON_CreateArray();
     int i;
     for (i = 0; i < serviceNum; i++) {
         cJSON *properties = cJSON_Parse(pServiceData[i].properties);
@@ -138,8 +136,7 @@ static char *IOTA_PropertiesReportPayload(ST_IOTA_SERVICE_DATA_INFO pServiceData
             return NULL;
         }
 
-        cJSON *tmp;
-        tmp = cJSON_CreateObject();
+        cJSON *tmp = cJSON_CreateObject();
 
         cJSON_AddStringToObject(tmp, SERVICE_ID, pServiceData[i].service_id);
         cJSON_AddStringToObject(tmp, EVENT_TIME, pServiceData[i].event_time);
@@ -194,7 +191,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV5(ST_IOTA_SERVICE_DATA_INFO pServiceDat
 static char *IOTA_BatchPropertiesReportPayload(ST_IOTA_DEVICE_DATA_INFO pDeviceData[], HW_INT deviceNum,
     HW_INT serviceLenList[])
 {
-    if (deviceNum == 0 || serviceLenList == NULL || pDeviceData == NULL) {
+    if ((deviceNum == 0) || (serviceLenList == NULL) || (pDeviceData == NULL)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
         return NULL;
     }
@@ -209,19 +206,17 @@ static char *IOTA_BatchPropertiesReportPayload(ST_IOTA_DEVICE_DATA_INFO pDeviceD
         return NULL;
     }
 
-    cJSON *root, *deviceDatas;
-    root = cJSON_CreateObject();
-    deviceDatas = cJSON_CreateArray();
-    int ii, jj;
-    for (ii = 0; ii < deviceNum; ii++) {
-        cJSON *deviceData;
-        cJSON *services;
-        deviceData = cJSON_CreateObject();
-        services = cJSON_CreateArray();
-        cJSON_AddStringToObject(deviceData, DEVICE_ID, pDeviceData[ii].device_id);
+    cJSON *root = cJSON_CreateObject();
+    cJSON *deviceDatas = cJSON_CreateArray();
+    int i;
+    int j;
+    for (i = 0; i < deviceNum; i++) {
+        cJSON *deviceData = cJSON_CreateObject();
+        cJSON *services = cJSON_CreateArray();
+        cJSON_AddStringToObject(deviceData, DEVICE_ID, pDeviceData[i].device_id);
 
-        for (jj = 0; jj < serviceLenList[ii]; jj++) {
-            cJSON *properties = cJSON_Parse(pDeviceData[ii].services[jj].properties);
+        for (j = 0; j < serviceLenList[i]; j++) {
+            cJSON *properties = cJSON_Parse(pDeviceData[i].services[j].properties);
             if (properties == NULL) {
                 PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
                 cJSON_Delete(services);
@@ -231,11 +226,10 @@ static char *IOTA_BatchPropertiesReportPayload(ST_IOTA_DEVICE_DATA_INFO pDeviceD
                 return NULL;
             }
 
-            cJSON *tmp;
-            tmp = cJSON_CreateObject();
+            cJSON *tmp = cJSON_CreateObject();
 
-            cJSON_AddStringToObject(tmp, SERVICE_ID, pDeviceData[ii].services[jj].service_id);
-            cJSON_AddStringToObject(tmp, EVENT_TIME, pDeviceData[ii].services[jj].event_time);
+            cJSON_AddStringToObject(tmp, SERVICE_ID, pDeviceData[i].services[j].service_id);
+            cJSON_AddStringToObject(tmp, EVENT_TIME, pDeviceData[i].services[j].event_time);
             cJSON_AddItemToObject(tmp, PROPERTIES, properties);
             cJSON_AddItemToArray(services, tmp);
         }
@@ -283,8 +277,7 @@ HW_API_FUNC HW_INT IOTA_BatchPropertiesReportV5(ST_IOTA_DEVICE_DATA_INFO pDevice
 
 static char *IOTA_CommandResponsePayload(HW_INT result_code, HW_CHAR *response_name, HW_CHAR *pcCommandResponse)
 {
-    cJSON *root;
-    root = cJSON_CreateObject();
+    cJSON *root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, RESULT_CODE, result_code);
     cJSON_AddStringToObject(root, RESPONSE_NAME, response_name);
     cJSON *commandResponse = cJSON_Parse(pcCommandResponse);
@@ -296,8 +289,7 @@ static char *IOTA_CommandResponsePayload(HW_INT result_code, HW_CHAR *response_n
 
     cJSON_AddItemToObject(root, PARAS, commandResponse);
 
-    char *payload;
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
     cJSON_Delete(root);
     return payload;
 }
@@ -305,7 +297,7 @@ static char *IOTA_CommandResponsePayload(HW_INT result_code, HW_CHAR *response_n
 HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name,
     HW_CHAR *pcCommandResponse, void *context)
 {
-    if (pcCommandResponse == NULL || requestId == NULL) {
+    if ((pcCommandResponse == NULL) || (requestId == NULL)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_CommandResponse:the requestId or commandResponse cannot be null.\n");
         return IOTA_PARAMETER_EMPTY;
     }
@@ -326,7 +318,7 @@ HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, 
 HW_API_FUNC HW_INT IOTA_CommandResponseV5(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name,
     HW_CHAR *pcCommandResponse, void *context, MQTTV5_DATA *properties)
 {
-    if (pcCommandResponse == NULL || requestId == NULL) {
+    if ((pcCommandResponse == NULL) || (requestId == NULL)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_CommandResponseV5:the requestId or commandResponse cannot be null.\n");
         return IOTA_PARAMETER_EMPTY;
     }
@@ -352,17 +344,14 @@ HW_API_FUNC HW_INT IOTA_PropertiesSetResponse(HW_CHAR *requestId, HW_INT result_
         return IOTA_PARAMETER_EMPTY;
     }
 
-    cJSON *root;
-    root = cJSON_CreateObject();
-    char *payload;
+    cJSON *root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, RESULT_CODE, result_code);
 
     if (result_desc != 0) {
         cJSON_AddStringToObject(root, RESULT_DESC, result_desc);
     }
 
-    payload = cJSON_Print(root);
-
+    char *payload = cJSON_Print(root);
     cJSON_Delete(root);
 
     int messageId = 0;
@@ -379,21 +368,18 @@ HW_API_FUNC HW_INT IOTA_PropertiesSetResponse(HW_CHAR *requestId, HW_INT result_
 HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVICE_DATA_INFO serviceProp[],
     HW_INT serviceNum, void *context)
 {
-    if (serviceNum <= 0 || requestId == NULL) {
+    if ((serviceNum <= 0) || (requestId == NULL)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_PropertiesGetResponse:the requestId or serviceNum is wrong.\n");
         return IOTA_PARAMETER_EMPTY;
     }
 
-    cJSON *root, *services;
-    root = cJSON_CreateObject();
-    char *payload;
-    services = cJSON_CreateArray();
-
+    cJSON *root = cJSON_CreateObject();
+    cJSON *services = cJSON_CreateArray();
     int i;
 
-    if (serviceProp[0].service_id != 0 && serviceProp[0].properties != 0) {
+    if ((serviceProp[0].service_id != 0) && (serviceProp[0].properties != 0)) {
         for (i = 0; i < serviceNum; i++) {
-            if (serviceProp[i].service_id != 0 && serviceProp[i].properties != 0) {
+            if ((serviceProp[i].service_id != 0) && (serviceProp[i].properties != 0)) {
                 cJSON *properties = cJSON_Parse(serviceProp[i].properties);
                 if (properties == NULL) {
                     PrintfLog(EN_LOG_LEVEL_ERROR, "parse JSON failed.\n");
@@ -402,8 +388,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVIC
                     return IOTA_PARSE_JSON_FAILED;
                 }
 
-                cJSON *tmp;
-                tmp = cJSON_CreateObject();
+                cJSON *tmp = cJSON_CreateObject();
 
                 cJSON_AddStringToObject(tmp, SERVICE_ID, serviceProp[i].service_id);
                 cJSON_AddStringToObject(tmp, EVENT_TIME, serviceProp[i].event_time);
@@ -420,7 +405,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesGetResponse(HW_CHAR *requestId, ST_IOTA_SERVIC
     }
 
     cJSON_AddItemToObject(root, SERVICES, services);
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
 
     cJSON_Delete(root);
 
@@ -442,16 +427,15 @@ HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_st
         return IOTA_PARAMETER_ERROR;
     }
 
-    if (device_statuses->device_statuses[0].device_id == NULL || device_statuses->device_statuses[0].status == NULL) {
+    if ((device_statuses->device_statuses[0].device_id == NULL) || (device_statuses->device_statuses[0].status == NULL)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_UpdateSubDeviceStatus() error, the input of "
-                                      "device_statuses->device_statuses[0] is invalid.\n");
+            "device_statuses->device_statuses[0] is invalid.\n");
         return IOTA_PARAMETER_ERROR;
     }
 
-    cJSON *root, *services, *device_statuses_json;
-    root = cJSON_CreateObject();
-    services = cJSON_CreateArray();
-    device_statuses_json = cJSON_CreateArray();
+    cJSON *root = cJSON_CreateObject();
+    cJSON *services = cJSON_CreateArray();
+    cJSON *device_statuses_json = cJSON_CreateArray();
     cJSON *service = cJSON_CreateObject();
     cJSON_AddStringToObject(service, SERVICE_ID, SUB_DEVICE_MANAGER);
     cJSON_AddStringToObject(service, EVENT_TYPE, SUB_DEVICE_UPDATE_STATUS);
@@ -459,10 +443,9 @@ HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_st
 
     int i;
     for (i = 0; i < deviceNum; i++) {
-        if (device_statuses->device_statuses[i].device_id != NULL &&
-            device_statuses->device_statuses[i].status != NULL) {
-            cJSON *tmp;
-            tmp = cJSON_CreateObject();
+        if ((device_statuses->device_statuses[i].device_id != NULL) &&
+            (device_statuses->device_statuses[i].status != NULL)) {
+            cJSON *tmp = cJSON_CreateObject();
 
             cJSON_AddStringToObject(tmp, DEVICE_ID, device_statuses->device_statuses[i].device_id);
             cJSON_AddStringToObject(tmp, STATUS, device_statuses->device_statuses[i].status);
@@ -480,15 +463,11 @@ HW_API_FUNC HW_INT IOTA_UpdateSubDeviceStatus(ST_IOTA_DEVICE_STATUSES *device_st
 
     cJSON *paras = cJSON_CreateObject();
     cJSON_AddItemToObject(paras, DEVICE_STATUS, device_statuses_json);
-
     cJSON_AddItemToObject(service, PARAS, paras);
-
-
     cJSON_AddItemToArray(services, service);
     cJSON_AddItemToObject(root, SERVICES, services);
 
-    char *payload;
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
 
     cJSON_Delete(root);
 
@@ -509,22 +488,21 @@ HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW
         PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_AddSubDevice() error, the input is invalid.\n");
         return IOTA_PARAMETER_ERROR;
     }
-    if (subDevicesInfo->deviceInfo == NULL || subDevicesInfo->deviceInfo[0].device_id == NULL) {
+    if ((subDevicesInfo->deviceInfo == NULL) || (subDevicesInfo->deviceInfo[0].device_id == NULL)) {
         PrintfLog(EN_LOG_LEVEL_ERROR,
             "iota_datatrans: IOTA_AddSubDevice() error, the input of subDevicesInfo->deviceInfo is invalid.\n");
         return IOTA_PARAMETER_ERROR;
     }
 
-    if (subDevicesInfo->deviceInfo[0].node_id == NULL || subDevicesInfo->deviceInfo[0].product_id == NULL) {
+    if ((subDevicesInfo->deviceInfo[0].node_id == NULL) || (subDevicesInfo->deviceInfo[0].product_id == NULL)) {
         PrintfLog(EN_LOG_LEVEL_ERROR,
             "iota_datatrans: IOTA_AddSubDevice() error, the input of subDevicesInfo->deviceInfo[0] is invalid.\n");
         return IOTA_PARAMETER_ERROR;
     }
 
-    cJSON *root, *services, *subDeviceInfo;
-    root = cJSON_CreateObject();
-    services = cJSON_CreateArray();
-    subDeviceInfo = cJSON_CreateArray();
+    cJSON *root = cJSON_CreateObject();
+    cJSON *services = cJSON_CreateArray();
+    cJSON *subDeviceInfo = cJSON_CreateArray();
 
     cJSON *service = cJSON_CreateObject();
     cJSON_AddStringToObject(service, SERVICE_ID, SUB_DEVICE_MANAGER);
@@ -534,7 +512,7 @@ HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW
 
     int i;
     for (i = 0; i < deviceNum; i++) {
-        if (subDevicesInfo->deviceInfo[i].node_id != NULL && subDevicesInfo->deviceInfo[i].product_id != NULL) {
+        if ((subDevicesInfo->deviceInfo[i].node_id != NULL) && (subDevicesInfo->deviceInfo[i].product_id != NULL)) {
             cJSON *tmp = cJSON_CreateObject();
 
             cJSON_AddStringToObject(tmp, PARENT_DEVICE_ID, subDevicesInfo->deviceInfo[i].parent_device_id);
@@ -564,8 +542,7 @@ HW_API_FUNC HW_INT IOTA_AddSubDevice(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW
     cJSON_AddItemToArray(services, service);
     cJSON_AddItemToObject(root, SERVICES, services);
 
-    char *payload;
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
 
     cJSON_Delete(root);
 
@@ -592,18 +569,15 @@ HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_I
         return IOTA_PARAMETER_ERROR;
     }
 
-    cJSON *root, *services, *delSubDevice;
-    root = cJSON_CreateObject();
-    services = cJSON_CreateArray();
-
+    cJSON *root = cJSON_CreateObject();
+    cJSON *services = cJSON_CreateArray();
     cJSON *service = cJSON_CreateObject();
     cJSON_AddStringToObject(service, SERVICE_ID, SUB_DEVICE_MANAGER);
     cJSON_AddStringToObject(service, EVENT_TYPE, DEL_SUB_DEVICE_REQUEST);
     cJSON_AddStringToObject(service, EVENT_TIME, delSubDevices->event_time);
     cJSON_AddStringToObject(service, EVENT_ID, delSubDevices->event_id);
 
-    delSubDevice = cJSON_CreateStringArray(delSubDevices->delSubDevice, deviceNum);
-
+    cJSON *delSubDevice = cJSON_CreateStringArray(delSubDevices->delSubDevice, deviceNum);
     cJSON *paras = cJSON_CreateObject();
     cJSON_AddItemToObject(paras, DEVICES, delSubDevice);
 
@@ -612,8 +586,7 @@ HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_I
     cJSON_AddItemToArray(services, service);
     cJSON_AddItemToObject(root, SERVICES, services);
 
-    char *payload;
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
 
     cJSON_Delete(root);
 
@@ -630,17 +603,15 @@ HW_API_FUNC HW_INT IOTA_DelSubDevice(ST_IOTA_DEL_SUB_DEVICE *delSubDevices, HW_I
 
 HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo, void *context)
 {
-    if (!(otaVersionInfo.fw_version != NULL || otaVersionInfo.sw_version != NULL)) {
+    if (!((otaVersionInfo.fw_version != NULL) || (otaVersionInfo.sw_version != NULL))) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_OTAVersionReport:the input is invalid.\n");
         return IOTA_PARAMETER_ERROR;
     }
 
-    cJSON *root, *paras, *services, *tmp;
-    root = cJSON_CreateObject();
-    tmp = cJSON_CreateObject();
-    paras = cJSON_CreateObject();
-    services = cJSON_CreateArray();
-    char *payload;
+    cJSON *root = cJSON_CreateObject();
+    cJSON *tmp = cJSON_CreateObject();
+    cJSON *paras = cJSON_CreateObject();
+    cJSON *services = cJSON_CreateArray();
 
     cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, otaVersionInfo.object_device_id);
     cJSON_AddStringToObject(tmp, SERVICE_ID, OTA);
@@ -654,7 +625,7 @@ HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo
 
     cJSON_AddItemToObject(root, SERVICES, services);
 
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
     cJSON_Delete(root);
 
     int messageId = 0;
@@ -670,7 +641,7 @@ HW_API_FUNC HW_INT IOTA_OTAVersionReport(ST_IOTA_OTA_VERSION_INFO otaVersionInfo
 
 HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInfo, void *context)
 {
-    if (otaStatusInfo.progress > 100 || otaStatusInfo.progress < 0) {
+    if ((otaStatusInfo.progress > 100) || (otaStatusInfo.progress < 0)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_OTAVersionReport:the progress is invalid.\n");
         return IOTA_PARAMETER_ERROR;
     }
@@ -680,12 +651,10 @@ HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInf
         return IOTA_PARAMETER_ERROR;
     }
 
-    cJSON *root, *paras, *services, *tmp;
-    root = cJSON_CreateObject();
-    tmp = cJSON_CreateObject();
-    paras = cJSON_CreateObject();
-    services = cJSON_CreateArray();
-    char *payload;
+    cJSON *root = cJSON_CreateObject();
+    cJSON *tmp = cJSON_CreateObject();
+    cJSON *paras = cJSON_CreateObject();
+    cJSON *services = cJSON_CreateArray();
 
     cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, otaStatusInfo.object_device_id);
     cJSON_AddStringToObject(tmp, SERVICE_ID, OTA);
@@ -702,7 +671,7 @@ HW_API_FUNC HW_INT IOTA_OTAStatusReport(ST_IOTA_UPGRADE_STATUS_INFO otaStatusInf
 
     cJSON_AddItemToObject(root, SERVICES, services);
 
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
     cJSON_Delete(root);
 
     int messageId = 0;
@@ -745,7 +714,7 @@ static HW_INT IOTA_OTAv2GetFileNameFromUrl(const char *url, char *fileName, int 
     return IOTA_FAILURE;
 }
 
-static char *IOTA_GetUrlData(char *url, char *port, size_t portBufferLength, char *ip,  size_t ipBufferLength)
+static char *IOTA_GetUrlData(char *url, char *port, size_t portBufferLength, char *ip, size_t ipBufferLength)
 {
     // Split Url data
     char *tmp = strstr(url, DOUBLE_OBLIQUE_LINE);
@@ -758,7 +727,7 @@ static char *IOTA_GetUrlData(char *url, char *port, size_t portBufferLength, cha
     if (tmpContainsColon == NULL) {
         return NULL;
     }
-    // the length of ipTmp is enougt to copy
+    // the length of ipTmp is enough to copy
     int ret = strncpy_s(ip, ipBufferLength, tmp + strlen(DOUBLE_OBLIQUE_LINE),
         len - strlen(tmpContainsColon) - strlen(DOUBLE_OBLIQUE_LINE));
     if (ret != 0) {
@@ -855,17 +824,17 @@ static HW_INT IOTA_GetHttpHeader(char *header, size_t headerBufferLength, char *
         return IOTA_FAILURE;
     }
 
-    if (strcat_s(header, headerBufferLength, OTA_HTTP_GET) != EOK || strcat_s(header, headerBufferLength, uri) != EOK ||
-        strcat_s(header, headerBufferLength, OTA_HTTP_VERSION) != EOK ||
-        strcat_s(header, headerBufferLength, OTA_HTTP_HOST) != EOK || strcat_s(header, headerBufferLength, ip) != EOK ||
-        strcat_s(header, headerBufferLength, OTA_LINEFEED) != EOK) {
+    if ((strcat_s(header, headerBufferLength, OTA_HTTP_GET) != EOK) || (strcat_s(header, headerBufferLength, uri) != EOK) ||
+        (strcat_s(header, headerBufferLength, OTA_HTTP_VERSION) != EOK) ||
+        (strcat_s(header, headerBufferLength, OTA_HTTP_HOST) != EOK) || (strcat_s(header, headerBufferLength, ip) != EOK) ||
+        (strcat_s(header, headerBufferLength, OTA_LINEFEED) != EOK)) {
         return IOTA_FAILURE;
     };
 
     if (token != NULL) {
-        if (strcat_s(header, headerBufferLength, OTA_CONTENT_TYPE) != EOK ||
-            strcat_s(header, headerBufferLength, OTA_AUTH) != EOK ||
-            strcat_s(header, headerBufferLength, token) != EOK) {
+        if ((strcat_s(header, headerBufferLength, OTA_CONTENT_TYPE) != EOK) ||
+            (strcat_s(header, headerBufferLength, OTA_AUTH) != EOK) ||
+            (strcat_s(header, headerBufferLength, token) != EOK)) {
             return IOTA_FAILURE;
         }
     }
@@ -878,10 +847,10 @@ static HW_INT IOTA_GetHttpHeader(char *header, size_t headerBufferLength, char *
 static HW_INT IOTA_IotReadHeaderFlag(char *buf, int readLength, char *fileName, long *fileSize)
 {
     // the length of rspStatusCode is enougt to copy
-    char rspStatusCode[HTTP_STATUS_LENGTH + 1] = {""};
+    char rspStatusCode[HTTP_STATUS_LENGTH + 1] = { "" };
     int result = 0;
-    int ret =
-        strncpy_s(rspStatusCode, sizeof(rspStatusCode), buf + strlen(OTA_HTTP_RESPONSE_VERSION), HTTP_STATUS_LENGTH);
+    int ret = strncpy_s(rspStatusCode, sizeof(rspStatusCode),
+        buf + strlen(OTA_HTTP_RESPONSE_VERSION), HTTP_STATUS_LENGTH);
     if (ret != 0) {
         return IOTA_FAILURE;
     }
@@ -898,10 +867,11 @@ static HW_INT IOTA_IotReadHeaderFlag(char *buf, int readLength, char *fileName, 
     if (content_Length_index < IOTA_SUCCESS) {
         return IOTA_FAILURE;
     }
-    int p = 0, k;
+    int p = 0;
+    int k;
     char pkgSize[PKG_LENGTH];
     for (k = content_Length_index + strlen(OTA_CONTENT_LENGTH); k < readLength - 1; k++) {
-        if (buf[k] == '\r' || buf[k] == '\n' || buf[k] == ';') {
+        if ((buf[k] == '\r') || (buf[k] == '\n') || (buf[k] == ';')) {
             break;
         } else {
             pkgSize[p++] = buf[k];
@@ -923,7 +893,7 @@ static HW_INT IOTA_IotReadHeaderFlag(char *buf, int readLength, char *fileName, 
                 PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() the fileName is too long \n");
                 break;
             }
-            if (buf[k] == '\r' || buf[k] == '\n' || buf[k] == ';') {
+            if ((buf[k] == '\r') || (buf[k] == '\n') || (buf[k] == ';')) {
                 break;
             } else {
                 fileName[p++] = buf[k];
@@ -974,12 +944,11 @@ static HW_INT IOTA_IotRead(SSL *ssl, const char *otaFilePath, char *otaFileNameO
         if (headerFlag == 0) {
             headerFlag = 1;
             result = IOTA_IotReadHeaderFlag(buf, readLength, otaFileNameOut, &fileSize);
-
-            if (strlen(otaFileNameOut) > PATH_MAX || result < 0) {
+            if ((strlen(otaFileNameOut) > PATH_MAX) || (result < 0)) {
                 PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_IotReadHeaderFlag() return = %d.\n", result);
                 break;
             }
-            char canonicalFilePath[PATH_MAX] = {0};
+            char canonicalFilePath[PATH_MAX] = { 0 };
             if (otaFilePath == NULL) {
                 realpath(otaFileNameOut, canonicalFilePath);
             } else {
@@ -996,8 +965,8 @@ static HW_INT IOTA_IotRead(SSL *ssl, const char *otaFilePath, char *otaFileNameO
                 realpath(fileNameWithPath, canonicalFilePath);
                 MemFree((void **)&fileNameWithPath);
             }
-            fp = fopen(canonicalFilePath, "wb");
 
+            fp = fopen(canonicalFilePath, "wb");
             if (fp == NULL) {
                 result = IOTA_FAILURE;
                 PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_IotRead() fopen %s Failed\n", otaFileNameOut);
@@ -1015,7 +984,7 @@ static HW_INT IOTA_IotRead(SSL *ssl, const char *otaFilePath, char *otaFileNameO
                 break;
             }
         } else {
-            if ((writeSize + readLength) < fileSize && fp != NULL) {
+            if (((writeSize + readLength) < fileSize) && (fp != NULL)) {
                 writeLength = fwrite((void *)buf, sizeof(char), readLength, fp);
                 if (writeLength < readLength) {
                     PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_IotRead() %s Write Failed.\n", otaFileNameOut);
@@ -1023,7 +992,7 @@ static HW_INT IOTA_IotRead(SSL *ssl, const char *otaFilePath, char *otaFileNameO
                     break;
                 }
                 writeSize += writeLength;
-            } else if (((writeSize + readLength) >= fileSize) && (writeSize < fileSize) && fp != NULL) {
+            } else if (((writeSize + readLength) >= fileSize) && (writeSize < fileSize) && (fp != NULL)) {
                 writeLength = fwrite((void *)buf, sizeof(char), fileSize - writeSize, fp);
                 if (writeLength < fileSize - writeSize) {
                     PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_IotRead() %s Write Failed!.\n", otaFileNameOut);
@@ -1039,7 +1008,7 @@ static HW_INT IOTA_IotRead(SSL *ssl, const char *otaFilePath, char *otaFileNameO
         buf[readLength] = '\0';
     } while (readLength > 0);
 
-    fflush(fp);
+    (void)fflush(fp);
     if (fp != NULL) {
         fclose(fp);
     }
@@ -1052,14 +1021,15 @@ HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT time
     return IOTA_GetOTAPackages_Ext(url, token, timeout, NULL, filename);
 }
 
-HW_API_FUNC HW_INT IOTA_GetLatestSoftBusInfo(HW_CHAR *busId, HW_CHAR *eventId, void *context) {
+HW_API_FUNC HW_INT IOTA_GetLatestSoftBusInfo(HW_CHAR *busId, HW_CHAR *eventId, void *context)
+{
     cJSON *root_soft_bus;
     root_soft_bus = cJSON_CreateObject();
 
     cJSON *services_soft_bus;
     services_soft_bus = cJSON_CreateArray();
 
-    cJSON *service_soft_bus; 
+    cJSON *service_soft_bus;
     service_soft_bus = cJSON_CreateObject();
 
     cJSON *paras = cJSON_CreateObject();
@@ -1083,11 +1053,13 @@ HW_API_FUNC HW_INT IOTA_GetLatestSoftBusInfo(HW_CHAR *busId, HW_CHAR *eventId, v
     int messageId = 0;
     if (payload == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: get the newest soft bus info failed, the payload is null\n");
-	} else {
+        return IOTA_FAILURE;
+    } else {
         messageId = EventUp(payload, context);
         PrintfLog(EN_LOG_LEVEL_DEBUG, "iota_datatrans: IOTA_GetLatestSoftBusInfo() with payload ==> %s\n", payload);
         if (messageId != 0) {
-            PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: get the newest soft bus info failed, the result is %d\n", messageId);
+            PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: get the newest soft bus info failed, the result is %d\n",
+                messageId);
         }
         free(payload);
         return messageId;
@@ -1097,15 +1069,15 @@ HW_API_FUNC HW_INT IOTA_GetLatestSoftBusInfo(HW_CHAR *busId, HW_CHAR *eventId, v
 HW_API_FUNC HW_INT IOTA_GetOTAPackages_Ext(HW_CHAR *url, HW_CHAR *token, HW_INT timeout, const HW_CHAR *otaFilePath,
     HW_CHAR *otaFilenameOut)
 {
-    if (url == NULL || otaFilenameOut == NULL ||
-        timeout <= OTA_TIMEOUT_MIN_LENGTH) { // the timeout value must be greater than 300s
+    if ((url == NULL) || (otaFilenameOut == NULL) ||
+        (timeout <= OTA_TIMEOUT_MIN_LENGTH)) { // the timeout value must be greater than 300s
         PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_GetOTAPackages() the input is invalid.\n");
         return IOTA_PARAMETER_ERROR;
     }
 
     int result = 0;
-    char ipBuffer[IP_LENGTH] = {""};
-    char portBuffer[PORT_LENGTH] = {""};
+    char ipBuffer[IP_LENGTH] = { "" };
+    char portBuffer[PORT_LENGTH] = { "" };
 
     char *ip = ipBuffer;
     char *port = portBuffer;
@@ -1157,11 +1129,9 @@ HW_API_FUNC HW_INT IOTA_GetOTAPackages_Ext(HW_CHAR *url, HW_CHAR *token, HW_INT 
         MemFree(&httpHeaderStr);
         return IOTA_FAILURE;
     }
-
     PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() the request header is \n%s.\n", httpHeaderStr);
 
     int res = SSL_write(ssl, httpHeaderStr, httpHeaderLength);
-
     if (res < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR,
             "iota_datatrans: IOTA_GetOTAPackages() send https request failed, response is %d.\n", res);
@@ -1201,7 +1171,6 @@ HW_API_FUNC SSL_CTX *IOTA_ssl_init()
     }
 
     server_ctx = SSL_CTX_new(SSLv23_client_method());
-
     if (server_ctx == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_ssl_init() New SSL_CTX failed.\n");
         return NULL;
@@ -1219,14 +1188,11 @@ HW_API_FUNC HW_INT IOTA_GetDeviceShadow(HW_CHAR *requestId, HW_CHAR *object_devi
         return IOTA_PARAMETER_EMPTY;
     }
 
-    cJSON *root;
-    root = cJSON_CreateObject();
-    char *payload;
-
+    cJSON *root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, object_device_id);
     cJSON_AddStringToObject(root, SERVICE_ID, service_id);
 
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
 
     cJSON_Delete(root);
 
@@ -1255,13 +1221,13 @@ HW_API_FUNC HW_INT IOTA_Bootstrap()
 
 HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, void *context)
 {
-    if (serviceNum == 0 || pServiceData == NULL) {
+    if ((serviceNum == 0) || (pServiceData == NULL)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "the payload cannot be null.\n");
         return IOTA_PARAMETER_EMPTY;
     }
-    cJSON *root, *data;
-    root = cJSON_CreateObject();
-    data = cJSON_CreateArray();
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON *data = cJSON_CreateArray();
     int i;
     for (i = 0; i < serviceNum; i++) {
         cJSON *properties = cJSON_Parse(pServiceData[i].properties);
@@ -1272,9 +1238,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceDat
             return IOTA_PARSE_JSON_FAILED;
         }
 
-        cJSON *serviceData;
-        serviceData = cJSON_CreateObject();
-
+        cJSON *serviceData = cJSON_CreateObject();
         cJSON_AddStringToObject(serviceData, SERVICE_ID_V3, pServiceData[i].service_id);
         cJSON_AddStringToObject(serviceData, EVENT_TIME_V3, pServiceData[i].event_time);
         cJSON_AddItemToObject(serviceData, SERVICE_DATA_V3, properties);
@@ -1284,8 +1248,7 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV3(ST_IOTA_SERVICE_DATA_INFO pServiceDat
     cJSON_AddItemToObject(root, DATA_V3, data);
     cJSON_AddStringToObject(root, MSGTYPE, DEVIVE_REQ);
 
-    char *payload;
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
     cJSON_Delete(root);
 
     int messageId = 0;
@@ -1318,8 +1281,7 @@ HW_API_FUNC HW_INT IOTA_CmdRspV3(ST_IOTA_COMMAND_RSP_V3 *cmdRspV3, void *context
         return IOTA_PARAMETER_EMPTY;
     }
 
-    cJSON *root;
-    root = cJSON_CreateObject();
+    cJSON *root = cJSON_CreateObject();
 
     cJSON_AddNumberToObject(root, MID, cmdRspV3->mid);
     cJSON_AddNumberToObject(root, ERR_CODE, cmdRspV3->errcode);
@@ -1328,8 +1290,7 @@ HW_API_FUNC HW_INT IOTA_CmdRspV3(ST_IOTA_COMMAND_RSP_V3 *cmdRspV3, void *context
     cJSON *body = cJSON_Parse(cmdRspV3->body);
     cJSON_AddItemToObject(root, BODY, body);
 
-    char *payload;
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
     cJSON_Delete(root);
 
     int messageId;
@@ -1360,27 +1321,23 @@ HW_API_FUNC HW_INT IOTA_SubscribeBoostrap()
 
 HW_API_FUNC HW_INT IOTA_GetNTPTime(void *context)
 {
-    cJSON *root, *services;
-    root = cJSON_CreateObject();
-    services = cJSON_CreateArray();
-    cJSON *serviceEvent;
-    serviceEvent = cJSON_CreateObject();
+    cJSON *root = cJSON_CreateObject();
+    cJSON *services = cJSON_CreateArray();
+    cJSON *serviceEvent = cJSON_CreateObject();
 
     cJSON_AddStringToObject(serviceEvent, SERVICE_ID, SDK_TIME);
     cJSON_AddStringToObject(serviceEvent, EVENT_TYPE, SDK_NTP_REQUEST);
     char *event_time = GetEventTimesStamp();
     cJSON_AddStringToObject(serviceEvent, EVENT_TIME, event_time);
 
-    cJSON *paras;
-    paras = cJSON_CreateObject();
+    cJSON *paras = cJSON_CreateObject();
     cJSON_AddNumberToObject(paras, DEVICE_SEND_TIME, getTime());
 
     cJSON_AddItemToObject(serviceEvent, PARAS, paras);
     cJSON_AddItemToArray(services, serviceEvent);
     cJSON_AddItemToObject(root, SERVICES, services);
 
-    char *payload;
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
     MemFree(&event_time);
     cJSON_Delete(root);
 
@@ -1397,16 +1354,14 @@ HW_API_FUNC HW_INT IOTA_GetNTPTime(void *context)
 
 HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR *timestamp, void *context)
 {
-    cJSON *root, *services, *serviceEvent;
-    root = cJSON_CreateObject();
-    services = cJSON_CreateArray();
-    serviceEvent = cJSON_CreateObject();
+    cJSON *root = cJSON_CreateObject();
+    cJSON *services = cJSON_CreateArray();
+    cJSON *serviceEvent = cJSON_CreateObject();
 
     cJSON_AddStringToObject(serviceEvent, SERVICE_ID, LOG);
     cJSON_AddStringToObject(serviceEvent, EVENT_TYPE, LOG_REPORT);
 
-    cJSON *paras;
-    paras = cJSON_CreateObject();
+    cJSON *paras = cJSON_CreateObject();
     cJSON_AddStringToObject(paras, CONTENT, content);
     cJSON_AddStringToObject(paras, TYPE, type);
     cJSON_AddStringToObject(paras, TIMESTAMP, timestamp);
@@ -1415,8 +1370,7 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR
     cJSON_AddItemToArray(services, serviceEvent);
     cJSON_AddItemToObject(root, SERVICES, services);
 
-    char *payload;
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
     cJSON_Delete(root);
 
     int messageId = 0;
@@ -1431,39 +1385,36 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR
 }
 
 /**
- *@Description: report device info to the iot platform
- *@param timestamp: ST_IOTA_DEVICE_INFO_REPORT structure
- *@param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success or
- failure callback functions to provide access to the context information in the callback.
- *@return: IOTA_SUCCESS represents success, others represent specific failure
+ * @Description: report device info to the iot platform
+ * @param timestamp: ST_IOTA_DEVICE_INFO_REPORT structure
+ * @param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passe
+ * to success or failure callback functions to provide access to the context information in the callback.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
  */
 HW_API_FUNC HW_INT IOTA_ReportDeviceInfo(ST_IOTA_DEVICE_INFO_REPORT *device_info_report, void *context)
 {
-    cJSON *root, *services, *serviceEvent;
-    root = cJSON_CreateObject();
-    services = cJSON_CreateArray();
-    serviceEvent = cJSON_CreateObject();
+    cJSON *root = cJSON_CreateObject();
+    cJSON *services = cJSON_CreateArray();
+    cJSON *serviceEvent = cJSON_CreateObject();
 
     cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, device_info_report->object_device_id);
     cJSON_AddStringToObject(serviceEvent, SERVICE_ID, SDK_INFO);
     cJSON_AddStringToObject(serviceEvent, EVENT_TYPE, SDK_INFO_REPORT);
     cJSON_AddStringToObject(serviceEvent, EVENT_TIME, device_info_report->event_time);
 
-    cJSON *paras;
-    paras = cJSON_CreateObject();
+    cJSON *paras = cJSON_CreateObject();
     cJSON_AddStringToObject(paras, DEVICE_SDK_VERSION, device_info_report->device_sdk_version);
     cJSON_AddStringToObject(paras, SW_VERSION, device_info_report->sw_version);
     cJSON_AddStringToObject(paras, FW_VERSION, device_info_report->fw_version);
-    if(device_info_report->device_ip != NULL) {
-	    cJSON_AddStringToObject(paras, DEVICE_IP, device_info_report->device_ip);
+    if (device_info_report->device_ip != NULL) {
+        cJSON_AddStringToObject(paras, DEVICE_IP, device_info_report->device_ip);
     }
 
     cJSON_AddItemToObject(serviceEvent, PARAS, paras);
     cJSON_AddItemToArray(services, serviceEvent);
     cJSON_AddItemToObject(root, SERVICES, services);
 
-    char *payload;
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
     cJSON_Delete(root);
 
     int messageId = 0;
@@ -1490,9 +1441,9 @@ HW_API_FUNC HW_INT IOTA_RptDeviceConfigRst(const ST_IOTA_DEVICE_CONFIG_RESULT *d
     root = cJSON_CreateObject();
     services = cJSON_CreateArray();
     serviceEvent = cJSON_CreateObject();
-    paras =  cJSON_CreateObject();
+    paras = cJSON_CreateObject();
     event_time = GetEventTimesStamp();
-    if (!root || !services || !serviceEvent || !paras || !event_time) {
+    if ((!root) || (!services) || (!serviceEvent) || (!paras) || (!event_time)) {
         cJSON_Delete(root);
         cJSON_Delete(services);
         cJSON_Delete(serviceEvent);
@@ -1584,11 +1535,10 @@ HW_API_FUNC HW_INT IOTA_SubDeviceVersionReport(HW_CHAR *version, void *context)
     }
     cJSON *root;
     root = cJSON_CreateObject();
-    char *payload;
     cJSON_AddStringToObject(root, MESSAGE_NAME, SUB_DEVICE_VERSION_REPORT);
     cJSON_AddStringToObject(root, VERSION, version);
 
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
 
     cJSON_Delete(root);
 
@@ -1609,13 +1559,11 @@ HW_API_FUNC HW_INT IOTA_SubDeviceProductGetReport(cJSON *product_id_list, void *
         PrintfLog(EN_LOG_LEVEL_ERROR, "the product_id_list cannot be null\n");
         return -1;
     }
-    cJSON *root;
-    root = cJSON_CreateObject();
-    char *payload;
+    cJSON *root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, MESSAGE_NAME, GET_PRODUCTS);
     cJSON_AddItemToObject(root, PRODUCTID_LIST, product_id_list);
 
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
 
     cJSON_Delete(root);
 
@@ -1637,13 +1585,11 @@ HW_API_FUNC HW_INT IOTA_SubDeviceScanReport(cJSON *device_list, void *context)
         PrintfLog(EN_LOG_LEVEL_ERROR, "the device_list cannot be null\n");
         return -1;
     }
-    cJSON *root;
-    root = cJSON_CreateObject();
-    char *payload;
+    cJSON *root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, MESSAGE_NAME, SCAN_SUB_DEVICE_RESULT);
     cJSON_AddItemToObject(root, DEVICE_LIST, device_list);
 
-    payload = cJSON_Print(root);
+    char *payload = cJSON_Print(root);
 
     cJSON_Delete(root);
 

@@ -91,7 +91,7 @@ void ParseDeviceRuleWithHook(RuleInfoList *ruleInfos, const cJSON *paras, void *
         if (toBeOperatedInfo != NULL) {
             if (version > toBeOperatedInfo->ruleVersionInShadow) {
                 RuleInfoListRemoveItem(ruleInfos, toBeOperatedInfo);
-                if (hookTarget != NULL && hook != NULL) {
+                if ((hookTarget != NULL) && (hook != NULL)) {
                     hook(hookTarget, HW_TRUE, rule);
                 }
             } else {
@@ -164,14 +164,14 @@ static int ParsePropCondition(DeviceDataCondition *condition, cJSON *contentInJs
     char *value = cJSON_GetStringValue(cJSON_GetObjectItem(contentInJson, "value"));
 
     // save the condition
-    CHECK_FALSE_RETURN_ERRVAL(CStrDuplicateNotNULL(&condition->operator , operator));
+    CHECK_FALSE_RETURN_ERRVAL(CStrDuplicateNotNULL(&condition->operator, operator));
     CHECK_FALSE_RETURN_ERRVAL(CStrDuplicateNotNULL(&condition->value, value));
 
     cJSON *deviceInfo = cJSON_GetObjectItem(contentInJson, "deviceInfo");
     CHECK_NULL_RETURN_ERRVAL(deviceInfo);
     CHECK_ERRVAL_RETURN_ERRVAL(ParseDeviceInfo(&condition->deviceInfo, deviceInfo));
 
-    DEVICE_RULE_DEBUG("in ParsePropCondition, operator is %s, value is %s", operator , value);
+    DEVICE_RULE_DEBUG("in ParsePropCondition, operator is %s, value is %s", operator, value);
 
     return 0;
 }
@@ -236,7 +236,6 @@ static int ParseSingleCondition(Condition *condition, cJSON *contentInJson)
         default:
             DEVICE_RULE_ERROR("invalid condition type: %s", type);
             return ERRVAL;
-            break;
     }
     return 0;
 }
@@ -257,7 +256,7 @@ static int ParseSingleRule(RuleInfo *ruleInfo, cJSON *rule)
     CHECK_FALSE_RETURN_ERRVAL(GetIntValueFromJson(&ruleInfo->ruleVersionInShadow, ruleVersionInShadow));
 
     const cJSON *timeRange = cJSON_GetObjectItem(rule, "timeRange");
-    if (timeRange != NULL && !cJSON_IsNull(timeRange)) {
+    if ((timeRange != NULL) && (!cJSON_IsNull(timeRange))) {
         const char *startTime = cJSON_GetStringValue(cJSON_GetObjectItem(timeRange, "startTime"));
         const char *endTime = cJSON_GetStringValue(cJSON_GetObjectItem(timeRange, "endTime"));
         const char *daysOfWeek = cJSON_GetStringValue(cJSON_GetObjectItem(timeRange, "daysOfWeek"));
@@ -325,7 +324,7 @@ HW_BOOL GetRuleInfoList(RuleInfoList *list, const cJSON * const propertiesCJSON,
             }
             p->ruleVersionInShadow = version;
             DEVICE_RULE_DEBUG("delete this rule");
-        } else if (oneRule == NULL || version > oneRule->ruleVersionInShadow) {
+        } else if ((oneRule == NULL) || (version > oneRule->ruleVersionInShadow)) {
             RuleInfo *p = RuleInfoListPush(addList);
             if (!CStrDuplicate(&p->ruleId, ruleId)) {
                 DEVICE_RULE_ERROR("[error]: can't allocate memory for target ruleId");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,13 +28,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef INCLUDE_UTIL_LOG_UTIL_H_
-#define INCLUDE_UTIL_LOG_UTIL_H_
+#ifndef LOG_UTIL_H
+#define LOG_UTIL_H
 
-#include "stdarg.h"
-
-#define LOG_FILE_ENABLE  				0  // If equal to 1, output to file; if equal to 0, output to log
-#define LOG_FILE_NAME   				"./client.log"  // Mqtt debug output file address
+#include <stdarg.h>
+#define LOG_FILE_ENABLE                  0  // If equal to 1, output to file; if equal to 0, output to log
+#define LOG_FILE_NAME                    "./client.log"  // Mqtt debug output file address
 
 typedef void (*PRINTF_LOG_CALLBACK_HANDLER)(int level, char *format, va_list args);
 void SetPrintfLogCallback(PRINTF_LOG_CALLBACK_HANDLER callback);
@@ -51,29 +50,28 @@ void SetLogLevel(int logLevel);
 void DestoryLogForLinux();
 
 typedef enum {
-	EN_LOG_LEVEL_DEBUG = LOG_DEBUG,
-	EN_LOG_LEVEL_INFO = LOG_INFO,
-	EN_LOG_LEVEL_WARNING = LOG_WARNING,
-	EN_LOG_LEVEL_ERROR = LOG_ERR,
-
+    EN_LOG_LEVEL_DEBUG = LOG_DEBUG,
+    EN_LOG_LEVEL_INFO = LOG_INFO,
+    EN_LOG_LEVEL_WARNING = LOG_WARNING,
+    EN_LOG_LEVEL_ERROR = LOG_ERR,
 } LOGLEVEL;
 
 #else
 
 typedef enum enum_LOG_LEVEL {
-	EN_LOG_LEVEL_DEBUG = 7,
-	EN_LOG_LEVEL_INFO = 6,
-	EN_LOG_LEVEL_WARNING = 4,
-	EN_LOG_LEVEL_ERROR = 3,
-	// for MQTT debug printing
-	EN_LOG_LEVEL_MQTT_MAXIMUM = 8,
-	EN_LOG_LEVEL_MQTT_MEDIUM,
-	EN_LOG_LEVEL_MQTT_MINIMUM,
-	EN_LOG_LEVEL_MQTT_PROTOCOL,
-	EN_LOG_LEVEL_MQTT_ERROR,
-	EN_LOG_LEVEL_MQTT_SEVERE,
-	EN_LOG_LEVEL_MQTT_FATAL,
+    EN_LOG_LEVEL_DEBUG = 7,
+    EN_LOG_LEVEL_INFO = 6,
+    EN_LOG_LEVEL_WARNING = 4,
+    EN_LOG_LEVEL_ERROR = 3,
+    // for MQTT debug printing
+    EN_LOG_LEVEL_MQTT_MAXIMUM = 8,
+    EN_LOG_LEVEL_MQTT_MEDIUM,
+    EN_LOG_LEVEL_MQTT_MINIMUM,
+    EN_LOG_LEVEL_MQTT_PROTOCOL,
+    EN_LOG_LEVEL_MQTT_ERROR,
+    EN_LOG_LEVEL_MQTT_SEVERE,
+    EN_LOG_LEVEL_MQTT_FATAL,
 } LOGLEVEL;
 #endif
 
-#endif /* INCLUDE_UTIL_LOG_UTIL_H_ */
+#endif /* LOG_UTIL_H */

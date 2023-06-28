@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -38,6 +38,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 #include "hw_type.h"
 #include "iota_init.h"
 #include "iota_cfg.h"
@@ -46,7 +47,6 @@
 #include "string_util.h"
 #include "iota_login.h"
 #include "iota_datatrans.h"
-#include "string.h"
 #include "cJSON.h"
 #include "iota_error_type.h"
 
@@ -57,25 +57,23 @@
  *
  * */
 
-char *workPath = ".";
-char *gatewayId = NULL;
+static char *g_workPath = ".";
+static char *g_gatewayId = NULL;
 
-char *bootstrap_address = "iot-bs.cn-north-4.myhuaweicloud.com";
+static char *g_bootstrapAddress = "iot-bs.cn-north-4.myhuaweicloud.com";
 
-char *serverIp_ = NULL;
-// char* serverIp_ = "iot-mqtts.cn-north-4.myhuaweicloud.com";
-int port_ = 8883;
+static char *g_serverIp = NULL; // g_serverIp = "iot-mqtts.cn-north-4.myhuaweicloud.com";
+static int g_port = 8883;
 
-char *password_ = "XXXX";
+static char *g_password = "XXXX";
 
 // deviceId，The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username
-char *username_ = "XXXX"; 
+static char *g_username = "XXXX";
 
-int disconnected_ = 0;
+static int g_disconnected = 0;
 
-// char *scopeId = NULL;  // boostrap device group
 
-int connect_failed_times = 0;
+static int g_connectFailedTimes = 0;
 
 void Test_PropertiesReport(void);
 
@@ -104,7 +102,7 @@ void TimeSleep(int ms)
 
 // -------------------Test  data report---------------------------------
 
-void Test_PropertiesReport()
+void Test_PropertiesReport(void)
 {
     int serviceNum = 2; // reported services' totol count
     ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
@@ -131,13 +129,12 @@ void Test_PropertiesReport()
 
     MemFree(&services[0].event_time);
 }
-//-------------------------------------------------------------------
 
 void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
     PrintfLog(EN_LOG_LEVEL_INFO, "bootstrap_demo: handleConnectSuccess(), login success\n");
-    disconnected_ = 0;
-    connect_failed_times = 0;
+    g_disconnected = 0;
+    g_connectFailedTimes = 0;
 }
 
 void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
@@ -147,10 +144,10 @@ void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
     // judge if the network is available etc. and login again
     // ...
     PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: HandleConnectFailure() login again\n");
-    connect_failed_times++;
-    if (connect_failed_times < 10) {
+    g_connectFailedTimes++;
+    if (g_connectFailedTimes < 10) {
         TimeSleep(50);
-    } else if (connect_failed_times < 50) {
+    } else if (g_connectFailedTimes < 50) {
         TimeSleep(2500);
     }
 
@@ -168,9 +165,9 @@ void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
     // judge if the network is available etc. and login again
     // ...
 
-    if (connect_failed_times < 10) {
+    if (g_connectFailedTimes < 10) {
         TimeSleep(50);
-    } else if (connect_failed_times < 50) {
+    } else if (g_connectFailedTimes < 50) {
         TimeSleep(2500);
     }
 
@@ -183,7 +180,7 @@ void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 
 void HandleDisConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
-    disconnected_ = 1;
+    g_disconnected = 1;
 
     printf("bootstrap_demo: handleLogoutSuccess, login again\n");
     printf("bootstrap_demo: HandleDisConnectSuccess(), messageId %d, code %d, messsage %s\n",
@@ -228,13 +225,12 @@ void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 void HandleBootstrap(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
     PrintfLog(EN_LOG_LEVEL_INFO, "bootstrap_demo: HandleBootstrap(), address is %s\n", rsp->message);
-    if (serverIp_ != NULL) {
-        MemFree(&serverIp_);
+    if (g_serverIp != NULL) {
+        MemFree(&g_serverIp);
     }
 
     int address_length = GetSubStrIndex(rsp->message, ":") + 1;
-
-    if (CopyStrValue(&serverIp_, (const char *)rsp->message, address_length - 1) < 0) {
+    if (CopyStrValue(&g_serverIp, (const char *)rsp->message, address_length - 1) < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "HandleBootstrap(): there is not enough memory here.\n");
     }
 }
@@ -244,13 +240,13 @@ void HandleBootstrap(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 void SetAuthConfig(int bootstrapFlag)
 {
     if (bootstrapFlag == 0) {
-        IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
+        IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, g_serverIp);
     } else {
-        IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, bootstrap_address);
+        IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, g_bootstrapAddress);
     }
-    IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
-    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
+    IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, g_port);
+    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, g_username);
+    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, g_password);
     IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET);
     /* *
      * Configuration is required in certificate mode:
@@ -272,7 +268,7 @@ void SetAuthConfig(int bootstrapFlag)
 #endif
 }
 
-void SetMyCallbacks()
+void SetMyCallbacks(void)
 {
     IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
     IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
@@ -296,19 +292,20 @@ void MyPrintLog(int level, char *format, va_list args)
     /*
      * if you want to printf log in system log files,you can do this:
      * vsyslog(level, format, args);
-     *  */
+     */
 }
 
 int main(int argc, char **argv)
 {
 #if defined(_DEBUG)
-    setvbuf(stdout, NULL, _IONBF, 0); // in order to make the console log printed immediately at debug mode
+    // in order to make the console log printed immediately in debug mode
+    (void)setvbuf(stdout, NULL, _IONBF, 0);
 #endif
 
     IOTA_SetPrintLogCallback(MyPrintLog);
     PrintfLog(EN_LOG_LEVEL_INFO, "bootstrap_demo: start test ===================>\n");
 
-    if (IOTA_Init(workPath) < 0) {
+    if (IOTA_Init(g_workPath) < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: IOTA_Init() error, init failed\n");
         return 1;
     }
@@ -327,7 +324,6 @@ int main(int argc, char **argv)
     // subscribe boostrap topic
     IOTA_SubscribeBoostrap();
 
-
     // ensure the boostrap topic is subscribed, then start to IOTA_Bootstrap.
     TimeSleep(3000);
 
@@ -342,7 +338,7 @@ int main(int argc, char **argv)
 
     IOTA_Destroy();
 
-    if (IOTA_Init(workPath) < 0) {
+    if (IOTA_Init(g_workPath) < 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "bootstrap_demo: IOTA_Init() error, init failed\n");
         return 1;
     }

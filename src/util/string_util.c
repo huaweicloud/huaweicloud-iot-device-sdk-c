@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,9 +35,8 @@
 #include <time.h>
 #include <sys/time.h>
 #include "securec.h"
-#include "string_util.h"
 #include "zlib.h"
-
+#include "string_util.h"
 
 int StringLength(const char *str)
 {
@@ -78,7 +77,7 @@ void StringMalloc(char **str, int length)
     if (*str == NULL) {
         return;
     }
-    memset_s(*str, length, 0, length);
+    (void)memset_s(*str, length, 0, length);
 }
 
 char *CombineStrings(int strAmount, const char *str1, ...)
@@ -94,8 +93,9 @@ char *CombineStrings(int strAmount, const char *str1, ...)
     }
     char *temStr;
 
-    int ret = strcpy_s(result, length, str1);
-    if (ret != 0) {
+    errno_t ret = strcpy_s(result, length, str1);
+    if (ret != EOK) {
+        MemFree(&result);
         return NULL;
     }
 
@@ -116,14 +116,14 @@ char *CombineStrings(int strAmount, const char *str1, ...)
         }
 
         ret = strcpy_s(p, length, result);
-        if (ret != 0) {
+        if (ret != EOK) {
             MemFree(&result);
             MemFree(&p);
             return NULL;
         }
 
         ret = strcat_s(p, length, temStr);
-        if (ret != 0) {
+        if (ret != EOK) {
             MemFree(&p);
             return NULL;
         }
@@ -141,20 +141,20 @@ char *CombineStrings(int strAmount, const char *str1, ...)
  */
 int CopyStrValue(char **dst, const char *src, int length)
 {
-    if (length <= 0) {
+    if ((length <= 0) || (dst == NULL)) {
         return 0;
     }
     *dst = malloc(length + 1);
     if (*dst == NULL) {
         return -1;
     }
-    int ret = memset_s(*dst, length + 1, 0, length);
-    if (ret != 0) {
+    errno_t ret = memset_s(*dst, length + 1, 0, length);
+    if (ret != EOK) {
         return -1;
     }
 
     ret = strncat_s(*dst, length + 1, src, length);
-    if (ret != 0) {
+    if (ret != EOK) {
         return -1;
     }
     return 0;
@@ -163,12 +163,12 @@ int CopyStrValue(char **dst, const char *src, int length)
 /* NOTE: the invocation need to free the return char pointer.
  * return parameter e.g. 20190531T011540Z
  */
-char *GetEventTimesStamp()
+char *GetEventTimesStamp(void)
 {
     time_t t;
     struct tm *lt;
 
-    time(&t);        // get Unix time stamp
+    (void)time(&t);        // get Unix time stamp
     lt = gmtime(&t); // transform into time struct
     if (lt == NULL) {
         return NULL;
@@ -177,14 +177,14 @@ char *GetEventTimesStamp()
     if (dest_str == NULL) {
         return NULL;
     } else {
-        memset_s(dest_str, EVENT_TIME_LENGTH + 1, 0, EVENT_TIME_LENGTH + 1);
-        snprintf_s(dest_str, EVENT_TIME_LENGTH + 1, EVENT_TIME_LENGTH, "%d%.2d%.2dT%.2d%.2d%.2dZ", lt->tm_year + 1900,
-            lt->tm_mon + 1, lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
+        (void)memset_s(dest_str, EVENT_TIME_LENGTH + 1, 0, EVENT_TIME_LENGTH + 1);
+        (void)snprintf_s(dest_str, EVENT_TIME_LENGTH + 1, EVENT_TIME_LENGTH, "%d%.2d%.2dT%.2d%.2d%.2dZ",
+            lt->tm_year + 1900, lt->tm_mon + 1, lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
         return dest_str;
     }
 }
 
-unsigned long long getTime()
+unsigned long long getTime(void)
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -194,12 +194,12 @@ unsigned long long getTime()
 /* NOTE: the invocation need to free the return char pointer.
  * return parameter e.g. 2019053101
  */
-char *GetClientTimesStamp()
+char *GetClientTimesStamp(void)
 {
     time_t t;
     struct tm *lt;
 
-    time(&t);        // get Unix time stamp
+    (void)time(&t);        // get Unix time stamp
     lt = gmtime(&t); // transform into time struct
     if (lt == NULL) {
         return NULL;
@@ -208,11 +208,43 @@ char *GetClientTimesStamp()
     if (dest_str == NULL) {
         return NULL;
     } else {
-        memset_s(dest_str, CLIENT_TIME_LENGTH + 1, 0, CLIENT_TIME_LENGTH + 1);
-        snprintf_s(dest_str, CLIENT_TIME_LENGTH + 1, CLIENT_TIME_LENGTH, "%d%.2d%.2d%.2d", lt->tm_year + 1900,
+        (void)memset_s(dest_str, CLIENT_TIME_LENGTH + 1, 0, CLIENT_TIME_LENGTH + 1);
+        (void)snprintf_s(dest_str, CLIENT_TIME_LENGTH + 1, CLIENT_TIME_LENGTH, "%d%.2d%.2d%.2d", lt->tm_year + 1900,
             lt->tm_mon + 1, lt->tm_mday, lt->tm_hour);
         return dest_str;
     }
+}
+
+/*
+ * NOTE: the caller need to free the return char pointer.
+ * return: convert timeval to the string in the format of year:month:day hour:minute:second.microsecond,
+ * e.g. "2023-01-28 15:38:29.609"
+ *
+ * return NULL if any errors occur.
+ */
+char *Timeval2Str(const struct timeval *tv)
+{
+    if (tv == NULL) {
+        return NULL;
+    }
+    
+    time_t t = (time_t)tv->tv_sec;
+    struct tm *lt = localtime(&t);
+    char timeSec[LOCAL_TIME_LENGTH + 1];
+    if (strftime(timeSec, LOCAL_TIME_LENGTH + 1, "%Y-%m-%d %H:%M:%S", lt) == 0) {
+        return NULL;
+    }
+
+    char *destStr = malloc(LOCAL_TIME_WITH_MS_LENGTH + 1);
+    if (destStr == NULL) {
+        return NULL;
+    }
+
+    if (sprintf_s(destStr, LOCAL_TIME_WITH_MS_LENGTH + 1, "%s.%03d", timeSec, tv->tv_usec / 1000) == -1) {
+        MemFree(&destStr);
+        return NULL;
+    }
+    return destStr;
 }
 
 /*
@@ -226,31 +258,14 @@ char *GetLocalTimeWithMs()
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
-
-    time_t t = (time_t)tv.tv_sec;
-    struct tm *lt = localtime(&t);
-    char timeSec[LOCAL_TIME_LENGTH + 1];
-    if (strftime(timeSec, LOCAL_TIME_LENGTH + 1, "%Y-%m-%d %H:%M:%S", lt) == 0) {
-        return NULL;
-    }
-
-    char *destStr = malloc(LOCAL_TIME_WITH_MS_LENGTH + 1);
-    if (destStr == NULL) {
-        return NULL;
-    }
-
-    if (sprintf_s(destStr, LOCAL_TIME_WITH_MS_LENGTH + 1, "%s.%03d", timeSec, tv.tv_usec / 1000) == -1) {
-        MemFree(&destStr);
-        return NULL;
-    }
-    return destStr;
+    return Timeval2Str(&tv);
 }
 
 /*
  * NOTE: the caller need to free the return char pointer.
  * return a string that is made by prepending input with GetLocalTimeWithMs() and a space,
  * e.g. PrependLocalTimeWithMs("abc") returns "2023-01-28 15:38:29.609 abc"
- * 
+ *
  * return NULL if argument is null.
  * return NULL if any errors occur.
  */
@@ -276,15 +291,15 @@ int GetSubStrIndex(const char *str, const char *substr)
     }
     int len = strlen(str);
     int subLen = strlen(substr);
-    if (len == 0 || substr == 0 || subLen >= SUB_STERING_MAX_LENGTH) {
+    if ((len == 0) || (substr == 0) || (subLen >= SUB_STERING_MAX_LENGTH)) {
         return -1;
     }
     int n = 0;
     char tmp[SUB_STERING_MAX_LENGTH] = { "" };
 
     while (len - n >= subLen && subLen >= 0) {
-        int ret = strncpy_s(tmp, sizeof(tmp), str + n, subLen);
-        if (ret != 0) {
+        errno_t ret = strncpy_s(tmp, sizeof(tmp), str + n, subLen);
+        if (ret != EOK) {
             return -1;
         }
         tmp[subLen] = '\0';
@@ -298,13 +313,12 @@ int GetSubStrIndex(const char *str, const char *substr)
 
 int StrEndWith(const char *str, const char *suffix)
 {
-    if (str == NULL || suffix == NULL) {
+    if ((str == NULL) || (suffix == NULL)) {
         return 0;
     }
 
     size_t lenStr = strlen(str);
     size_t lenSuffix = strlen(suffix);
-
     if (lenSuffix > lenStr) {
         return 0;
     }
@@ -316,8 +330,16 @@ int StrEndWith(const char *str, const char *suffix)
  */
 long long getLLongValueFromStr(const char *str, const char *subStr)
 {
+    if ((str == NULL) || (subStr == NULL)) {
+        return -1;
+    }
+
     char *version_tmp = strstr(str, subStr);
-    char buf[LONG_LONG_MAX_LENGTH+1] = {0};
+    if (version_tmp == NULL) {
+        return -1;
+    }
+
+    char buf[LONG_LONG_MAX_LENGTH + 1] = { 0 };
     uInt i = 0;
     uInt j = 0;
     for (i = 0; i < strlen(version_tmp); i++) {
@@ -346,13 +368,14 @@ int gZIPCompress(const char *src, int srcLength, unsigned char *dest, int destLe
     unsigned int encoding = 16;
     int ret = 0;
 
-    if (src != NULL && srcLength > 0 && destLength >= 0) {
+    if ((src != NULL) && (srcLength > 0) && (dest != NULL) && (destLength >= 0)) {
         c_stream.zalloc = NULL;
         c_stream.zfree = NULL;
         c_stream.opaque = NULL;
         if (deflateInit2(&c_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, (int)(MAX_WBITS | encoding), 8,
-            Z_DEFAULT_STRATEGY) != Z_OK)
+            Z_DEFAULT_STRATEGY) != Z_OK) {
             return -1;
+        }
         c_stream.next_in = (Bytef *)src;
         c_stream.avail_in = srcLength;
         c_stream.next_out = (Bytef *)dest;
@@ -382,20 +405,21 @@ int gZIPCompress(const char *src, int srcLength, unsigned char *dest, int destLe
 }
 
 // Reassign memory
-char *ReassignMemory(char *oldMemory, unsigned int resultLen) {
-    if (resultLen <= 0) {
+char *ReassignMemory(char *oldMemory, unsigned int resultLen)
+{
+    if (resultLen <= 0 || oldMemory == NULL) {
         return oldMemory;
     }
-	char *result = (char *)malloc(resultLen);
-	if (result == NULL) {
-		return oldMemory;
-	}
-	result[0] = 0;
-	int ret = strncat_s(result, resultLen, oldMemory, strlen(oldMemory));
+    char *result = (char *)malloc(resultLen);
+    if (result == NULL) {
+        return oldMemory;
+    }
+    result[0] = 0;
+    errno_t ret = strncat_s(result, resultLen, oldMemory, strlen(oldMemory));
     if (ret != EOK) {
         MemFree(&result);
         return oldMemory;
     }
-	MemFree(&oldMemory);
-	return result;
+    MemFree(&oldMemory);
+    return result;
 }

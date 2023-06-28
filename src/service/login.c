@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,21 +29,21 @@
  */
 
 #include "base.h"
-#include "login.h"
 #include "mqtt_base.h"
 #include "iota_error_type.h"
+#include "login.h"
 
-int CreateConnection()
+int CreateConnection(void)
 {
     return MqttBase_CreateConnection();
 }
 
-int ReleaseConnection()
+int ReleaseConnection(void)
 {
     return MqttBase_ReleaseConnection();
 }
 
-int IsConnected()
+int IsConnected(void)
 {
     return MqttBase_IsConnected();
 }

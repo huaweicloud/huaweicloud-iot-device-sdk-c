@@ -321,9 +321,9 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 
 3. Modify configuration.
 	You need to modify the following parameters in the **src/device_demo/device_demo.c** file: 
-	**servierIp_**: southbound IP address of IoTDA, which can be viewed on the application management page of the console.
-	**username_**: parameter required for using MQTT. The default value is device ID, which is returned during device registration.
-	**password_**: device secret, which is returned during device registration.
+	**g_serverIp**: southbound IP address of IoTDA, which can be viewed on the application management page of the console.
+	**g_username**: parameter required for using MQTT. The default value is device ID, which is returned during device registration.
+	**g_password**: device secret, which is returned during device registration.
 	![](./doc/doc_en/4_1.png)
 
 4. Run the **make** command to start compilation.
@@ -437,13 +437,13 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
   - 4. Test the demo.
     Replace the following information in **src/device_demo/device_demo.c**.
 
-  char *serverIp_ = "xx.xx.xx.xx"; // IP address of the edge node.
+  char *g_serverIp = "xx.xx.xx.xx"; // IP address of the edge node.
 
-  int port_ = 7883; // MQTTS port number. Currently, the IoT Edge uses this port number by default.
+  int g_port= 7883; // MQTTS port number. Currently, the IoT Edge uses this port number by default.
 
-  char *username_ = "tunnelDeviceA"; // The value is set in step 1.
+  char *g_username = "tunnelDeviceA"; // The value is set in step 1.
 
-  char *password_ = "xxxx"; // The value is set in step 1.
+  char *g_password = "xxxx"; // The value is set in step 1.
 
   Assume that the IDs of source device A and target device B are **tunnelDeviceA** and **tunnelDeviceB** respectively. Device A sends a **hello world** message to device B.
   The following code is invoked on device A (the demo can be invoked in the **main** function):
@@ -452,7 +452,7 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
    {
 
      char *to = "deviceB";
-     char *from = username_;
+     char *from = username;
      char *content = "hello deviceB";
      char *requestId = "demoIdToDeviceB";
      int messageId = IOTA_M2MSendMsg(to, from, content, requestId, NULL);
@@ -513,7 +513,7 @@ The SDK provides log callback functions. You can call the **IOTA_SetPrintLogCall
 
 Before initiating services, call the **IOTA_Init()** API to initialize AgentLite resources. For details, see the API documentation. Refer to **IOTA_Init()** called by the **main()** function in the demo.
 
-`IOTA_Init(HW_CHAR *pcWorkPath)`
+`IOTA_Init(HW_CHAR *workPath)`
 
 - **Configuring device binding**
 
@@ -522,10 +522,10 @@ Before connecting a device to the platform, set the IP address, port, device ID,
 ```c
 
 void setAuthConfig(){
-  IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
-  IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
-  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
+  IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, g_serverIp);
+  IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, g_port);
+  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, g_username);
+  IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, g_password);
   IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET); // Secret mode
   IOTA_ConfigSetUint(EN_IOTA_CFG_CHECK_STAMP_METHOD, EN_IOTA_CFG_CHECK_STAMP_OFF);
 /**
@@ -615,20 +615,20 @@ You can press **Ctrl+C** to stop the program. After that, the device is offline.
   
   - API for reporting a device message:
     
-    `HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content)`
-    
+    `HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content, HW_CHAR *topicParas, HW_INT compressFlag, void *context);`
     The data reported via this API is not parsed by the platform. It can be forwarded to other services or pushed to the application server. **object_device_id** indicates the device to be reported. **name** indicates the message name. **id** indicates the message ID. **content** indicates the content to be reported. **topicParas** indicates the parameters of the custom topic. If this parameter is set to **NULL**, the default topic of the platform is used to report data. Refer to the **Test_MessageReport** function in the demo. For details about the parameters, see the API documentation.
     
 ```c
- void Test_MessageReport() {
-  //default topic
-  // int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", NULL);
-  
-  //user topic
-  int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg");
-  if (messageId != 0) {
-  	  PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo:   Test_MessageReport() failed, messageId %d\n", messageId);
-	}
+static void Test_MessageReport()
+{
+    // default topic
+    int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello123123123123", NULL, 0, NULL);
+
+    // user topic
+    // int messageId = IOTA_MessageReport(NULL, "data123", "123", "hello", "devMsg", 0, NULL);
+    if (messageId != 0) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
+    }
 }
 ```
 
@@ -674,8 +674,8 @@ services[1].properties = service2;
   
   - A device receives the command as defined in the product model.
 
-    `HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER pfnCallbackHandler)`
-    This API is used to set the command callback function. When a command is delivered from the cloud or a device-side rule is triggered, `pfnCallbackHandler` is called.
+    `HW_API_FUNC HW_VOID IOTA_SetCmdCallback(PFN_CMD_CALLBACK_HANDLER callbackHandler)`
+    This API is used to set the command callback function. When a command is delivered from the cloud or a device-side rule is triggered, `callbackHandler` is called.
     ```c
     void HandleCommandRequest(EN_IOTA_COMMAND *command)
     {
@@ -735,7 +735,7 @@ void Test_BatchPropertiesReport() {
   //	serviceList[1] = 1;		  // **Device 2** needs to report one service.
   char *device1_service1 = "{\"Load\":\"1\",\"ImbA_strVal\":\"3\"}";     // Properties to be reported by **service 1** (in JSON format).
   char *device1_service2 = "{\"PhV_phsA\":\"2\",\"PhV_phsB\":\"4\"}";// Properties to be reported by **service 2** (in JSON format).
-  devices[0].device_id = subDeviceId;
+  devices[0].device_id = g_subDeviceId;
   devices[0].services[0].event_time = "20191209T081212Z";
   devices[0].services[0].service_id = "parameter";
   devices[0].services[0].properties = device1_service1;
@@ -763,10 +763,10 @@ void Test_BatchPropertiesReport() {
 	  - Refer to the **SetAuthConfig** function in the demo to set the mode for the device to access using a certificate.
 ```c
 void SetAuthConfig() {
-	IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, serverIp_);
-	IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, port_);
-	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, username_);
-	//	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, password_);
+	IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, g_serverIp);
+	IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, g_port);
+	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, g_username);
+	//	IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, g_password);
 	//	IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, 	EN_IOTA_CFG_AUTH_MODE_SECRET);
 	
 	 IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_CERT);

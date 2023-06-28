@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -37,7 +37,7 @@ int init(char *workPath)
     return MqttBase_init(workPath);
 }
 
-int destory()
+int destory(void)
 {
     return MqttBase_destory();
 }

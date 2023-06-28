@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,22 +28,21 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "stdio.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <log_util.h>
+#include <json_util.h>
+#include <string_util.h>
+#include <stdio.h>
 #include "signal.h"
 #include "hw_type.h"
 #include "iota_init.h"
 #include "iota_cfg.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include "errno.h"
 #include "iota_error_type.h"
 #include "iota_login.h"
 #include "iota_datatrans.h"
 #include "cJSON.h"
-#include <hw_type.h>
-#include <log_util.h>
-#include <json_util.h>
-#include <string_util.h>
 #include "generic_tcp_protocol.h"
 
 int CreateServerSocket(char *serverIp, int serverPort, int backlog)
@@ -138,11 +137,11 @@ void SendMessageToSubDevice(int clientSocket, char *payload)
 void SendCommandRspToIoTPlatform(char *requestId)
 {
     PrintfLog(EN_LOG_LEVEL_INFO, "geteway_demo: SendCommandRspToIoTPlatform()\n");
-    char *pcCommandRespense = "{\"SupWh\": \"aaa\"}"; // in service accumulator
+    char *commandResponse = "{\"SupWh\": \"aaa\"}"; // in service accumulator
     int result_code = 0;
     char *response_name = "cmdResponses";
 
-    int messageId = IOTA_CommandResponse(requestId, result_code, response_name, pcCommandRespense, NULL);
+    int messageId = IOTA_CommandResponse(requestId, result_code, response_name, commandResponse, NULL);
     if (messageId != 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "geteway_demo: SendCommandRspToIoTPlatform() failed, messageId %d\n", messageId);
     }
@@ -259,7 +258,9 @@ ST_IOTA_SERVICE_DATA_INFO *DecodeServiceProperty(char *recvBuf)
     // Second byte indicate the value of properties1, the value ranges from 0 to 9;
     // Third byte indicate the value of properties2, the value ranges from 0 to 9;
     unsigned int serviceIndex = 0;
-    char serviceId[2], firstPropertie[2], secondPropertie[2];
+    char serviceId[2] = {0};
+    char firstPropertie[2]= {0};
+    char secondPropertie[2]= {0};
     serviceId[0] = *recvBuf;
     serviceId[1] = '\0';
     firstPropertie[0] = *(recvBuf + 1);
@@ -267,7 +268,6 @@ ST_IOTA_SERVICE_DATA_INFO *DecodeServiceProperty(char *recvBuf)
     secondPropertie[0] = *(recvBuf + 2);
     secondPropertie[1] = '\0';
     serviceIndex = atoi(serviceId);
-
     if (serviceIndex > 4 || serviceIndex < 1) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "geteway_demo: DecodeServiceProperty() error, service id = %d, is invalid\n",
             serviceIndex);

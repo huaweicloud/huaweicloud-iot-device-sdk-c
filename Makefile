@@ -14,7 +14,7 @@ SYS_HAL_OBJS = sys_hal.o sys_hal_imp.o
 DETECT_ANOMALY_OBJS = detect_anomaly.o
 SOFT_BUS_OBJS = dconncaseone_interface.o soft_bus_datatrans.o soft_bus_init.o
 
-CORE_OBJECTS = hmac_sha256.o mqtt_base.o log_util.o string_util.o cJSON.o json_util.o base.o callback_func.o login.o subscribe.o data_trans.o iota_init.o iota_login.o iota_datatrans.o  mqttv5_util.o
+CORE_OBJECTS = hmac_sha256.o mqtt_base.o log_util.o string_util.o cJSON.o json_util.o base.o callback_func.o login.o subscribe.o data_trans.o iota_init.o iota_login.o iota_datatrans.o
 OBJS += $(foreach NAME,$(CORE_OBJECTS),$(OUT_PATH)/$(NAME))
 OBJS += $(foreach NAME,$(SYS_HAL_OBJS),$(OUT_PATH)/$(NAME))
 OBJS += $(foreach NAME,$(DETECT_ANOMALY_OBJS),$(OUT_PATH)/$(NAME))
@@ -22,8 +22,6 @@ OBJS += $(foreach NAME,$(DETECT_ANOMALY_OBJS),$(OUT_PATH)/$(NAME))
 DEVICE_RULE_FILENAME = ${wildcard $(SRC_PATH)/service/device_rule/*.c} 
 DEVICE_RULE_OBJS := $(DEVICE_RULE_FILENAME:%.c=$(OUT_PATH)/%.o)
 OBJS += $(DEVICE_RULE_OBJS)
-#generic_tcp_protocol.o gateway_server_demo.o
-#bootstrap_demo.o
 #$(warning "OS $(OS)")
 #$(warning "OSTYPE $(OSTYPE)")
 
@@ -38,18 +36,24 @@ CFLAGS += -DSOFT_BUS_OPTION2=1
 OBJS += $(foreach NAME,$(SOFT_BUS_OBJS),$(OUT_PATH)/$(NAME))
 endif
 
-#SSH_SWITCH :=1
+#SSH_SWITCH := 1
 ifdef SSH_SWITCH
 CFLAGS += -DSSH_SWITCH=1
 OBJS += $(foreach NAME,$(SSH_OBJS),$(OUT_PATH)/$(NAME))
 LIBS += -lnopoll -lssh
 endif
 
+#MQTTV5 := 1
+ifdef MQTTV5
+CFLAGS += -DMQTTV5
+OBJS +=  $(OUT_PATH)/mqttv5_util.o
+endif
+
 # enable device rule compilation
-DEVIC_ERULE_ENALBE:=y
-CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE:=y
-ifeq ($(DEVIC_ERULE_ENALBE),y)
-CFLAGS += -DDEVIC_ERULE_ENALBE=1
+DEVICE_RULE_ENALBE := y
+CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE := y
+ifeq ($(DEVICE_RULE_ENALBE),y)
+CFLAGS += -DDEVICE_RULE_ENALBE=1
 ifeq ($(CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE),y)
 CFLAGS += -DCONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE=1
 endif
@@ -71,6 +75,11 @@ endif
 $(TARGET): $(OBJ_DIRS) $(OUT_PATH)/device_demo.o $(OBJS)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OUT_PATH)/device_demo.o $(OBJS)  $(LIBS)
 
+gateway_demo: $(OBJ_DIRS) $(OUT_PATH)/generic_tcp_protocol.o $(OUT_PATH)/gateway_server_demo.o $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OUT_PATH)/generic_tcp_protocol.o $(OUT_PATH)/gateway_server_demo.o $(OBJS) $(LIBS)
+
+bootstrap_demo: $(OBJ_DIRS) $(OUT_PATH)/bootstrap_demo.o $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OUT_PATH)/bootstrap_demo.o $(OBJS) $(LIBS)
 
 ##-----------base----------------##
 $(OUT_PATH)/hmac_sha256.o: $(SRC_PATH)/base/hmac_sha256.c
@@ -142,13 +151,13 @@ $(OUT_PATH)/ssh_client.o: $(SRC_PATH)/tunnel/ssh_client.c
 ##-----------soft bus----------------##
 $(OUT_PATH)/soft_bus_datatrans.o: $(SRC_PATH)/service/soft_bus_datatrans.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/base/ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/util/ $(HEADER_PATH)/service/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)
- 
+
 $(OUT_PATH)/soft_bus_init.o: $(SRC_PATH)/service/soft_bus_init.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/base/ $(HEADER_PATH)/util/ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)
- 
+
 $(OUT_PATH)/dconncaseone_interface.o: $(SRC_PATH)/dconncaseone_interface.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/
- 
+
 ##--------------sysHal--------------##
 SYS_HAL_SRC = $(SRC_PATH)/service/sys_hal
 SYS_HAL_HEADER_PATH = ./include/service/sys_hal
@@ -175,7 +184,7 @@ $(DEVICE_RULE_OBJS):$(OUT_PATH)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(DEVICE_RULE_INC)
 
 .PHONY: all
-all:	$(TARGET)
+all:	$(TARGET) gateway_demo bootstrap_demo
 
 
 $(OBJ_DIRS):

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,10 +28,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "log_util.h"
-#include "string_util.h"
 #include <stdio.h>
 #include <limits.h>
+#include "string_util.h"
+#include "log_util.h"
 
 PRINTF_LOG_CALLBACK_HANDLER PrintfLogCb = NULL;
 void SetPrintfLogCallback(PRINTF_LOG_CALLBACK_HANDLER callback)
@@ -75,13 +75,13 @@ int FileWrite(char *format, va_list args)
     }
 
     int ret = 0;
-    if (fp == NULL) {      
+    if (fp == NULL) {
         char fileWay[PATH_MAX] = {0};
         realpath(LOG_FILE_NAME, fileWay);
         
         fp = fopen(fileWay, "a+");
         if (fp == NULL) {
-            printf( "ERROR FileWrite() fopen err! fileWay = %s\n", fileWay);
+            printf("ERROR FileWrite() fopen err! fileWay = %s\n", fileWay);
             return -1;
         }
         PrintfLog(EN_LOG_LEVEL_INFO, " FileWrite() fileName = %s\n", fileWay);
@@ -91,7 +91,7 @@ int FileWrite(char *format, va_list args)
     if (ret == EOF) {
         PrintfLog(EN_LOG_LEVEL_ERROR, " FileWrite() fputs err!\n");
     }
-    fflush(fp);
+    (void)fflush(fp);
     return ret;
 }
 #endif
@@ -157,8 +157,8 @@ void PrintfLog(int logLevel, char *_Format, ...)
 #if LOG_FILE_ENABLE
     if (g_fileSign > 0) {
         g_fileSign = FileWrite(format, args);
-        va_start(args, _Format); 
-    } 
+        va_start(args, _Format);
+    }
 #endif
 
     if (PrintfLogCb) {

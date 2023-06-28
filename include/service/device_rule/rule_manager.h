@@ -28,8 +28,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _RULE_MANAGER_H_
-#define _RULE_MANAGER_H_
+#ifndef RULE_MANAGER_H
+#define RULE_MANAGER_H
 
 #include "iota_init.h"
 #include "hw_type.h"
@@ -37,7 +37,7 @@
 #include "callback_func.h"
 #include "cJSON.h"
 
-#ifdef DEVIC_ERULE_ENALBE
+#ifdef DEVICE_RULE_ENALBE
 
 HW_BOOL RuleMgr_Init(void);
 void RuleMgr_Destroy(void);
@@ -57,7 +57,7 @@ void RuleMgr_EnableDeviceRuleStorage(const char *filepath);
 #define RuleMgr_EnableDeviceRuleStorage(filepath)
 #endif //  CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE
 
-#else //  DEVIC_ERULE_ENALBE
+#else //  DEVICE_RULE_ENALBE
 
 #define RuleMgr_Init() HW_FALSE
 #define RuleMgr_Destroy()
@@ -72,6 +72,6 @@ void RuleMgr_EnableDeviceRuleStorage(const char *filepath);
 #define RuleMgr_DelRule(delList)
 #define RuleMgr_EnableDeviceRuleStorage(filepath)
 
-#endif // DEVIC_ERULE_ENALBE
+#endif // DEVICE_RULE_ENALBE
 
 #endif

@@ -28,8 +28,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _RULE_EXECUTE_H_
-#define _RULE_EXECUTE_H_
+#ifndef RULE_EXECUTE_H
+#define RULE_EXECUTE_H
 
 #include <time.h>
 #include "hw_type.h"
@@ -52,7 +52,7 @@ typedef struct {
 } PropertyValue;
 
 typedef HW_BOOL (*GetPropertyValueCallBack)(const char *serviceId, const char *property, PropertyValue *value);
-typedef void (*ExecuteCommandCallBack)(const char *deviceId, const Command * command);
+typedef void (*ExecuteCommandCallBack)(const char *deviceId, const Command *command);
 void PropertyValueSetInt(PropertyValue *dest, int val);
 void PropertyValueSetDouble(PropertyValue *dest, double val);
 void PropertyValueSetCStr(PropertyValue *dest, const char *val);

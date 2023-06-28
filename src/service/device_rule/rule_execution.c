@@ -125,7 +125,7 @@ static HW_BOOL CalculateDailyTimerCondition(HW_BOOL *result, DailyTimerCondition
     // but tm_wday in struct  rm starts from 0(Sun)->6(Sat),so add 1 here
     if (condition->daysOfWeek & (1 << (time.tm_wday + 1))) {
         int sec = HHMMSStoSecond(time.tm_hour, time.tm_min, time.tm_sec);
-        if (condition->time <= sec && sec < condition->time + 60) {
+        if ((condition->time <= sec) && (sec < condition->time + 60)) {
             // make sure it doesn't stumble into 1 miniute range of  previous executed action.
             if (timestamp - condition->lastExecutedTime[time.tm_wday] >= 60) {
                 *result = HW_TRUE;
@@ -147,7 +147,7 @@ static void DailyTimerConditionMarkDayIsExecuted(DailyTimerCondition *condition,
     // but tm_wday in struct  rm starts from 0(Sun)->6(Sat), so add 1 here
     if (condition->daysOfWeek & (1 << (time.tm_wday + 1))) {
         int sec = HHMMSStoSecond(time.tm_hour, time.tm_min, time.tm_sec);
-        if ( sec >= condition->time   && sec < condition->time + 60) {
+        if ((sec >= condition->time) && (sec < condition->time + 60)) {
             condition->lastExecutedTime[time.tm_wday] = timestamp;
             return;
         }
@@ -263,7 +263,8 @@ static HW_BOOL CalculateDeviceDataRangeCodition(HW_BOOL *result, const DeviceDat
     }
     const char *rangeStr = condition->value;
     const char *numberEnd;
-    // Don't worry, double have precision and accuracy when storing big number, bit it can accurately represent 32bit of intger.
+    // Don't worry, double have precision and accuracy when storing big number,
+    // but it can accurately represent 32bit of intger.
     // https://stackoverflow.com/questions/13269523/can-all-32-bit-ints-be-exactly-represented-as-a-double
     
     double valueLeftBoundry = strtod(rangeStr, (char **)&numberEnd);
@@ -298,17 +299,18 @@ static HW_BOOL CalculateDeviceDataRangeCodition(HW_BOOL *result, const DeviceDat
         default:
             DEVICE_RULE_ERROR("can't compare with unknown type");
             return HW_FALSE;
-
     }
+
     *result = ((valueRead >= valueLeftBoundry) && (valueRead <= valueRightBoundry));
     return HW_TRUE;
-
 }
+
 static HW_BOOL CalculateDeviceDataCompareCodition(HW_BOOL *result, const DeviceDataCondition *condition,
     const GetPropertyValueCallBack callback)
 {
-    PropertyValue valRead, valExpected;
-    if (!GetPropertyValueByPath(condition->deviceInfo.path, &valRead,callback)) {
+    PropertyValue valRead;
+    PropertyValue valExpected;
+    if (!GetPropertyValueByPath(condition->deviceInfo.path, &valRead, callback)) {
         return HW_FALSE;
     }
     if (!StrToPropertyValue(condition->value, valRead.type, &valExpected)) {
@@ -323,7 +325,7 @@ static HW_BOOL CalculateDeviceDataCompareCodition(HW_BOOL *result, const DeviceD
 
     if (strcmp(condition->operator, "<") == 0) {
         *result = comparisonResult < 0;
-    } else if (strcmp(condition->operator, "=") == 0 || strcmp(condition->operator , "==") == 0) {
+    } else if ((strcmp(condition->operator, "=") == 0) || (strcmp(condition->operator, "==") == 0)) {
         *result = comparisonResult == 0;
     } else if (strcmp(condition->operator, ">") == 0) {
         *result = comparisonResult > 0;
@@ -337,9 +339,10 @@ static HW_BOOL CalculateDeviceDataCompareCodition(HW_BOOL *result, const DeviceD
     return HW_TRUE;
 }
 
-static HW_BOOL CalculateDeviceDataCondition(HW_BOOL *result, const DeviceDataCondition *condition,    const GetPropertyValueCallBack callback)
+static HW_BOOL CalculateDeviceDataCondition(HW_BOOL *result, const DeviceDataCondition *condition,
+    const GetPropertyValueCallBack callback)
 {
-    if (strcmp(condition->operator,"between") == 0) {
+    if (strcmp(condition->operator, "between") == 0) {
         return CalculateDeviceDataRangeCodition(result, condition, callback);
     } else {
         return CalculateDeviceDataCompareCodition(result, condition, callback);
@@ -371,25 +374,22 @@ static HW_BOOL CalculateConditions(HW_BOOL *result, ConditionList *list, const c
             }
             case ConditionTypeDailyTimer: {
                 if (!CalculateDailyTimerCondition(&currentResult, &conditionItem->data.dailyTimer, epochTime)) {
-                   DEVICE_RULE_ERROR("CalculateDailyTimerCondition failed");
+                    DEVICE_RULE_ERROR("CalculateDailyTimerCondition failed");
                     return HW_FALSE;
                 }
                 break;
             }
             default:
-                DEVICE_RULE_WARN("unknown condition type, ignore \"%s\"",
-                    ConditionTypeToStr(conditionItem->type));
+                DEVICE_RULE_WARN("unknown condition type, ignore \"%s\"", ConditionTypeToStr(conditionItem->type));
         }
-
 
         if (isLogicAnd) {
             *result = (*result) && currentResult;
         } else {
             *result = (*result) || currentResult;
         }
-        
     }
-        if (*result == HW_TRUE) {
+    if (*result == HW_TRUE) {
         DyListFor (conditionItem, list) {
             switch (conditionItem->type) {
                 case ConditionTypeDailyTimer: {
@@ -434,7 +434,8 @@ static HW_BOOL RuleInfoHasTimer(const RuleInfo *self)
     return HW_FALSE;
 }
 
-static HW_BOOL IsTriggeredByTimer(HW_BOOL *result, RuleInfo *ruleInfo, time_t epochTime) {
+static HW_BOOL IsTriggeredByTimer(HW_BOOL *result, RuleInfo *ruleInfo, time_t epochTime)
+{
     Condition *conditionItem;
     *result = HW_FALSE;
     DyListFor (conditionItem, &ruleInfo->conditions) {
@@ -447,7 +448,7 @@ static HW_BOOL IsTriggeredByTimer(HW_BOOL *result, RuleInfo *ruleInfo, time_t ep
                 break;
             }
             case ConditionTypeDailyTimer: {
-            if (!CalculateDailyTimerCondition(result, &conditionItem->data.dailyTimer, epochTime)) {
+                if (!CalculateDailyTimerCondition(result, &conditionItem->data.dailyTimer, epochTime)) {
                     DEVICE_RULE_ERROR("CalculateDailyTimerCondition failed");
                     return HW_FALSE;
                 }
@@ -507,8 +508,10 @@ void CheckRuleInfoListAndExecute(RuleInfoList *list, const GetPropertyValueCallB
                     yesterdayInWeek |= DaysOfWeekSaturday;
                 }
 
-                HW_BOOL secInToday = ((ruleItem->timeRange.daysOfWeek & (1 << (today + 1))) != 0 && sec <= ruleItem->timeRange.endTime);
-                HW_BOOL secInYesterday = ((yesterdayInWeek & (1 << (today + 1))) != 0 && sec >= ruleItem->timeRange.startTime);
+                HW_BOOL secInToday = ((ruleItem->timeRange.daysOfWeek & (1 << (today + 1))) != 0 &&
+                    sec <= ruleItem->timeRange.endTime);
+                HW_BOOL secInYesterday = ((yesterdayInWeek & (1 << (today + 1))) != 0 &&
+                    sec >= ruleItem->timeRange.startTime);
                 if (!(secInToday || secInYesterday)) {
                     DEVICE_RULE_DEBUG("rule isn't in this day of week, skip");
                     continue;

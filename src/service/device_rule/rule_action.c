@@ -30,8 +30,8 @@
 
 #include <string.h>
 #include "string_util.h"
-#include "rule_action.h"
 #include "securec.h"
+#include "rule_action.h"
 
 HW_BOOL CommandCtor(Command *self)
 {

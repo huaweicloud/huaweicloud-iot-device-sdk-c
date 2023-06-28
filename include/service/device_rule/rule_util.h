@@ -28,14 +28,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _RULE_UTIL_
-#define _RULE_UTIL_
+#ifndef RULE_UTIL
+#define RULE_UTIL
 
 #include <stdint.h>
-
 #include "hw_type.h"
 #include "cJSON.h"
-
 #include "log_util.h"
 
 #define CHECK_NAN_RETURN_ERR(object, errorCode)   \
@@ -89,12 +87,10 @@
     } while (0)
 
 
-
 #define DEVICE_RULE_DEBUG(FMT, ...) PrintfLog(EN_LOG_LEVEL_DEBUG, FMT "\n", ##__VA_ARGS__)
 #define DEVICE_RULE_INFO(FMT, ...) PrintfLog(EN_LOG_LEVEL_INFO, FMT "\n", ##__VA_ARGS__)
 #define DEVICE_RULE_WARN(FMT, ...) PrintfLog(EN_LOG_LEVEL_WARNING, FMT "\n", ##__VA_ARGS__)
 #define DEVICE_RULE_ERROR(FMT, ...) PrintfLog(EN_LOG_LEVEL_ERROR, FMT "\n", ##__VA_ARGS__)
-
 
 
 HW_BOOL GetIntValueFromJson(int *value, const cJSON *item);
@@ -157,7 +153,8 @@ HW_BOOL DynamicArrayPopNoDtor(DynamicArray *arr, size_t itemSize);
     }                                                                                                          \
     void TYPE_NAME_PREFIX##RemoveItem(TYPE_NAME_PREFIX *arr, ITEM_TYPE *item)                                  \
     {                                                                                                          \
-        DynamicArrayRemoveItem((DynamicArray *)arr, item, sizeof(ITEM_TYPE), (DyArrayItemDtorType)(ITEM_DTOR));\
+        DynamicArrayRemoveItem((DynamicArray *)arr, item, sizeof(ITEM_TYPE),                                   \
+            (DyArrayItemDtorType)(ITEM_DTOR));                                                                 \
     }                                                                                                          \
     HW_BOOL TYPE_NAME_PREFIX##Pop(TYPE_NAME_PREFIX *arr)                                                       \
     {                                                                                                          \
@@ -173,10 +170,12 @@ HW_BOOL DynamicItemDummyCtor(void *item);
 
 #define DyListFor(item, ptrList)                      \
     for ((item) = ((DynamicArray *)(ptrList))->items; \
-        (uintptr_t)(item) != (uintptr_t)((DynamicArray *)(ptrList))->items + sizeof(*(item)) * ((ptrList)->size); ++(item))
+        (uintptr_t)(item) != \
+        (uintptr_t)((DynamicArray *)(ptrList))->items + sizeof(*(item)) * ((ptrList)->size);++(item))
 
 #define ConstDyListFor(item, ptrList)                       \
     for ((item) = ((const DynamicArray *)(ptrList))->items; \
-        (uintptr_t)(item) != (uintptr_t)((const DynamicArray *)(ptrList))->items + sizeof(*(item)) * ((ptrList)->size); ++(item))
+        (uintptr_t)(item) != \
+        (uintptr_t)((const DynamicArray *)(ptrList))->items + sizeof(*(item)) * ((ptrList)->size); ++(item))
 
 #endif
