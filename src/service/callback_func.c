@@ -29,6 +29,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "securec.h"
 #include "string_util.h"
@@ -57,10 +58,12 @@ CMD_CALLBACK_HANDLER onCmd;
 CMD_CALLBACK_HANDLER_V3 onCmdV3;
 PROTOCOL_CALLBACK_HANDLER onConnSuccess;
 MESSAGE_CALLBACK_HANDLER onMessage;
+RAW_MESSAGE_CALLBACK_HANDLER onRawMessage;
 PROP_SET_CALLBACK_HANDLER onPropertiesSet;
 PROP_GET_CALLBACK_HANDLER onPropertiesGet;
 SHADOW_GET_CALLBACK_HANDLER onDeviceShadow;
 USER_TOPIC_MSG_CALLBACK_HANDLER onUserTopicMessage;
+USER_TOPIC_RAW_MSG_CALLBACK_HANDLER onUserTopicRawMessage;
 BOOTSTRAP_CALLBACK_HANDLER onBootstrap;
 M2M_CALLBACK_HANDLER onM2mMessage;
 DEVICE_CONFIG_CALLBACK_HANDLER onDeviceConfig = NULL;
@@ -125,45 +128,110 @@ static void OnBootstrapDownArrived(void *context, int token, int code, const cha
     return;
 }
 
-static void OnMessagesDownArrived(void *context, int token, int code, const char *message, void *mqttv5)
+static EN_IOTA_MQTT_MSG_INFO *CreateMqttMsgInfo(void *context, int token, int code)
 {
+    EN_IOTA_MQTT_MSG_INFO *info = (EN_IOTA_MQTT_MSG_INFO *)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+    if (info == NULL) {
+        return NULL;
+    }
+    info->context = context;
+    info->messageId = token;
+    info->code = code;
+    return info;
+}
+
+static bool GetMessageInSystemFormat(cJSON *root, char **objectDeviceId, char **name, char **id, char **content)
+{
+    if (!cJSON_IsObject(root)) {
+        return false;
+    }
+
+    // check if any key is not belong to that in system format
+    cJSON *kvInMessage = root->child;
+    while (kvInMessage) {
+        if ((strcmp(kvInMessage->string, CONTENT) != 0) && (strcmp(kvInMessage->string, OBJECT_DEVICE_ID) != 0) &&
+            (strcmp(kvInMessage->string, NAME) != 0) && (strcmp(kvInMessage->string, ID) != 0)) {
+            return false;
+        }
+        kvInMessage = kvInMessage->next;
+    }
+
+    // check if value is complying to system format
+    cJSON *contentObject = cJSON_GetObjectItem(root, CONTENT);
+    cJSON *objectDeviceIdObject = cJSON_GetObjectItem(root, OBJECT_DEVICE_ID);
+    cJSON *nameObject = cJSON_GetObjectItem(root, NAME);
+    cJSON *idObject = cJSON_GetObjectItem(root, ID);
+    if ((objectDeviceIdObject && !cJSON_IsNull(objectDeviceIdObject) && !cJSON_IsString(objectDeviceIdObject)) ||
+        (nameObject && !cJSON_IsNull(nameObject) && !cJSON_IsString(nameObject)) ||
+        (idObject && !cJSON_IsNull(idObject) && !cJSON_IsString(idObject)) ||
+        (contentObject && !cJSON_IsNull(contentObject) && !cJSON_IsString(contentObject))) {
+        return false; // is not system format
+    }
+
+    *objectDeviceId = cJSON_GetStringValue(objectDeviceIdObject);
+    *name = cJSON_GetStringValue(nameObject);
+    *id = cJSON_GetStringValue(idObject);
+    *content = cJSON_GetStringValue(contentObject);
+    return true;
+}
+
+static void OnRawMessageDownArrived(void *context, int token, int code, char *message, int messageLength, void *mqttv5)
+{
+    EN_IOTA_RAW_MESSAGE *rawMsg = (EN_IOTA_RAW_MESSAGE *)malloc(sizeof(EN_IOTA_RAW_MESSAGE));
+    if (rawMsg == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnMessagesDownArrived(): there is not enough memory here.\n");
+        return;
+    }
+    (void)memset_s(rawMsg, sizeof(EN_IOTA_RAW_MESSAGE), 0, sizeof(EN_IOTA_RAW_MESSAGE));
+
+    rawMsg->mqttMsgInfo = CreateMqttMsgInfo(context, token, code);
+    if (rawMsg->mqttMsgInfo == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnMessagesDownArrived(): there is not enough memory here.\n");
+        goto EXIT;
+    }
+
+    rawMsg->payloadLength = messageLength;
+    rawMsg->payload = message;
+    if (onRawMessage) {
+        (onRawMessage)(rawMsg, mqttv5);
+    }
+EXIT:
+    MemFree(&rawMsg->mqttMsgInfo);
+    MemFree(&rawMsg);
+}
+
+
+static void OnMessagesDownArrived(void *context, int token, int code, char *message, int messageLength, void *mqttv5)
+{
+    OnRawMessageDownArrived(context, token, code, message, messageLength, mqttv5);
+
+    cJSON *root = cJSON_Parse(message);
     EN_IOTA_MESSAGE *msg = (EN_IOTA_MESSAGE *)malloc(sizeof(EN_IOTA_MESSAGE));
     if (msg == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnMessagesDownArrived(): there is not enough memory here.\n");
-        return;
+        goto EXIT;
     }
-    msg->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO *)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+
+    msg->mqtt_msg_info = CreateMqttMsgInfo(context, token, code);
     if (msg->mqtt_msg_info == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnMessagesDownArrived(): there is not enough memory here.\n");
-        MemFree(&msg);
-        return;
+        goto EXIT;
     }
-    msg->mqtt_msg_info->context = context;
-    msg->mqtt_msg_info->messageId = token;
-    msg->mqtt_msg_info->code = code;
 
-    JSON *root = JSON_Parse(message);
-
-    char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1");
-    msg->object_device_id = object_device_id;
-
-    char *name = JSON_GetStringFromObject(root, NAME, "-1");
-    msg->name = name;
-
-    char *id = JSON_GetStringFromObject(root, ID, "-1");
-    msg->id = id;
-
-    char *content = JSON_GetStringFromObject(root, CONTENT, "-1");
-    msg->content = content;
-
+    if (!GetMessageInSystemFormat(root, &msg->object_device_id, &msg->name, &msg->id, &msg->content)) {
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "OnMessagesDownArrived(): message is not system fomart.\n");
+        goto EXIT;
+    }
     if (onMessage) {
         (onMessage)(msg, mqttv5);
     }
 
-    JSON_Delete(root);
-    MemFree(&msg->mqtt_msg_info);
+EXIT:
+    cJSON_Delete(root);
+    if (msg) {
+        MemFree(&msg->mqtt_msg_info);
+    }
     MemFree(&msg);
-    return;
 }
 
 static void OnM2mMessagesDownArrived(void *context, int token, int code, const char *message)
@@ -554,50 +622,69 @@ static void OnShadowGetResponseArrived(void *context, int token, int code, const
     return;
 }
 
-static void OnUserTopicArrived(void *context, int token, int code, const char *topic, const char *message)
+static void OnUserTpoicRawMessage(void *context, int token, int code, char *topicParas, char *message,
+    int messageLength)
 {
-    char *topic_paras_value = strstr(topic, "user/");
-    char *topic_paras = strstr(topic_paras_value + 5, "");
-
-    EN_IOTA_USER_TOPIC_MESSAGE *user_topic_msg =
-        (EN_IOTA_USER_TOPIC_MESSAGE *)malloc(sizeof(EN_IOTA_USER_TOPIC_MESSAGE));
-    if (user_topic_msg == NULL) {
+    EN_IOTA_USER_TOPIC_RAW_MESSAGE *rawMsg =
+        (EN_IOTA_USER_TOPIC_RAW_MESSAGE *)malloc(sizeof(EN_IOTA_USER_TOPIC_RAW_MESSAGE));
+    if (rawMsg == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnUserTopicArrived(): there is not enough memory here.\n");
         return;
     }
-    user_topic_msg->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO *)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
-    if (user_topic_msg->mqtt_msg_info == NULL) {
+    (void)memset_s(rawMsg, sizeof(EN_IOTA_USER_TOPIC_RAW_MESSAGE), 0, sizeof(EN_IOTA_USER_TOPIC_RAW_MESSAGE));
+
+    rawMsg->mqttMsgInfo = CreateMqttMsgInfo(context, token, code);
+    if (rawMsg->mqttMsgInfo == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnUserTopicArrived(): there is not enough memory here.\n");
-        MemFree(&user_topic_msg);
-        return;
+        goto EXIT;
     }
-    user_topic_msg->mqtt_msg_info->context = context;
-    user_topic_msg->mqtt_msg_info->messageId = token;
-    user_topic_msg->mqtt_msg_info->code = code;
 
-    user_topic_msg->topic_para = topic_paras;
+    rawMsg->payloadLength = messageLength;
+    rawMsg->payload = message;
+    rawMsg->topicPara = topicParas;
+    if (onUserTopicRawMessage) {
+        (onUserTopicRawMessage)(rawMsg);
+    }
+EXIT:
+    MemFree(&rawMsg->mqttMsgInfo);
+    MemFree(&rawMsg);
+}
 
-    JSON *root = JSON_Parse(message);
+static void OnUserTopicArrived(void *context, int token, int code, char *topic, char *message, int messageLength)
+{
+    char *topicParasValue = strstr(topic, "user/");
+    char *topicParas = strstr(topicParasValue + 5, "");
+    OnUserTpoicRawMessage(context, token, code, topicParas, message, messageLength);
 
-    char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1");
-    user_topic_msg->object_device_id = object_device_id;
+    cJSON *root = cJSON_Parse(message);
+    EN_IOTA_USER_TOPIC_MESSAGE *userTopicMsg = (EN_IOTA_USER_TOPIC_MESSAGE *)malloc(sizeof(EN_IOTA_USER_TOPIC_MESSAGE));
+    if (userTopicMsg == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnUserTopicArrived(): there is not enough memory here.\n");
+        goto EXIT;
+    }
+    userTopicMsg->mqtt_msg_info = CreateMqttMsgInfo(context, token, code);
+    if (userTopicMsg->mqtt_msg_info == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnUserTopicArrived(): there is not enough memory here.\n");
+        goto EXIT;
+    }
 
-    char *name = JSON_GetStringFromObject(root, NAME, "-1");
-    user_topic_msg->name = name;
+    if (!GetMessageInSystemFormat(root, &userTopicMsg->object_device_id, &userTopicMsg->name, &userTopicMsg->id,
+        &userTopicMsg->content)) {
+        PrintfLog(EN_LOG_LEVEL_DEBUG, "OnUserTopicArrived(): message is not system fomart.\n");
+        goto EXIT;
+    }
 
-    char *id = JSON_GetStringFromObject(root, ID, "-1");
-    user_topic_msg->id = id;
-
-    char *content = JSON_GetStringFromObject(root, CONTENT, "-1");
-    user_topic_msg->content = content;
+    userTopicMsg->topic_para = topicParas;
 
     if (onUserTopicMessage) {
-        (onUserTopicMessage)(user_topic_msg);
+        (onUserTopicMessage)(userTopicMsg);
     }
-
-    JSON_Delete(root);
-    MemFree(&user_topic_msg->mqtt_msg_info);
-    MemFree(&user_topic_msg);
+EXIT:
+    cJSON_Delete(root);
+    if (userTopicMsg) {
+        MemFree(&userTopicMsg->mqtt_msg_info);
+    }
+    MemFree(&userTopicMsg);
     return;
 }
 
@@ -1292,7 +1379,8 @@ static void OnEventsDownArrived(void *context, int token, int code, const char *
     return;
 }
 
-static void OnMessageArrived(void *context, int token, int code, const char *topic, char *message, void *mqttv5)
+static void OnMessageArrived(void *context, int token, int code, char *topic, char *message, int messageLength,
+    void *mqttv5)
 {
     if (StringLength(StrInStr(topic, BOOTSTRAP_DOWN)) > 0) {
         OnBootstrapDownArrived(context, token, code, message);
@@ -1300,7 +1388,7 @@ static void OnMessageArrived(void *context, int token, int code, const char *top
     }
 
     if (StringLength(StrInStr(topic, TOPIC_SUFFIX_MESSAGEDOWN)) > 0) {
-        OnMessagesDownArrived(context, token, code, message, mqttv5);
+        OnMessagesDownArrived(context, token, code, message, messageLength, mqttv5);
         return;
     }
 
@@ -1330,7 +1418,7 @@ static void OnMessageArrived(void *context, int token, int code, const char *top
     }
 
     if (StringLength(StrInStr(topic, TOPIC_SUFFIX_USER)) > 0) {
-        OnUserTopicArrived(context, token, code, topic, message);
+        OnUserTopicArrived(context, token, code, topic, message, messageLength);
         return;
     }
 
@@ -1411,6 +1499,12 @@ void SetMessageCallback(MESSAGE_CALLBACK_HANDLER callbackHandler)
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
+void SetRawMessageCallback(RAW_MESSAGE_CALLBACK_HANDLER callbackHandler)
+{
+    onRawMessage = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
 void SetPropSetCallback(PROP_SET_CALLBACK_HANDLER callbackHandler)
 {
     onPropertiesSet = callbackHandler;
@@ -1432,6 +1526,12 @@ void SetShadowGetCallback(SHADOW_GET_CALLBACK_HANDLER callbackHandler)
 void SetUserTopicMsgCallback(USER_TOPIC_MSG_CALLBACK_HANDLER callbackHandler)
 {
     onUserTopicMessage = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetUserTopicRawMsgCallback(USER_TOPIC_RAW_MSG_CALLBACK_HANDLER callbackHandler)
+{
+    onUserTopicRawMessage = callbackHandler;
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 

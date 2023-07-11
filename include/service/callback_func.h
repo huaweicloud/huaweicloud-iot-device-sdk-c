@@ -60,6 +60,9 @@ void SetProtocolCallback(EN_CALLBACK_SETTING item, PROTOCOL_CALLBACK_HANDLER cal
 typedef void (*MESSAGE_CALLBACK_HANDLER)(EN_IOTA_MESSAGE *protocolRsp, void *mqttv5);
 void SetMessageCallback(MESSAGE_CALLBACK_HANDLER callbackHandler);
 
+typedef void (*RAW_MESSAGE_CALLBACK_HANDLER)(EN_IOTA_RAW_MESSAGE *rsp, void *mqttv5);
+void SetRawMessageCallback(RAW_MESSAGE_CALLBACK_HANDLER callbackHandler);
+
 typedef void (*PROP_SET_CALLBACK_HANDLER)(EN_IOTA_PROPERTY_SET *rsp);
 void SetPropSetCallback(PROP_SET_CALLBACK_HANDLER callbackHandler);
 
@@ -71,6 +74,9 @@ void SetShadowGetCallback(SHADOW_GET_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*USER_TOPIC_MSG_CALLBACK_HANDLER)(EN_IOTA_USER_TOPIC_MESSAGE *rsp);
 void SetUserTopicMsgCallback(USER_TOPIC_MSG_CALLBACK_HANDLER callbackHandler);
+
+typedef void (*USER_TOPIC_RAW_MSG_CALLBACK_HANDLER)(EN_IOTA_USER_TOPIC_RAW_MESSAGE *rsp);
+void SetUserTopicRawMsgCallback(USER_TOPIC_RAW_MSG_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*BOOTSTRAP_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 void SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER callbackHandler);

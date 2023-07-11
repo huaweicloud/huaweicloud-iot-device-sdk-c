@@ -183,6 +183,13 @@ typedef struct {
 } EN_IOTA_MESSAGE;
 
 typedef struct {
+    EN_IOTA_MQTT_MSG_INFO *mqttMsgInfo;
+    HW_CHAR *objectDeviceId;
+    HW_INT payloadLength;
+    HW_CHAR *payload;
+} EN_IOTA_RAW_MESSAGE;
+
+typedef struct {
     EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info;
     HW_CHAR *request_id;
     HW_CHAR *to;
@@ -236,6 +243,14 @@ typedef struct {
     HW_CHAR *topic_para;
 } EN_IOTA_USER_TOPIC_MESSAGE;
 
+typedef struct {
+    EN_IOTA_MQTT_MSG_INFO *mqttMsgInfo;
+    HW_CHAR *objectDeviceId;
+    HW_INT payloadLength;
+    HW_CHAR *payload;
+    HW_CHAR *topicPara;
+} EN_IOTA_USER_TOPIC_RAW_MESSAGE;
+
 typedef enum {
     EN_IOTA_CALLBACK_CONNECT_SUCCESS = 0,
     EN_IOTA_CALLBACK_CONNECT_FAILURE = 1,
@@ -268,6 +283,9 @@ HW_API_FUNC HW_VOID IOTA_SetCmdCallbackV3(PFN_CMD_CALLBACK_HANDLER_V3 callbackHa
 typedef HW_VOID (*PFN_MESSAGE_CALLBACK_HANDLER)(EN_IOTA_MESSAGE *message, void *mqttv5);
 HW_API_FUNC HW_VOID IOTA_SetMessageCallback(PFN_MESSAGE_CALLBACK_HANDLER callbackHandler);
 
+typedef HW_VOID (*PFN_RAW_MESSAGE_CALLBACK_HANDLER)(EN_IOTA_RAW_MESSAGE *message, void *mqttv5);
+HW_API_FUNC HW_VOID IOTA_SetRawMessageCallback(PFN_RAW_MESSAGE_CALLBACK_HANDLER callbackHandler);
+
 typedef HW_VOID (*PFN_PROP_SET_CALLBACK_HANDLER)(EN_IOTA_PROPERTY_SET *message);
 HW_API_FUNC HW_VOID IOTA_SetPropSetCallback(PFN_PROP_SET_CALLBACK_HANDLER callbackHandler);
 
@@ -279,6 +297,9 @@ HW_API_FUNC HW_VOID IOTA_SetShadowGetCallback(PFN_SHADOW_GET_CALLBACK_HANDLER ca
 
 typedef HW_VOID (*PFN_USER_TOPIC_MSG_CALLBACK_HANDLER)(EN_IOTA_USER_TOPIC_MESSAGE *message);
 HW_API_FUNC HW_VOID IOTA_SetUserTopicMsgCallback(PFN_USER_TOPIC_MSG_CALLBACK_HANDLER callbackHandler);
+
+typedef HW_VOID (*PFN_USER_TOPIC_RAW_MSG_CALLBACK_HANDLER)(EN_IOTA_USER_TOPIC_RAW_MESSAGE *message);
+HW_API_FUNC HW_VOID IOTA_SetUserTopicRawMsgCallback(PFN_USER_TOPIC_RAW_MSG_CALLBACK_HANDLER pfnCallbackHandler);
 
 typedef HW_VOID (*PFN_BOOTSTRAP_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *message);
 HW_API_FUNC HW_VOID IOTA_SetBootstrapCallback(PFN_BOOTSTRAP_CALLBACK_HANDLER callbackHandler);

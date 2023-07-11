@@ -569,7 +569,11 @@ void setMyCallbacks(){
 	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
 
 	IOTA_SetMessageCallback(HandleMessageDown);
+  // 推荐使用此API，可以处理自定格式的消息
+	IOTA_SetRawMessageCallback(HandleRawMessageDown);
 	IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
+  // 推荐使用此API，可以处理自定格式的消息
+	IOTA_SetUserTopicRawMsgCallback(HandleUserTopicRawMessageDown);
 	IOTA_SetCmdCallback(HandleCommandRequest);
 	IOTA_SetPropSetCallback(HandlePropertiesSet);
 	IOTA_SetPropGetCallback(HandlePropertiesGet);
@@ -587,8 +591,8 @@ void setMyCallbacks(){
 	- 订阅失败后，将调用HandleSubscribeFailure函数；
 	- 发布数据成功后，将调用HandlePublishSuccess函数；
 	- 发布数据失败后，将调用HandlePublishFailure函数；
-	- 设备接收到平台不解析的透传消息（默认topic）后，将调用HandleMessageDown函数；
-	- 设备接收到平台不解析的透传消息（自定义topic）后，将调用HandleUserTopicMessageDown函数；
+	- 设备接收到平台不解析的透传消息（默认topic）后，将调用HandleRawMessageDown函数；如果消息符合系统格式将同时调用HandleMessageDown；
+	- 设备接收到平台不解析的透传消息（自定义topic）后，将调用HandleUserTopicMessageDown函数；如果消息符合系统格式将同时调用HandleUserTopicMessageDown；
 	- 设备接收到命令后，将调用HandleCommandRequest函数；
 	- 设备接收到属性设置命令后，将调用HandlePropertiesSet函数；
 	- 设备接收到属性查询命令后，将调用HandlePropertiesGet函数；

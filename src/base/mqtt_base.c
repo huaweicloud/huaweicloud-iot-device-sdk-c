@@ -598,9 +598,9 @@ int MqttBase_OnMessageArrived(void *context, char *topicName, int topicLen, MQTT
 
     if (onMessageA) {
 #if defined(MQTTV5)
-        onMessageA(context, message->msgid, 0, temp_topic, temp_payload, &mqttv5_por);
+        onMessageA(context, message->msgid, 0, temp_topic, temp_payload, message->payloadlen, &mqttv5_por);
 #else
-        onMessageA(context, message->msgid, 0, temp_topic, temp_payload, NULL);
+        onMessageA(context, message->msgid, 0, temp_topic, temp_payload, message->payloadlen, NULL);
 #endif
     }
 
