@@ -93,7 +93,7 @@ typedef enum {
 
 typedef void (*MQTT_BASE_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp);
 typedef void (*MQTT_BASE_CALLBACK_HANDLER_WITH_TOPIC)(void *context, int token,
-    int code, const char *topic, char *message, void *mqttv5);
+    int code, char *topic, char *message, int messageLength, void *mqttv5);
 typedef void MqttBase_connectionLost(void *context, char *cause);
 typedef void MqttBase_deliveryComplete(void *context, int token);
 typedef void MqttBase_messageArrived(void *context, char *topic, char *message);

@@ -132,6 +132,11 @@ HW_API_FUNC HW_VOID IOTA_SetMessageCallback(PFN_MESSAGE_CALLBACK_HANDLER callbac
     SetMessageCallback(callbackHandler);
 }
 
+HW_API_FUNC HW_VOID IOTA_SetRawMessageCallback(PFN_RAW_MESSAGE_CALLBACK_HANDLER callbackHandler)
+{
+    SetRawMessageCallback(callbackHandler);
+}
+
 HW_API_FUNC HW_VOID IOTA_SetPropSetCallback(PFN_PROP_SET_CALLBACK_HANDLER callbackHandler)
 {
     SetPropSetCallback(callbackHandler);
@@ -150,6 +155,11 @@ HW_API_FUNC HW_VOID IOTA_SetShadowGetCallback(PFN_SHADOW_GET_CALLBACK_HANDLER ca
 HW_API_FUNC HW_VOID IOTA_SetUserTopicMsgCallback(PFN_USER_TOPIC_MSG_CALLBACK_HANDLER callbackHandler)
 {
     SetUserTopicMsgCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetUserTopicRawMsgCallback(PFN_USER_TOPIC_RAW_MSG_CALLBACK_HANDLER callbackHandler)
+{
+    SetUserTopicRawMsgCallback(callbackHandler);
 }
 
 HW_API_FUNC HW_VOID IOTA_SetBootstrapCallback(PFN_BOOTSTRAP_CALLBACK_HANDLER callbackHandler)

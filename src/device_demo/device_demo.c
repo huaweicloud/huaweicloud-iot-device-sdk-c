@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 #include <signal.h>
-
+#include <stdbool.h>
 #if defined(WIN32) || defined(WIN64)
 #include "windows.h"
 #endif
@@ -107,8 +107,10 @@ static void HandleSubscribeFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 static void HandlePublishSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 static void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 static void HandleMessageDown(EN_IOTA_MESSAGE *rsp, void *mqttv5);
+static void HandleRawMessageDown(EN_IOTA_RAW_MESSAGE *rsp, void *mqttv5);
 static void HandleM2mMessageDown(EN_IOTA_M2M_MESSAGE *rsp);
 static void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp);
+static void HandleUserTopicRawMessageDown(EN_IOTA_USER_TOPIC_RAW_MESSAGE *rsp);
 static void HandleCommandRequest(EN_IOTA_COMMAND *command);
 static void HandlePropertiesSet(EN_IOTA_PROPERTY_SET *rsp);
 static void TimeSleep(int ms);
@@ -799,39 +801,110 @@ static void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 }
 
 // -------------------handle  message arrived-------------------------------
+static bool GetMessageInSystemFormat(cJSON *root, char **objectDeviceId, char **name, char **id, char **content)
+{
+    if (!cJSON_IsObject(root)) {
+        return false;
+    }
+
+    // check if any key is not belong to that in system format
+    cJSON *kvInMessage = root->child;
+    while (kvInMessage) {
+        if ((strcmp(kvInMessage->string, CONTENT) != 0) && (strcmp(kvInMessage->string, OBJECT_DEVICE_ID) != 0) &&
+            (strcmp(kvInMessage->string, NAME) != 0) && (strcmp(kvInMessage->string, ID) != 0)) {
+            return false;
+        }
+        kvInMessage = kvInMessage->next;
+    }
+
+    // check if value is complying to system format
+    cJSON *contentObject = cJSON_GetObjectItem(root, CONTENT);
+    cJSON *objectDeviceIdObject = cJSON_GetObjectItem(root, OBJECT_DEVICE_ID);
+    cJSON *nameObject = cJSON_GetObjectItem(root, NAME);
+    cJSON *idObject = cJSON_GetObjectItem(root, ID);
+    if ((objectDeviceIdObject && !cJSON_IsNull(objectDeviceIdObject) && !cJSON_IsString(objectDeviceIdObject)) ||
+        (nameObject && !cJSON_IsNull(nameObject) && !cJSON_IsString(nameObject)) ||
+        (idObject && !cJSON_IsNull(idObject) && !cJSON_IsString(idObject)) ||
+        (contentObject && !cJSON_IsNull(contentObject) && !cJSON_IsString(contentObject))) {
+        return false; // is not system format
+    }
+
+    *objectDeviceId = cJSON_GetStringValue(objectDeviceIdObject);
+    *name = cJSON_GetStringValue(nameObject);
+    *id = cJSON_GetStringValue(idObject);
+    *content = cJSON_GetStringValue(contentObject);
+    return true;
+}
+
+static void ProcessMQTT5Data(const char *functionName, void *mqttv5)
+{
+#if defined(MQTTV5)
+    MQTTV5_DATA *mqtt = (MQTTV5_DATA *)mqttv5;
+    MQTTV5_USER_PRO *user_pro = mqtt->properties;
+    if (mqtt->contnt_type != NULL) {
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(),contnt_type: %s\n", functionName, mqtt->contnt_type);
+    }
+    if (user_pro != NULL) {
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(),properties is:\n", functionName);
+        while (user_pro != NULL) {
+            PrintfLog(EN_LOG_LEVEL_INFO, "key = %s, value = %s\n", user_pro->key, user_pro->Value);
+            user_pro = (MQTTV5_USER_PRO *)user_pro->nex;
+        }
+    }
+    if (mqtt->correlation_data != NULL) {
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(),correlation_data: %s\n", mqtt->correlation_data);
+    }
+    if (mqtt->response_topic != NULL) {
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(),response_topic: %s\n", functionName, mqtt->response_topic);
+    }
+    // 删除链表、释放内存
+    mqttV5_listFree(mqtt->properties);
+#else
+    (void)functionName;
+    (void)mqttv5;
+#endif
+}
+
+static void ProcessMessageData(const char *functionName,
+    const char *content, const char *id, const char *name, const char *objectDeviceId)
+{
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(), content: %s\n", functionName, content);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(), id: %s\n", functionName, id);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(), name: %s\n", functionName, name);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(), objectDeviceId: %s\n", functionName, objectDeviceId);
+}
+
+static void ProcessRawMessageData(const char *functionName, const char *payload, int payloadLength)
+{
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(), payload length: %d\n", functionName, payloadLength);
+    cJSON *root = cJSON_Parse(payload);
+    char *objectDeviceId = NULL;
+    char *name = NULL;
+    char *id = NULL;
+    char *content = NULL;
+    if (GetMessageInSystemFormat(root, &objectDeviceId, &name, &id, &content)) {
+        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(), message is system format\n", functionName);
+        ProcessMessageData(functionName, content, id, name, objectDeviceId);
+    }
+    cJSON_Delete(root);
+}
 
 static void HandleMessageDown(EN_IOTA_MESSAGE *rsp, void *mqttv5)
 {
     if (rsp == NULL) {
         return;
     }
-#if defined(MQTTV5)
-    MQTTV5_DATA *mqtt = (MQTTV5_DATA *)mqttv5;
-    MQTTV5_USER_PRO *user_pro = mqtt->properties;
-    if (mqtt->contnt_type != NULL) {
-        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(),contnt_type = %s\n", mqtt->contnt_type);
+    ProcessMQTT5Data(__FUNCTION__, mqttv5);
+    ProcessMessageData(__FUNCTION__, rsp->content, rsp->id, rsp->name, rsp->object_device_id);
+}
+
+static void HandleRawMessageDown(EN_IOTA_RAW_MESSAGE *rsp, void *mqttv5)
+{
+    if (rsp == NULL) {
+        return;
     }
-    if (user_pro != NULL) {
-        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(),properties is:\n");
-        while (user_pro != NULL) {
-            PrintfLog(EN_LOG_LEVEL_INFO, "key = %s ,Value = %s\n", user_pro->key, user_pro->Value);
-            user_pro = (MQTTV5_USER_PRO *)user_pro->nex;
-        }
-    }
-    if (mqtt->correlation_data != NULL) {
-        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(),correlation_data = %s\n",
-            mqtt->correlation_data);
-    }
-    if (mqtt->response_topic != NULL) {
-        PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(),response_topic = %s\n", mqtt->response_topic);
-    }
-    // 删除链表、释放内存
-    mqttV5_listFree(mqtt->properties);
-#endif
-    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), content %s\n", rsp->content);
-    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), id %s\n", rsp->id);
-    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), name %s\n", rsp->name);
-    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), object_device_id %s\n", rsp->object_device_id);
+    ProcessMQTT5Data(__FUNCTION__, mqttv5);
+    ProcessRawMessageData(__FUNCTION__, rsp->payload, rsp->payloadLength);
 }
 
 static void HandleM2mMessageDown(EN_IOTA_M2M_MESSAGE *rsp)
@@ -913,11 +986,17 @@ static void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp)
     if (rsp == NULL) {
         return;
     }
-    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), topic_para %s\n", rsp->topic_para);
-    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), content %s\n", rsp->content);
-    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), id %s\n", rsp->id);
-    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), name %s\n", rsp->name);
-    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleMessageDown(), object_device_id %s\n", rsp->object_device_id);
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(), topic_para: %s\n", __FUNCTION__, rsp->topic_para);
+    ProcessMessageData(__FUNCTION__, rsp->content, rsp->id, rsp->name, rsp->object_device_id);
+}
+
+static void HandleUserTopicRawMessageDown(EN_IOTA_USER_TOPIC_RAW_MESSAGE *rsp)
+{
+    if (rsp == NULL) {
+        return;
+    }
+    PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(), topic_para: %s\n", __FUNCTION__, rsp->topicPara);
+    ProcessRawMessageData(__FUNCTION__, rsp->payload, rsp->payloadLength);
 }
 
 static void HandleCommandRequest(EN_IOTA_COMMAND *command)
@@ -1229,8 +1308,12 @@ static void SetMyCallbacks(void)
     IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
 
     IOTA_SetMessageCallback(HandleMessageDown);
+    // 推荐使用此API，可以处理自定格式的消息
+    IOTA_SetRawMessageCallback(HandleRawMessageDown);
     IOTA_SetM2mCallback(HandleM2mMessageDown);
     IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
+    // 推荐使用此API，可以处理自定格式的消息
+    IOTA_SetUserTopicRawMsgCallback(HandleUserTopicRawMessageDown);
     IOTA_SetCmdCallback(HandleCommandRequest);
     IOTA_SetPropSetCallback(HandlePropertiesSet);
     IOTA_SetPropGetCallback(HandlePropertiesGet);
