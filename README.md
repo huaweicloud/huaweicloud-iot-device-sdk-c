@@ -25,6 +25,7 @@ English | [Simplified Chinese](./README_CN.md)
 
 | Version Number| Change Type| Description                                                |
 | ------ | -------- | ------------------------------------------------------------ |
+| 1.1.3  | Function enhancement | update conf\rootcert.pem          |
 | 1.1.2  | New feature  | Device rules, M2M, GN compilation file, anomaly detection, timestamp printed in logs, MQTT_DEBUG, Chinese cryptographic algorithm, remote configuration, and device-cloud secure communication (soft bus) were added.|
 | 1.1.1  | New feature  | SSH remote O&M function was added.                                         |
 | 1.1.0  | New feature  | MQTT 5.0 was supported. The code was optimized to resolve the memory overflow issue.                 |
@@ -91,6 +92,8 @@ English | [Simplified Chinese](./README_CN.md)
 
 29. Device-cloud secure communication (soft bus) was added.
 
+30. Update server ca conf/rootcert.pem 
+
 May 6, 2023
 
 <h1 id="1">1 About This Document</h1>
@@ -131,37 +134,52 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 
 1. Visit the OpenSSL website (https://www.openssl.org/source/), download the latest OpenSSL version (for example, **openssl-1.1.1d.tar.gz**), upload it to the Linux compiler (for example, in the directory **/home/test**), and run the following command to decompress the package: 
 
-   **tar -zxvf openssl-1.1.1d.tar.gz** 
+   ```shell
+   tar -zxvf openssl-1.1.1d.tar.gz 
+   ```
    ![](./doc/doc_en/untarPkg.png)
 
 2. Generate a **Makefile**.
    Run the following command to access the OpenSSL source code directory:
 
-   cd openssl-1.1.1d       
-   
+   ```shell
+   cd openssl-1.1.1d
+   ```
+
    Run the following configuration command: 
 
-   **/config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl** 
-   
+   ```shell
+   ./config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl 
+   ```
+
    **prefix** is a custom installation directory, **openssldir** is a custom directory that stores configuration files, and **shared** is used to generate a dynamic link library (.so library).
 
-   - If an exception occurs during the compilation, add **no-asm** to the configuration command (indicating that the assembly code is not used).
-     
-     **/config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl**
-     ![](./doc/doc_en/no_asm.png)
+   If an exception occurs during the compilation, add **no-asm** to the configuration command (indicating that the assembly code is not used).
+
+   ```shell
+   ./config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl
+   ```
+
+   ![](./doc/doc_en/no_asm.png)
 
 3. Generate library files.
    In the OpenSSL source code directory, run the following command to add dependencies:
 
-   **make depend** 
+   ```shell
+   make depend
+   ```
 
    Run the following command to start compilation:
 
-   **make**
+   ```shell
+   make
+   ```
 
    Run the following command to install:
 
-   **make install**
+   ```shell
+   make install
+   ```
 
    In the OpenSSL installation directory **home/test/openssl**, find the **lib** folder.
 
@@ -171,7 +189,8 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 
 4. To use the TLS for Chinese cryptographic algorithm, download [the corresponding version of OpenSSL](https://github.com/jntass/TASSL-1.1.1). The installation method is the same as that of native OpenSSL. Based on OpenSSL 1.1.1s, this version is compatible with various native OpenSSL APIs and supports international TLS.
 
-<h2 id="3.3">3.3 Compiling the Paho Library</h2> 
+<h2 id="3.3">3.3 Compiling the Paho Library</h2>
+
 1. Visit https://github.com/eclipse/paho.mqtt.c to download the **paho.mqtt.c** source code. The files of version 1.3.9 or earlier in the release version are recommended. For the latest version, the number of lines in the file and the header files to be copied may be changed.
 
 2. Decompress the package and upload it to the Linux compiler.
@@ -179,17 +198,22 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 3. Edit the **Makefile**.
 	- Run the following command to edit the **Makefile**:
 	  
-	  **vim Makefile**
+	  ```shell
+	  vim Makefile
+	  ```
 	  
 	- Run the following command to display the number of lines:
 	  
-	  **:set nu**
-	
+	  ```shell
+	  :set nu
+	  ```
+	  
 	- Add the following two lines after **DOXYGEN_COMMAND** (locations of the OpenSSL header files and library files customized in [3.2](#3.2)):
 	  
-	  **CFLAGS += -I/home/test/openssl/include** 
-	  
-	  **LDFLAGS += -L/home/test/openssl/lib -lrt** 
+	  ```makefile
+	  CFLAGS += -I/home/test/openssl/include  
+	  LDFLAGS += -L/home/test/openssl/lib -lrt 
+	  ```
 	  
 	  ![](./doc/doc_en/paho_makefile1.png)
 	  
@@ -199,17 +223,21 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 4. Compile the code.
 	- Run the following command:
 	  
-	  **make clean**
+	  ```shell
+	  make clean
+	  ```
 	  
 	- Run the following command:
 	  
-	  **make**
+	  ```shell
+	  make
+	  ```
 	
 5. After the compilation is complete, you can view the libraries that are compiled in the **build/output** directory.
 	![](./doc/doc_en/paho.png)
 
 6. Copy Paho library files.
-	Currently, the SDK uses only **libpaho-mqtt3as**. Copy the **libpaho-mqtt3as.so** and **libpaho-mqtt3as.so.1** files to the **lib** folder of the SDK, and copy the header files (**MQTTAsync.h**, **MQTTClient.h**, **MQTTClientPersistence.h**, **MQTTProperties.h**, **MQTTReasonCodes.h**, and **MQTTSubscribeOpts.h**) in the **src** folder of the Paho source code directory to the **include/base** directory of the SDK. Alternatively, you can add all MQTT-related header files to the directory, as some versions of Paho libraries have the **MQTTExportDeclarations.h** header file. 
+	Currently, the SDK uses only **libpaho-mqtt3as**. Copy the **libpaho-mqtt3as.so**、**libpaho-mqtt3as.so.1** and **libpaho-mqtt3as.so.1.3** files to the **lib** folder of the SDK, and copy the header files (**MQTTAsync.h**, **MQTTClient.h**, **MQTTClientPersistence.h**, **MQTTProperties.h**, **MQTTReasonCodes.h**, and **MQTTSubscribeOpts.h**) in the **src** folder of the Paho source code directory to the **include/base** directory of the SDK. Alternatively, you can add all MQTT-related header files to the directory, as some versions of Paho libraries have the **MQTTExportDeclarations.h** header file. 
 
 
 <h2 id="3.4">3.4 Compiling the zlib Library </h2>
@@ -217,22 +245,30 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 1. Download the [zlib source code package](https://github.com/madler/zlib/archive/v1.2.11.zip).
 	Run the following command to decompress the package:
    
-   	**unzip zlib-1.2.11.zip**
+   ```shell
+   unzip zlib-1.2.11.zip
+   ```
    
 2. Run the following command to access the source code directory:
 
-	**cd zlib-1.2.11**
+	```shell
+	cd zlib-1.2.11
+	```
 	
 3. Generate a **Makefile**.
 
-	**./configure**
-	
+   ```shell
+   ./configure
+   ```
+
 4. Run the **Makefile**.
 
-	**make**
-	
+   ```shell
+   make
+   ```
+
 5. Copy .so library files.
-	Copy the **libz.so**, **libz.so.1**, and **libz.so.1.2.11** files generated in the source code directory to the **lib** folder of the SDK.
+    Copy the **libz.so**, **libz.so.1**, and **libz.so.1.2.11** files generated in the source code directory to the **lib** folder of the SDK.
 
 <h2 id="3.5">3.5 Compiling the huawei_secure_c Library </h2>
 
@@ -240,7 +276,9 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 
 2. Access the source code directory and run the **Makefile** with the following command:
 
-   **make**
+   ```shell
+   make
+   ```
 
 3. Copy .so library files.
     Copy the **libboundscheck.so** files generated in the source code of **lib** directory to the **lib** folder of the SDK.
@@ -250,49 +288,63 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 1. Download the [libssh source code package](https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz).
 	Run the following command to decompress the package:
    
-   	tar xvf libssh-0.10.4.tar.xz
+   ```shell
+   tar xvf libssh-0.10.4.tar.xz
+   ```
    
 2. Run the following command to access the source code directory:
 
-	**cd libssh-0.10.4**
+	```shell
+	cd libssh-0.10.4
+	```
 	
 3. Run the following commands to compile the library files:
 
-    **mkdir build**
-    **cd build**
-    **cmake ..**
-    **make**
-	
+   ```shell
+   mkdir build
+   cd build
+   cmake ..
+   make
+   ```
+
 4. Run the following command to install the lib:
 
-	**sudo make install**
+	```shell
+	sudo make install  
+	```
 	
 5. Copy .so library files and header files.
-	Copy the **libssh.so**, **libssh.so.4**, and **libssh.so.4.9.4** files generated in the source code directory to the **lib** folder of the SDK.
-    Copy the **libssh** folder in the **usr/local/include** directory to the **include** folder of the SDK.
+    Copy the **libssh.so**, **libssh.so.4**, and **libssh.so.4.9.4** files generated in the source code directory **build/lib** to the **lib** folder of the SDK.
+   Copy the **libssh** folder in the **usr/local/include** directory to the **include** folder of the SDK.
 
 <h2 id="3.7">3.7 Compiling the libnopoll Library</h2>
 
 1. Download the [libnopoll source code package](http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz).
 	Run the following command to decompress the package:
    
-   	**tar xzvf nopoll-0.4.8.b429.tar.gz**
+   ```shell
+   tar xzvf nopoll-0.4.8.b429.tar.gz
+   ```
    
 2. Run the following command to access the source code directory:
 
+	```shell
 	cd nopoll-0.4.8.b429
+	```
 	
 3. Run the following commands to compile and install the library files:
 
-	**./configure**
-    **make**
-    **make install**
-    **pkg-config nopoll --cflags**
-    **pkg-config nopoll --libs**
-	
+   ```shell
+   ./configure
+    make
+    sudo make install
+    pkg-config nopoll --cflags
+    pkg-config nopoll --libs  
+   ```
+
 4. Copy .so library files.
-	Copy the **libnopoll.so**, **libnopoll.so.0**, and **libnopoll.so.0.0.0** files generated in the source code directory to the **lib** folder of the SDK.
-    Copy the **libnopoll** folder in the **usr/local/include** directory to the **include** folder of the SDK.
+    Copy the **libnopoll.so**, **libnopoll.so.0**, and **libnopoll.so.0.0.0** files generated in the source code directory **src/.libs** to the **lib** folder of the SDK.
+   Copy the **nopoll** folder in the **usr/local/include** directory to the **include** folder of the SDK.
 
 <h2 id="3.8">3.8 Uploading a Product Model and Registering a Device</h2>
 
@@ -310,7 +362,8 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 4. Choose **Devices** > **All Devices** in the navigation pane and you can see that the status of the newly created device is inactive.
 	![](./doc/doc_en/profile4.png)
 
-<h1 id="4">4. Quick Experience</h1> 
+<h1 id="4">4. Quick Experience</h1>
+
 1. Copy the SDK package to the Linux environment and run the following command to decompress the package:
 	
 	**unzip  huaweicloud-iot-device-sdk-c-master.zip**
@@ -321,38 +374,45 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 
 3. Modify configuration.
 	You need to modify the following parameters in the **src/device_demo/device_demo.c** file: 
-	**g_serverIp**: southbound IP address of IoTDA, which can be viewed on the application management page of the console.
+	**g_serverIp**: southbound IP address of IoTDA, which can be viewed on the overview page of the console.
+    ![](./doc/doc_en/access_mqtt.png)
 	**g_username**: parameter required for using MQTT. The default value is device ID, which is returned during device registration.
 	**g_password**: device secret, which is returned during device registration.
-	![](./doc/doc_en/4_1.png)
+	![](./doc/doc_en/device_demo.png)
 
-4. Run the **make** command to start compilation.
+4. Run the **make** command to start compilation, It is recommended to use Makefile to compile.
 
 	4.1 Run the following command to compile the file using **Makefile**:
    
-        make (Delete **-m64** from the **Makefile** in a 32-bit OS.)
+        make (Delete -m64 from the Makefile in a 32-bit OS.)
 
-   4.2 Run the following command to compile the file using GN:
+   4.2 Run the following command to compile the file using GN, first install gn and ninja tools:
 
-        gn gen -C out
-        ninja -C out
+   
+   
+	```shell
+	gn gen -C out
+	ninja -C out
+	cd out
+	```
 	
 5. Run.
-	- Run the following command to load library files:
-	
+
+    5.1 Run the following command to load library files:
+
 	  **export LD_LIBRARY_PATH=./lib/**
 
-	- Run the following command:
+	  5.2 Run the following command:
 	
 	  **./MQTT_Demo**
 	
 	  You can view many printed logs on the console.
 	  **login success** indicates that the device authentication is successful.  
-	  
+	
 	  **MqttBase_onSubscribeSuccess** indicates that the subscription is successful.  
-	  
+	
 	  **MqttBase_onPublishSuccess** indicates that the data has been published.  
-	  
+	
 	  ![](./doc/doc_en/4_2.png)
 
 6. Check the running status of the device.
@@ -422,28 +482,32 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
 
   This certificate is used by the device to verify the identity of the edge node.
   - 3. Replace port number.
-    In the directory of **include/base/mqtt_base.h**, replace
-
-  #**define MQTT_PORT         				"1883"**
-
-  #**define MQTTS_PORT         				"8883"**
-
-  with
-
-  #**define MQTT_PORT         				"7882"**
-
-  #**define MQTTS_PORT         				"7883"**
+        In the directory of **include/base/mqtt_base.h**, replace
+    
+      ```c
+      #define MQTT_PORT         			    "1883"
+      #define MQTTS_PORT         			    "8883"
+      ```
+    
+      with
+    
+      ```C
+      #define MQTT_PORT         				"7882"
+      #define MQTTS_PORT         				"7883"
+      ```
 
   - 4. Test the demo.
-    Replace the following information in **src/device_demo/device_demo.c**.
-
-  char *g_serverIp = "xx.xx.xx.xx"; // IP address of the edge node.
-
-  int g_port= 7883; // MQTTS port number. Currently, the IoT Edge uses this port number by default.
-
-  char *g_username = "tunnelDeviceA"; // The value is set in step 1.
-
-  char *g_password = "xxxx"; // The value is set in step 1.
+        Replace the following information in **src/device_demo/device_demo.c**.
+    
+      ```c
+       char *g_serverIp = "xx.xx.xx.xx"; // IP address of the edge node.
+      
+       int g_port= 7883; // MQTTS port number. Currently, the IoT Edge uses this port number by default.
+      
+       char *g_username = "tunnelDeviceA"; // The value is set in step 1.
+      
+       char *g_password = "xxxx"; // The value is set in step 1.
+      ```
 
   Assume that the IDs of source device A and target device B are **tunnelDeviceA** and **tunnelDeviceB** respectively. Device A sends a **hello world** message to device B.
   The following code is invoked on device A (the demo can be invoked in the **main** function):
@@ -467,7 +531,7 @@ The SDK must run on the Linux OS, and GCC (version 4.8 or later is recommended) 
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), to: %s\n", rsp->to);
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), from: %s\n", rsp->from);
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleM2mMessageDown(), content: %s\n", rsp->content);
-    
+  
     // You can add the service processing logic here, for example, the subsequent processing after the content is received.
     // do sth
   }

@@ -67,7 +67,8 @@
 
 static char *g_workPath = ".";
 
-static char *g_serverIp = "iot-mqtts.cn-north-4.myhuaweicloud.com";
+// You can get the access address from IoT Console "Overview" -> "Access Information"
+static char *g_serverIp = "接入地址";
 static int g_port = 8883;
 
 // deviceId, The mqtt protocol requires the user name to be filled in.

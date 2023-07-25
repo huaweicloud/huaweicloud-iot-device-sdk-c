@@ -25,6 +25,7 @@
 
 | 版本号 | 变更类型 | 功能描述说明                                                 |
 | ------ | -------- | ------------------------------------------------------------ |
+| 1.1.3  | 功能增强 | 更新conf\rootcert.pem证书                                   |
 | 1.1.2  | 新功能   | 增加规则引擎、M2M、gn编译文件、异常检测、日志打印时间戳、MQTT_DEBUG、国密算法、远程配置、端云安全通信（软总线）功能 |
 | 1.1.1  | 新功能   | 新增SSH远程运维功能                                          |
 | 1.1.0  | 新功能   | 增加MQTT5.0功能，优化代码，修复内存溢出问题                  |
@@ -91,6 +92,8 @@
 
 29、增加端云安全通信（软总线）功能
 
+30、更新server ca conf\rootcert.pem
+
 *2023/05/06*
 
 <h1 id="1">1.前言</h1>
@@ -131,47 +134,66 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 1. 访问openssl官网https://www.openssl.org/source ，下载最新版本openssl（如openssl-1.1.1d.tar.gz），上传到linux编译机上（以上传到目录/home/test为例），并使用如下命令解压：  
 
-   tar -zxvf openssl-1.1.1d.tar.gz  
+   ```shell
+   tar -zxvf openssl-1.1.1d.tar.gz 
+   ```
+
+
    ![](./doc/doc_cn/untarPkg.png)
 
 2. 配置生成makefile文件
    执行以下命令进入openssl源码目录：
 
-   cd openssl-1.1.1d        
-   
-   运行如下配置命令：  
+   ```shell
+   cd openssl-1.1.1d
+   ```
 
-   ./config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl  
-   
+   运行如下配置命令：
+
+   ```shell
+   ./config shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl 
+   ```
+
    其中“prefix”是自定义安装目录，“openssldir”是自定义配置文件目录，“shared”作用是生成动态链接库（即.so库）。
 
-   - 如果编译有问题配置命令加上no-asm（表示不使用汇编代码）
-     
-     ./config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl
-     ![](./doc/doc_cn/no_asm.png)
+   如果编译有问题配置命令加上no-asm（表示不使用汇编代码）
+
+   ```shell
+   ./config  no-asm shared --prefix=/home/test/openssl --openssldir=/home/test/openssl/ssl
+   ```
+
+
+   ![](./doc/doc_cn/no_asm.png)
 
 3. 编译出库。
    在openssl源码目录下，运行make depend命令添加依赖：
 
-   make depend  
+   ```shell
+   make depend
+   ```
 
    运行make命令开始编译：
 
+   ```sh
    make
+   ```
 
    再运行如下命令进行安装：
 
+   ```shell
    make install
+   ```
 
    在配置的openssl安装目录下home/test/openssl找到lib目录，有生成的库文件：
 
    libcrypto.so.1.1、libssl.so.1.1和软链接libcrypto.so、libssl.so，请将这些文件拷贝到SDK的lib文件夹下（同时将home/test/openssl/include底下的openssl文件夹拷贝到SDK的include目录下）。
-
+   
    ![](./doc/doc_cn/openssl.png)
-
+   
 4. 若需要使用国密TLS，可访问[国密版本openssl](https://github.com/jntass/TASSL-1.1.1)，安装方法同原生openssl。该版本当前基于openssl1.1.1s，兼容openssl各类原生接口，仍支持国际TLS。
 
-<h2 id="3.3">3.3 编译paho库</h2>  
+<h2 id="3.3">3.3 编译paho库</h2>
+
 1. 访问github下载地址https://github.com/eclipse/paho.mqtt.c, 下载paho.mqtt.c源码(建议下载release版本中1.3.9及之前的版本的Source code (tar.gz)文件，如果使用最新的版本，下方适配的文件中的行数可能会有所改变，以及需要拷贝的头文件按照最新版本增加)。
 
 2. 解压后上传到linux编译机。
@@ -179,17 +201,22 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 3. 修改makefile
 	- 通过如下命令进行编辑Makefile
 	  
+	  ```sh
 	  vim Makefile
+	  ```
 	  
 	- 显示行数
 	  
+	  ```shell
 	  :set nu
-	
+	  ```
+	  
 	- 在"DOXYGEN_COMMAND"之后添加下面两行（[3.2](#3.2)中自定义的openssl的头文件和库文件位置）
 	  
+	  ```makefile
 	  CFLAGS += -I/home/test/openssl/include  
-	  
-	  LDFLAGS += -L/home/test/openssl/lib -lrt  
+	  LDFLAGS += -L/home/test/openssl/lib -lrt 
+	  ```
 	  
 	  ![](./doc/doc_cn/paho_makefile1.png)
 	  
@@ -199,39 +226,52 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 4. 编译
 	- 执行清空命令：
 	  
+	  ```shell
 	  make clean
+	  ```
 	  
 	- 执行编译命令：
 	  
+	  ```shell
 	  make
+	  ```
 	
 5. 编译完成后，可以在build/output目录下看到编译成功的库。
 	![](./doc/doc_cn/paho.png)
 
 6. 拷贝paho库文件
-	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so和libpaho-mqtt3as.so.1拷贝到SDK的lib文件夹下（同时将paho源码目录下src文件夹里的头文件（MQTTAsync.h/MQTTClient.h/MQTTClientPersistence.h/MQTTProperties.h/MQTTReasonCodes.h/MQTTSubscribeOpts.h）拷贝到SDK的include/base目录下，注意：有的paho版本会有 MQTTExportDeclarations.h 头文件，建议可以将MQTT相关的头文件都添加进去)。
+	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so、libpaho-mqtt3as.so.1和libpaho-mqtt3as.so.1.3拷贝到SDK的lib文件夹下（同时将paho源码目录下src文件夹里的头文件（MQTTAsync.h/MQTTClient.h/MQTTClientPersistence.h/MQTTProperties.h/MQTTReasonCodes.h/MQTTSubscribeOpts.h）拷贝到SDK的include/base目录下，注意：有的paho版本会有 MQTTExportDeclarations.h 头文件，建议可以将MQTT相关的头文件都添加进去)。
 
 
-<h2 id="3.4">3.4 编译zlib库</h2>  
+<h2 id="3.4">3.4 编译zlib库</h2>
+
 1. 下载zlib源码https://github.com/madler/zlib/archive/v1.2.11.zip 
 	通过如下命令解压缩：
    
-   	unzip zlib-1.2.11.zip
+   ```shell
+   unzip zlib-1.2.11.zip
+   ```
    
 2. 进入源码目录下：
 
+	```shell
 	cd  zlib-1.2.11
+	```
 	
 3. 配置生成makefile文件
 
-	./configure
-	
+   ```shell
+   ./configure
+   ```
+
 4. 执行makefile文件
 
-	make
-	
+   ```shell
+   make
+   ```
+
 5. 拷贝so库文件
-	将源码目录下生成的libz.so、libz.so.1、libz.so.1.2.11拷贝到sdk的lib文件夹下。
+    将源码目录下生成的libz.so、libz.so.1、libz.so.1.2.11拷贝到sdk的lib文件夹下。
 
 <h2 id="3.5">3.5 编译华为安全函数库</h2>
 
@@ -239,7 +279,9 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 2. 进入源码makefile同级目录，执行makefile文件
 
+   ```shell
    make
+   ```
 
 3. 拷贝so库文件
     将源码目录下生成的lib文件夹下的libboundscheck.so拷贝到sdk的lib文件夹下。
@@ -249,28 +291,37 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 1. 下载libssh源码https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz
 	通过如下命令解压缩：
    
-   	tar xvf libssh-0.10.4.tar.xz
+   ```shell
+   tar xvf libssh-0.10.4.tar.xz
+   ```
    
 2. 进入源码目录下：
 
+	```shell
 	cd libssh-0.10.4
+	```
 	
 3. 编译库文件：
 
+    ```shell
     mkdir build
     cd build
     cmake ..
     make
-	
+    ```
+
 4. 安装库：
 
-	sudo make install
-	
+    ```shell
+    sudo make install  
+    ```
+
 5. 拷贝so库文件和头文件
-	将源码目录下生成的libssh.so、libssh.so.4、libssh.so.4.9.4拷贝到sdk的lib文件夹下。
-    将/usr/local/include下的libssh的整个头文件目录拷贝到sdk的include文件夹下。
+    将源码目录下build/lib文件夹中生成的libssh.so、libssh.so.4、libssh.so.4.9.4拷贝到sdk的lib文件夹下。
+   将/usr/local/include下的libssh的整个头文件目录拷贝到sdk的include文件夹下。
 
 <h2 id="3.7">3.7 编译libnopoll库</h2>
+
 1. 下载nopoll源码http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz
 	通过如下命令解压缩：
    
@@ -278,25 +329,29 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
    
 2. 进入源码目录下：
 
+	```shell
 	cd nopoll-0.4.8.b429
+	```
 	
 3. 编译与安装
 
-	./configure
-    make
-    make install
-    pkg-config nopoll --cflags
-    pkg-config nopoll --libs
-	
+   ```shell
+   ./configure
+   make
+   sudo make install
+   pkg-config nopoll --cflags
+   pkg-config nopoll --libs  
+   ```
+
 4. 拷贝so库文件
-	通过上一步获取到的路径，将源码目录下生成的libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0拷贝到sdk的lib文件夹下。
-    将/usr/local/include下的libnopoll的整个头文件目录拷贝到sdk的include文件夹下。
+    通过上一步获取到的路径，将源码目录src/.libs下生成的libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0拷贝到sdk的lib文件夹下。
+   将/usr/local/include下的nopoll的整个头文件目录拷贝到sdk的include文件夹下。
 
-<h2 id="3.8">3.8 上传profile及注册设备</h2>     
+<h2 id="3.8">3.8 上传profile及注册设备</h2>
+
 1. 将已开发完成的profile（产品模型）导入到控制台，点击左侧导航栏“产品”，点击“模型定义”，再点击下方的“上传模型文件”，选择”添加文件“，选择文件后点击”确定“，即可完成profile导入。
-   
 
-![](./doc/doc_cn/profile1.png)
+	![](./doc/doc_cn/profile1.png)
 
 2. 点击“设备”->“所有设备”，点击右上角“注册设备”，选择产品所在的“资源空间”，选择上方创建的产品，填写设备标识码（一般是IMEI、MAC地址等），自定义“设备名称”，“密钥”如果不自定义，平台会自动生成。全部填写完毕后，点击“确定”。
 	![](./doc/doc_cn/profile2.png)
@@ -308,50 +363,66 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 4. 点击”设备“->“所有设备”，在最上方可看到该设备的状态是未激活。
 	![](./doc/doc_cn/profile4.png)
 
-<h1 id="4">4.快速体验</h1>  
+<h1 id="4">4.快速体验</h1>
+
 1. 将SDK压缩包拷贝到Linux环境中，通过如下命令解压：
 	
+	```shell
 	unzip  huaweicloud-iot-device-sdk-c-master.zip
+	```
 	
 2. 进入到解压的文件夹下：
-	
-	cd huaweicloud-iot-device-sdk-c-master
+
+   ```shell
+    cd huaweicloud-iot-device-sdk-c-master
+   ```
 
 3. 修改配置信息：
-	需要修改src/device_demo/device_demo.c文件中的如下参数：  
-	g_serverIp：平台南向IP，可在控制台的应用管理中查看。
-	g_username：MQTT协议需要填写username，iot平台默认设备ID为username，设备ID是设备注册时返回的值。
-	g_password：设备密钥，设备注册时返回的值。
-	![](./doc/doc_cn/4_1.png)
+    需要修改src/device_demo/device_demo.c文件中的如下参数：  
+    g_serverIp：平台南向IP，可在控制台的“总览”->“接入信息”中查看。
+   ![](./doc/doc_cn/access_mqtt.png)
+    g_username：MQTT协议需要填写username，iot平台默认设备ID为username，设备ID是设备注册时返回的值。
+    g_password：设备密钥，设备注册时返回的值。
+    ![](./doc/doc_cn/device_demo.png)
 
-4. 执行命令进行编译：
+4. 执行命令进行编译，推荐使用Makefile进行编译：
 
-	4.1 用Makefile进行编译：
-   
-        make（如果是32位的操作系统，请删除掉Makefile中的"-m64"）
+   4.1 用Makefile进行编译：
 
-   4.2 用gn进行编译：
+   ```shell
+   make（如果是32位的操作系统，请删除掉Makefile中的"-m64"）
+   ```
 
-        gn gen -C out
-        ninja -C out
-	
-5. 运行：	
-	- 加载库文件
-	
-	  export LD_LIBRARY_PATH=./lib/
+   4.2 用gn进行编译，先安装gn以及ninja工具：
 
-	- 执行如下命令：
-	
-	  ./MQTT_Demo
-	
-	  在控制台上可以看到很多打印的日志：
-	  “login success”表示设备鉴权成功   
-	  
-	  “MqttBase_onSubscribeSuccess”表示订阅成功   
-	  
-	  “MqttBase_onPublishSuccess”表示发布数据成功   
-	  
-	  ![](./doc/doc_cn/4_2.png)
+   ```shell
+   gn gen -C out
+   ninja -C out
+   cd out
+   ```
+
+5. 运行：
+
+    5.1 加载库文件
+
+    ```shell
+    export LD_LIBRARY_PATH=./lib/
+    ```
+
+    5.2 执行如下命令：
+
+    ```shell
+    ./MQTT_Demo
+    ```
+
+      在控制台上可以看到很多打印的日志：
+      “login success”表示设备鉴权成功   
+
+      “MqttBase_onSubscribeSuccess”表示订阅成功   
+
+      “MqttBase_onPublishSuccess”表示发布数据成功   
+
+      ![](./doc/doc_cn/4_2.png)
 
 6. 查看设备运行情况：
   - 网关设备在线：
@@ -421,27 +492,31 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
   此证书用于设备校验边缘节点的身份。
   - 3.替换端口号：
     将include/base/mqtt_base.h中的：
-
-  #define MQTT_PORT         				"1883"
-
-  #define MQTTS_PORT         				"8883"
-
-  替换为：
-
-  #define MQTT_PORT         				"7882"
-
-  #define MQTTS_PORT         				"7883"
+    
+    ```c
+     #define MQTT_PORT         				"1883"
+     #define MQTTS_PORT       				"8883"
+    ```
+    
+    替换为：
+    
+    ```c
+    #define MQTT_PORT         				"7882"
+    #define MQTTS_PORT         				"7883"
+    ```
 
   - 4.测试Demo：
     将src/device_demo/device_demo.c中边缘节点IP等信息进行替换：
-
-  char *g_serverIp = "xx.xx.xx.xx"; // 边缘节点的IP
-
-  int g_port = 7883; // MQTTS端口号, 目前IoTEdge默认使用此端口号
-
-  char *g_username = "tunnelDeviceA"; // 上述步骤1当中设置
-
-  char *g_password = "xxxx"; // 上述步骤1中设置
+    
+    ```c
+     char *g_serverIp = "xx.xx.xx.xx"; // 边缘节点的IP
+    
+     int g_port = 7883; // MQTTS端口号, 目前IoTEdge默认使用此端口号
+    
+     char *g_username = "tunnelDeviceA"; // 上述步骤1当中设置
+    
+     char *g_password = "xxxx"; // 上述步骤1中设置
+    ```
 
   假设源设备A和目标设备B的ID分别：tunnelDeviceA和tunnelDeviceB, 设备A向设备B发送"hello world"消息。
   在A设备当中调用如下代码（demo可在main函数中调用）:
@@ -488,11 +563,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
     INFO device_demo: HandleM2mMessageDown(), from:      deviceA
     INFO device_demo: HandleM2mMessageDown(), content:   hello deviceB
 
-
-
 10.端云安全通信（结合OpenHarmony软总线）
-
-
 
 <h1 id="5">5.使用步骤</h1>  
 
