@@ -1,2 +1,3 @@
-put third party libraries here.
-将三方库放到这里。
+put third party libraries at lib folder.
+
+将三方库放到lib文件夹下。
