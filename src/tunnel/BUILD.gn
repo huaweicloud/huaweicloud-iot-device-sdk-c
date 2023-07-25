@@ -37,6 +37,7 @@ static_library("tunnel") {
     include_dirs = [
         "../../include/util",
         "../../include/third_party/cjson",
+        "../../include/third_party/libboundscheck",
         "../../include/nopoll",
         "../../include/agentlite",
         "../../include/tunnel",

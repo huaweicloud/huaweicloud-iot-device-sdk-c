@@ -42,7 +42,7 @@ static_library("device_demo") {
         "../../include/third_party/cjson",
         "../../include",
         "../../include/nopoll",
-        "../../include/libboundscheck",
+        "../../include/third_party/libboundscheck",
         "../../include/service/device_rule",
         "../../include/tunnel",
     ]

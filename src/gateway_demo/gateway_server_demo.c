@@ -45,7 +45,7 @@
 #include "cJSON.h"
 #include "generic_tcp_protocol.h"
 
-char *gIoTPlatformIp = "iot-mqtts.cn-north-4.myhuaweicloud.com";
+char *gIoTPlatformIp = "接入地址"; // replace with the real access address
 int gIoTPlatformPort = 8883;
 int gClientSocket = -1;
 // deviceId，The mqtt protocol requires the user name to be filled in. Here we use deviceId as the username

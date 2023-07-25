@@ -526,7 +526,7 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
                                         void *context, MQTTV5_DATA *mqttv5);
 #endif
 
-#define SDK_VERSION                     "C_v1.1.2"
+#define SDK_VERSION                     "C_v1.1.3"
 #define OTA_PORT                        8943
 #define BUFSIZE                         4096
 #define PKGNAME_MAX                     1024  // the max length of the package name

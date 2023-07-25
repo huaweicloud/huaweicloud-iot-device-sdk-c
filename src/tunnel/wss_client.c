@@ -257,6 +257,8 @@ void WssClientCreate(const URL_INFO *urlInfo)
     noPollConnOpts *opts = NULL;
     pthread_t threadWait;
     int ret = IOTA_SUCCESS;
+    int i;
+    int delay = 0;
 
     do {
         if (!g_Ctx) {
@@ -282,7 +284,14 @@ void WssClientCreate(const URL_INFO *urlInfo)
         }
         /* save the config data to help reconnect */
         WssClientSaveConfigInfo(urlInfo);
-        ret = WssClientConnect(HW_FALSE);
+        for (i = 1; i <= TUNNEL_WSSCLIENT_CONN_RETRY_TIMES; ++i) {
+            nopoll_sleep(delay);
+            ret = WssClientConnect(HW_FALSE);
+            if (ret == IOTA_SUCCESS) {
+                break;
+            }
+            delay += TUNNEL_WSSCLIENT_CONN_RETRY_DELAY;
+        }
         if (ret != IOTA_SUCCESS) {
             PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientCreate: Websocket connect failed, ErrorNO:%d!\n", ret);
         }
@@ -409,9 +418,9 @@ void WssClientSendRsp(const char *reqId, const char *opType, char *buff, int len
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_SERTYPE, TUNNEL_SSH_SERTYPE_SSH);
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_REQID, reqId);
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_DATA, buff);
-    if (cJSON_PrintPreallocated(json2Send, g_rspMsg, TUNNEL_WSSCLIENT_RSPMSG_LEN, cJSON_True) == cJSON_False) {
+    if (cJSON_PrintPreallocated(json2Send, g_rspMsg, TUNNEL_WSSCLIENT_RSPMSG_LEN, cJSON_True) == HW_FALSE) {
         cJSON_Delete(json2Send);
-        return; 
+        return;
     }
     bytes = nopoll_conn_send_text(g_Conn, g_rspMsg, (int)strlen(g_rspMsg));
     PrintfLog(EN_LOG_LEVEL_INFO, "WssClientSendRsp: bytes:%d\n", bytes);

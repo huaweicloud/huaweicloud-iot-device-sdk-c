@@ -38,7 +38,7 @@ static_library("base") {
         "../../include/base",
         "../../include/util",
         "../../include/agentlite",
-        "../../include/third_party",
+        "../../include/third_party/cjson",
         "../../include/third_party/libboundscheck",
         "../../include/",
     ]
