@@ -76,6 +76,7 @@ void WssClientListenerOnMsg(noPollCtx *ctx, noPollConn *conn, noPollMsg *msg, no
     char *opType = NULL;
     char *serviceType = NULL;
     char *reqId = NULL;
+    pthread_t threadRun;
 
     // fragment message assemble
     if (nopoll_msg_is_fragment(msg)) {
@@ -108,6 +109,8 @@ void WssClientListenerOnMsg(noPollCtx *ctx, noPollConn *conn, noPollMsg *msg, no
         serviceType = JSON_GetStringFromObject(root, TUNNEL_SSH_SERTYPE, NULL);
         if (strcmp(serviceType, TUNNEL_SSH_SERTYPE_SSH) != 0) {
             PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientListenerOnMsg: Wrong tunnel_service_type, Please check.\n");
+            JSON_Delete(root);
+            root = NULL;
             break;
         }
         reqId = JSON_GetStringFromObject(root, TUNNEL_SSH_REQID, NULL);
@@ -118,13 +121,11 @@ void WssClientListenerOnMsg(noPollCtx *ctx, noPollConn *conn, noPollMsg *msg, no
                 WssClientSendDisConn(reqId, "400", "WssClientListenerOnMsg: Create SSH channel failed");
             }
         } else if (strcmp(opType, TUNNEL_SSH_OPTYPE_CMD) == 0) {
-            SSHClientRunCmd(root);
+            pthread_create(&threadRun, NULL, SSHClientRunCmd, (void *)root);
         }
     } while (0);
 
     /* release reference */
-    JSON_Delete(root);
-    root = NULL;
     nopoll_msg_unref(g_PreviousMsg);
     g_PreviousMsg = NULL;
     return;
