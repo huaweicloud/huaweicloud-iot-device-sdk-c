@@ -297,6 +297,5 @@ void SSHClientRunCmd(void *root)
             TUNNEL_SSH_RSPBUFF_LEN, 0, TUNNEL_SSH_READ_TIMEOUT_MS);
     }
     JSON_Delete(tunnelCmdData);
-    pthread_exit();
     return;
 }
