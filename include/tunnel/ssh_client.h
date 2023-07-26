@@ -34,10 +34,10 @@
 #include "json_util.h"
 
 #define TUNNEL_SSH_RSPBUFF_LEN        2048
-#define TUNNEL_SSH_READ_TIMEOUT_MS    100
+#define TUNNEL_SSH_READ_TIMEOUT_MS    2000
 
 int SSHClientCreate(const JSON *root);
-void SSHClientRunCmd(const JSON *tunnelCmdData);
+void SSHClientRunCmd(void *root);
 void SSHClientSessionDestroy(void);
 
 #endif

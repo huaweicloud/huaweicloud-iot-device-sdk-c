@@ -263,10 +263,11 @@ int SSHClientCreate(const JSON *root)
     return ret;
 }
 
-void SSHClientRunCmd(const JSON *tunnelCmdData)
+void SSHClientRunCmd(void *root)
 {
     int ret;
     int nbytes;
+    JSON *tunnelCmdData = (JSON *)root;
     char *cmd = JSON_GetStringFromObject(tunnelCmdData, TUNNEL_SSH_DATA, NULL);
     char *reqId = JSON_GetStringFromObject(tunnelCmdData, TUNNEL_SSH_REQID, NULL);
 
@@ -295,5 +296,7 @@ void SSHClientRunCmd(const JSON *tunnelCmdData)
         nbytes = ssh_channel_read_timeout(g_SSHChannel, g_rspBuffer,
             TUNNEL_SSH_RSPBUFF_LEN, 0, TUNNEL_SSH_READ_TIMEOUT_MS);
     }
+    JSON_Delete(tunnelCmdData);
+    pthread_exit();
     return;
 }
