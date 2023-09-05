@@ -94,7 +94,9 @@ English | [Simplified Chinese](./README_CN.md)
 
 30. Update server ca conf/rootcert.pem 
 
-May 6, 2023
+31. Optimize the timeout period for SSH remote reporting packets.
+
+Sept 5, 2023
 
 <h1 id="1">1 About This Document</h1>
 This document uses an example to describe how to use **huaweicloud-iot-device-sdk-c** (SDK for short) to quickly connect MQTT devices to the Huawei Cloud IoT platform.

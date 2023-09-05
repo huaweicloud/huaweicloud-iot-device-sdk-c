@@ -29,6 +29,7 @@
  */
 
 #include <stdio.h>
+#include <pthread.h>
 #include "libssh/libssh.h"
 #include "securec.h"
 #include "string_util.h"
@@ -42,12 +43,14 @@
 
 ssh_session g_SSHSession = NULL;
 ssh_channel g_SSHChannel = NULL;
-char *g_rspBuffer = NULL;
+static char g_reqId[TUNNEL_SSH_REQID_LENGTH] = {0};
+static pthread_mutex_t g_channelLocker = PTHREAD_MUTEX_INITIALIZER;
 void SSHClientOnChannelClose(ssh_session session, ssh_channel channel, void *userdata);
 struct ssh_channel_callbacks_struct g_callBackFunc = {.channel_close_function = SSHClientOnChannelClose};
 
 void SSHClientSessionDestroy(void)
 {
+    pthread_mutex_lock(&g_channelLocker);
     if (g_SSHChannel) {
         ssh_channel_close(g_SSHChannel);
         ssh_channel_send_eof(g_SSHChannel);
@@ -60,10 +63,7 @@ void SSHClientSessionDestroy(void)
         ssh_free(g_SSHSession);
         g_SSHSession = NULL;
     }
-
-    if (g_rspBuffer) {
-        MemFree(&g_rspBuffer);
-    }
+    pthread_mutex_unlock(&g_channelLocker);
 }
 
 int SSHClientVerifyKnownhost(ssh_session session)
@@ -134,59 +134,84 @@ int SSHClientVerifyKnownhost(ssh_session session)
 void SSHClientOnChannelClose(ssh_session session, ssh_channel channel, void *userdata)
 {
     WssClientSendDisConn("SSH_timeout_disconnect", "408", "SSH idles for too long, the session will be closed");
+    SSHClientSessionDestroy();
+}
+
+void SSHClientRead(void)
+{
+    int nbytes = 0;
+    char *rspBuffer = (char *)malloc(TUNNEL_SSH_RSPBUFF_LEN);
+    if (!rspBuffer) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientRead: Malloc failed!\n");
+        return;
+    }
+    (void)memset_s(rspBuffer, TUNNEL_SSH_RSPBUFF_LEN, 0, TUNNEL_SSH_RSPBUFF_LEN);
+    do {
+        pthread_mutex_lock(&g_channelLocker);
+        nbytes = ssh_channel_read_nonblocking(g_SSHChannel, rspBuffer, TUNNEL_SSH_RSPBUFF_LEN, 0);
+        pthread_mutex_unlock(&g_channelLocker);
+        if (nbytes > 0) {
+            PrintfLog(EN_LOG_LEVEL_INFO, "SSHClientRead: nbytes:%d\n", nbytes);
+            WssClientSendRsp(g_reqId, TUNNEL_SSH_OPTYPE_CMDRSP, rspBuffer, nbytes);
+            (void)memset_s(rspBuffer, TUNNEL_SSH_RSPBUFF_LEN, 0, TUNNEL_SSH_RSPBUFF_LEN);
+        }
+    } while (nbytes >= 0);
+    MemFree(&rspBuffer);
 }
 
 /**
  * @Description: create interactive shell session
- * @param reqId: request id
  * @return: IOTA_SUCCESS represents success, others represent specific failure
  */
-int SSHClientInteractiveShellSession(const char *reqId)
+int SSHClientInteractiveShellSession(void)
 {
     int ret;
-    int nbytes;
+    int nbytes = 0;
+    pthread_t threadRead;
     
     g_SSHChannel = ssh_channel_new(g_SSHSession);
     if (g_SSHChannel == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientInteractiveShellSession: SSH channel created failed: %s\n",
-            ssh_get_error(g_SSHChannel));
+            ssh_get_error(g_SSHSession));
         return IOTA_FAILURE;
     }
 
     ret = ssh_channel_open_session(g_SSHChannel);
     if (ret != SSH_OK) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientInteractiveShellSession: SSH channel open session failed: %s\n",
-            ssh_get_error(g_SSHChannel));
+            ssh_get_error(g_SSHSession));
         return ret;
     }
 
     ret = ssh_channel_request_pty(g_SSHChannel);
     if (ret != SSH_OK) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientInteractiveShellSession: SSH channel request pty failed: %s\n",
-            ssh_get_error(g_SSHChannel));
+            ssh_get_error(g_SSHSession));
         return ret;
     }
  
+    ret = ssh_channel_change_pty_size(g_SSHChannel, TUNNEL_TERMINAL_WIDTH, TUNNEL_TERMINAL_HEIGHT);
+    if (ret != SSH_OK) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientInteractiveShellSession: SSH channel change pty size failed: %s\n",
+            ssh_get_error(g_SSHSession));
+        return ret;
+    }
+
     ret = ssh_channel_request_shell(g_SSHChannel);
     if (ret != SSH_OK) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientInteractiveShellSession: SSH channel request shell failed: %s\n",
-            ssh_get_error(g_SSHChannel));
+            ssh_get_error(g_SSHSession));
         return ret;
     }
 
     ssh_callbacks_init(&g_callBackFunc);
     ssh_set_channel_callbacks(g_SSHChannel, &g_callBackFunc);
-    // send login message
-    nbytes = ssh_channel_read_timeout(g_SSHChannel, g_rspBuffer, TUNNEL_SSH_RSPBUFF_LEN, 0, TUNNEL_SSH_READ_TIMEOUT_MS);
-    while (nbytes > 0) {
-        WssClientSendRsp(reqId, TUNNEL_SSH_OPTYPE_CMDRSP, g_rspBuffer, nbytes);
-        nbytes = ssh_channel_read_timeout(g_SSHChannel, g_rspBuffer,
-            TUNNEL_SSH_RSPBUFF_LEN, 0, TUNNEL_SSH_READ_TIMEOUT_MS);
-    }
+    pthread_create(&threadRead, NULL, SSHClientRead, NULL);
+    pthread_detach(threadRead);
     return IOTA_SUCCESS;
 }
 
-int SSHClientSessionInit(const char *reqId, const char *userName, const char *passWord)
+int SSHClientSessionInit(const char *userName, const char *passWord)
 {
     int verbosity = SSH_LOG_NOLOG;
     int port = 22;
@@ -222,7 +247,7 @@ int SSHClientSessionInit(const char *reqId, const char *userName, const char *pa
             break;
         }
 
-        ret = SSHClientInteractiveShellSession(reqId);
+        ret = SSHClientInteractiveShellSession();
     } while (0);
     
     if (ret != 0) {
@@ -242,14 +267,12 @@ int SSHClientCreate(const JSON *root)
         PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientCreate: Tunnel ssh data parse error!\n");
         return IOTA_PARSE_JSON_FAILED;
     }
+    if (memcpy_s(g_reqId, TUNNEL_SSH_REQID_LENGTH, reqId, TUNNEL_SSH_REQID_LENGTH - 1) != EOK) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientCreate: Memcpy failed!\n");
+        return IOTA_FAILURE;
+    }
     // only one session can be built
     SSHClientSessionDestroy();
-    g_rspBuffer = malloc(TUNNEL_SSH_RSPBUFF_LEN);
-    if (!g_rspBuffer) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientCreate: Respond Buffer malloc failed\n");
-        SSHClientSessionDestroy();
-        return IOTA_RESOURCE_NOT_AVAILABLE;
-    }
 
     userName = JSON_GetStringFromObject(data, TUNNEL_SSH_DATA_USERNAME, NULL);
     passWord = JSON_GetStringFromObject(data, TUNNEL_SSH_DATA_PASSWORD, NULL);
@@ -258,44 +281,38 @@ int SSHClientCreate(const JSON *root)
         return IOTA_PARSE_JSON_FAILED;
     }
     PrintfLog(EN_LOG_LEVEL_INFO, "UserName:%s\n", userName);
-    int ret = SSHClientSessionInit(reqId, userName, passWord);
+    int ret = SSHClientSessionInit(userName, passWord);
     (void)memset_s(passWord, strlen(passWord), 0, strlen(passWord));
     return ret;
 }
 
-void SSHClientRunCmd(void *root)
+void SSHClientRunCmd(JSON *root)
 {
     int ret;
-    int nbytes;
-    JSON *tunnelCmdData = (JSON *)root;
-    char *cmd = JSON_GetStringFromObject(tunnelCmdData, TUNNEL_SSH_DATA, NULL);
-    char *reqId = JSON_GetStringFromObject(tunnelCmdData, TUNNEL_SSH_REQID, NULL);
+    int nbytes = 0;
+    char *cmd = JSON_GetStringFromObject(root, TUNNEL_SSH_DATA, NULL);
+    char *reqId = JSON_GetStringFromObject(root, TUNNEL_SSH_REQID, NULL);
 
     if (!cmd || !reqId) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientRunCmd: Tunnel ssh command parse error!\n");
         return;
     }
+    if (memcpy_s(g_reqId, TUNNEL_SSH_REQID_LENGTH, reqId, TUNNEL_SSH_REQID_LENGTH - 1) != EOK) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientRunCmd: Memcpy failed!\n");
+        return;
+    }
     PrintfLog(EN_LOG_LEVEL_INFO, "SSHClientRunCmd: Command:%10s\n", cmd);
 
-    if (!g_SSHSession || !g_rspBuffer) {
+
+    if (!g_SSHSession) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientRunCmd: SSH may not init yet, please check!\n");
         return;
     }
-    
+
     ret = ssh_channel_write(g_SSHChannel, cmd, strlen(cmd));
     if (ret != strlen(cmd)) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientRunCmd: SSH channel command execute failed: %s\n",
-            ssh_get_error(g_SSHChannel));
+        PrintfLog(EN_LOG_LEVEL_ERROR, "SSHClientRunCmd: SSH channel command execute failed: %s\n", ssh_get_error(g_SSHSession));
         return;
     }
-
-    nbytes = ssh_channel_read_timeout(g_SSHChannel, g_rspBuffer,
-        TUNNEL_SSH_RSPBUFF_LEN, 0, TUNNEL_SSH_READ_TIMEOUT_MS);
-    while (nbytes > 0) {
-        WssClientSendRsp(reqId, TUNNEL_SSH_OPTYPE_CMDRSP, g_rspBuffer, nbytes);
-        nbytes = ssh_channel_read_timeout(g_SSHChannel, g_rspBuffer,
-            TUNNEL_SSH_RSPBUFF_LEN, 0, TUNNEL_SSH_READ_TIMEOUT_MS);
-    }
-    JSON_Delete(tunnelCmdData);
     return;
 }

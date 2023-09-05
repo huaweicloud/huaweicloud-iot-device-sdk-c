@@ -94,7 +94,9 @@
 
 30、更新server ca conf\rootcert.pem
 
-*2023/05/06*
+31、 优化SSH远程登录报文等待超时时间
+
+*2023/09/05*
 
 <h1 id="1">1.前言</h1>
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。

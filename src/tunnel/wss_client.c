@@ -42,9 +42,7 @@
 
 noPollConn *g_Conn = NULL;
 noPollCtx *g_Ctx = NULL;
-noPollMsg *g_PreviousMsg = NULL;
 URL_INFO g_UrlInfo = {NULL, NULL, NULL, NULL};
-char *g_rspMsg = NULL;
 
 void WssClientDestroyWsClient(void);
 
@@ -72,18 +70,20 @@ void WssClientListenerOnMsg(noPollCtx *ctx, noPollConn *conn, noPollMsg *msg, no
 {
     const char *content = NULL;
     noPollMsg *aux = NULL;
+    noPollMsg *preMsg = NULL;
     JSON *root = NULL;
     char *opType = NULL;
     char *serviceType = NULL;
     char *reqId = NULL;
     pthread_t threadRun;
 
+
     // fragment message assemble
     if (nopoll_msg_is_fragment(msg)) {
         PrintfLog(EN_LOG_LEVEL_INFO, "WssClientListenerOnMsg: Found fragment, FIN = %d\n", nopoll_msg_is_final(msg));
         /* call to join this message */
-        aux = g_PreviousMsg;
-        g_PreviousMsg = nopoll_msg_join(g_PreviousMsg, msg);
+        aux = preMsg;
+        preMsg = nopoll_msg_join(preMsg, msg);
         nopoll_msg_unref(aux);
         if (!nopoll_msg_is_final(msg)) {
             return;
@@ -91,15 +91,15 @@ void WssClientListenerOnMsg(noPollCtx *ctx, noPollConn *conn, noPollMsg *msg, no
         PrintfLog(EN_LOG_LEVEL_INFO, "WssClientListenerOnMsg: Found final fragmen\n");
     } else {
         PrintfLog(EN_LOG_LEVEL_INFO, "WssClientListenerOnMsg: Get Complete Message\n");
-        g_PreviousMsg = nopoll_msg_join(g_PreviousMsg, msg);
+        preMsg = nopoll_msg_join(preMsg, msg);
     }
-    if (!g_PreviousMsg) {
+    if (!preMsg) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientListenerOnMsg: Message alloc failed\n");
         return;
     }
 
     do {
-        content = (const char *)nopoll_msg_get_payload(g_PreviousMsg);
+        content = (const char *)nopoll_msg_get_payload(preMsg);
         root = JSON_Parse(content);
         if (root == NULL) {
             PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientListenerOnMsg: Parse Message Failed.\n");
@@ -121,13 +121,14 @@ void WssClientListenerOnMsg(noPollCtx *ctx, noPollConn *conn, noPollMsg *msg, no
                 WssClientSendDisConn(reqId, "400", "WssClientListenerOnMsg: Create SSH channel failed");
             }
         } else if (strcmp(opType, TUNNEL_SSH_OPTYPE_CMD) == 0) {
-            pthread_create(&threadRun, NULL, SSHClientRunCmd, (void *)root);
+            SSHClientRunCmd(root);
         }
     } while (0);
 
     /* release reference */
-    nopoll_msg_unref(g_PreviousMsg);
-    g_PreviousMsg = NULL;
+    nopoll_msg_unref(preMsg);
+    preMsg = NULL;
+    JSON_Delete(root);
     return;
 }
 
@@ -191,7 +192,6 @@ void WssClientListenerOnClose(noPollCtx *ctx, noPollConn *conn, noPollPtr user_d
     } while (0);
 
     g_Conn = NULL;
-    MemFree(&g_rspMsg);
     nopoll_loop_stop(ctx);
     nopoll_ctx_unref(ctx);
     g_Ctx = NULL;
@@ -234,6 +234,7 @@ int WssClientConnect(nopoll_bool isRetry)
     if (!nopoll_conn_wait_until_connection_ready(g_Conn, TUNNEL_WSSCLIENT_CONN_TIMEOUT)) {
         if (!isRetry) {
             pthread_create(&threadClose, NULL, WssClientCloseConn, (void *)g_Conn);
+            pthread_detach(threadClose);
         }
         return IOTA_WSS_CONNECT_FAILED;
     }
@@ -244,6 +245,8 @@ int WssClientConnect(nopoll_bool isRetry)
     /* websocket keep alive */
     if (pthread_create(&threadPing, NULL, WssClientKeepAlive, (void *)g_Conn) != IOTA_SUCCESS) {
         return IOTA_THREAD_CREATE_FAILED;
+    } else {
+        pthread_detach(threadPing);
     }
     return IOTA_SUCCESS;
 }
@@ -274,15 +277,9 @@ void WssClientCreate(const URL_INFO *urlInfo)
                 ret = IOTA_THREAD_CREATE_FAILED;
                 break;
             }
+            pthread_detach(threadWait);
         }
-        
-        if (!g_rspMsg) {
-            g_rspMsg = malloc(TUNNEL_WSSCLIENT_RSPMSG_LEN);
-            if (!g_rspMsg) {
-                ret = IOTA_RESOURCE_NOT_AVAILABLE;
-                break;
-            }
-        }
+
         /* save the config data to help reconnect */
         WssClientSaveConfigInfo(urlInfo);
         for (i = 1; i <= TUNNEL_WSSCLIENT_CONN_RETRY_TIMES; ++i) {
@@ -376,7 +373,7 @@ int WssClientSplitUrl(URL_INFO *info, const char* url, const char* token)
             break;
         }
 
-        info->token = malloc(tokenLen);
+        info->token = (char *)malloc(tokenLen);
         if (!info->token) {
             info->token = NULL;
             break;
@@ -406,29 +403,30 @@ void WssClientSendRsp(const char *reqId, const char *opType, char *buff, int len
 {
     cJSON *json2Send = NULL;
     int bytes;
+    char *rspMsg = NULL;
 
     if (!g_Conn) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientSendRsp: WssClient connection is null, could't send message!\n");
         return;
     }
     json2Send = cJSON_CreateObject();
-    if (buff) {
-        buff[len] = '\0';
-    }
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_OPTYPE, opType);
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_SERTYPE, TUNNEL_SSH_SERTYPE_SSH);
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_REQID, reqId);
     cJSON_AddStringToObject(json2Send, TUNNEL_SSH_DATA, buff);
-    if (cJSON_PrintPreallocated(json2Send, g_rspMsg, TUNNEL_WSSCLIENT_RSPMSG_LEN, cJSON_True) == HW_FALSE) {
-        cJSON_Delete(json2Send);
+    rspMsg = cJSON_Print(json2Send);
+    cJSON_Delete(json2Send);
+    if (!rspMsg) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientSendRsp: Malloc failed\n");
         return;
     }
-    bytes = nopoll_conn_send_text(g_Conn, g_rspMsg, (int)strlen(g_rspMsg));
+    PrintfLog(EN_LOG_LEVEL_INFO, "WssClientSendRsp: len:%d\n", (int)strlen(rspMsg));
+    bytes = nopoll_conn_send_text(g_Conn, rspMsg, (int)strlen(rspMsg));
     PrintfLog(EN_LOG_LEVEL_INFO, "WssClientSendRsp: bytes:%d\n", bytes);
-    if (bytes != strlen(g_rspMsg)) {
+    if (bytes != strlen(rspMsg)) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientSendRsp: WssClient send message failed!\n");
     }
-    cJSON_Delete(json2Send);
+    MemFree(&rspMsg);
     return;
 }
 
@@ -443,6 +441,7 @@ void WssClientSendDisConn(const char *reqId, const char *code, const char *msg)
 {
     cJSON *data = cJSON_CreateObject();
     cJSON *root = cJSON_CreateObject();
+    char* rspMsg = NULL;
 
     if (!data || !root) {
         cJSON_Delete(data);
@@ -455,8 +454,12 @@ void WssClientSendDisConn(const char *reqId, const char *code, const char *msg)
     cJSON_AddStringToObject(root, TUNNEL_SSH_SERTYPE, TUNNEL_SSH_SERTYPE_SSH);
     cJSON_AddStringToObject(root, TUNNEL_SSH_REQID, reqId);
     cJSON_AddItemToObject(root, TUNNEL_SSH_DATA, data);
-    cJSON_PrintPreallocated(root, g_rspMsg, TUNNEL_WSSCLIENT_RSPMSG_LEN, cJSON_True);
-    nopoll_conn_send_text(g_Conn, g_rspMsg, (int)strlen(g_rspMsg));
-
+    rspMsg = cJSON_Print(root);
     cJSON_Delete(root);
+    if (!rspMsg) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "WssClientSendDisConn: Malloc failed\n");
+    }
+    PrintfLog(EN_LOG_LEVEL_INFO, "WssClientSendDisConn: Send DisConnect message\n");
+    nopoll_conn_send_text(g_Conn, rspMsg, (int)strlen(rspMsg));
+    MemFree(&rspMsg);
 }
