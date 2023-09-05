@@ -25,6 +25,7 @@ English | [Simplified Chinese](./README_CN.md)
 
 | Version Number| Change Type| Description                                                |
 | ------ | -------- | ------------------------------------------------------------ |
+| 1.1.4  | Fixed the issue of SSH remote where packet reporting times out.         |
 | 1.1.3  | Function enhancement | update conf\rootcert.pem          |
 | 1.1.2  | New feature  | Device rules, M2M, GN compilation file, anomaly detection, timestamp printed in logs, MQTT_DEBUG, Chinese cryptographic algorithm, remote configuration, and device-cloud secure communication (soft bus) were added.|
 | 1.1.1  | New feature  | SSH remote O&M function was added.                                         |
