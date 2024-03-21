@@ -1016,6 +1016,18 @@ static int OnEventsDownOtaArrived(EN_IOTA_SERVICE_EVENT *services, char *event_t
         int file_size = JSON_GetIntFromObject(paras, FILE_SIZE, -1);
         services->ota_paras->file_size = file_size;
 
+        char *file_name = JSON_GetStringFromObject(paras, FILE_NAME, NULL);
+        services->ota_paras->file_name = file_name;
+ 
+        char *task_id = JSON_GetStringFromObject(paras, TASK_ID, NULL);
+        services->ota_paras->task_id = task_id;
+        
+        int sub_device_count = JSON_GetIntFromObject(paras, SUBDEVICE_COUNT, -1);
+        services->ota_paras->sub_device_count = sub_device_count;
+ 
+        char *task_ext_info = JSON_GetStringFromObject(paras, TASKEXT_INFO, NULL);
+        services->ota_paras->task_ext_info = task_ext_info;
+ 
         char *access_token = JSON_GetStringFromObject(paras, ACCESS_TOKEN, NULL);
         services->ota_paras->access_token = access_token;
 
