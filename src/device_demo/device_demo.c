@@ -580,6 +580,7 @@ static void Test_ReportOTAVersion(EN_IOTA_EVENT *message)
 }
 
 static void Test_ReportUpgradeStatus(int i, char *version, char *object_device_id)
+{
     ST_IOTA_UPGRADE_STATUS_INFO statusInfo;
     if (i == 0) {
         statusInfo.description = "success";
