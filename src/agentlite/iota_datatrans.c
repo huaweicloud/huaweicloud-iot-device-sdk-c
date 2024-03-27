@@ -884,10 +884,10 @@ static HW_INT IOTA_IotReadHeaderFlag(char *buf, int readLength, char *fileName, 
     PrintfLog(EN_LOG_LEVEL_INFO, "iota_datatrans: IOTA_GetOTAPackages() the fileSize is %d.\n", *fileSize);
 
     // get filename  from  Content-Disposition in the reponse Header, for v1 only
-    int filename_index = GetSubStrIndex((const char *)buf, FILE_NAME);
+    int filename_index = GetSubStrIndex((const char *)buf, FILE_NAME_EQUAL);
     p = 0;
     if (filename_index >= IOTA_SUCCESS) {
-        for (k = filename_index + strlen(FILE_NAME); k < readLength - 1; k++) {
+        for (k = filename_index + strlen(FILE_NAME_EQUAL); k < readLength - 1; k++) {
             if (p >= PKGNAME_MAX) {
                 result = IOTA_FAILURE;
                 PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_GetOTAPackages() the fileName is too long \n");

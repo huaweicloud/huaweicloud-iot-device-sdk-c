@@ -96,8 +96,8 @@ static void Test_BatchPropertiesReport(char *deviceId);
 static void Test_CommandResponse(char *requestId);
 static void Test_PropSetResponse(char *requestId);
 static void Test_PropGetResponse(char *requestId);
-static void Test_ReportOTAVersion(void);
-static void Test_ReportUpgradeStatus(int i, char *version);
+static void Test_ReportOTAVersion(EN_IOTA_EVENT *message);
+static void Test_ReportUpgradeStatus(int i, char *version, char *object_device_id);
 static void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 static void HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
 static void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp);
@@ -564,23 +564,22 @@ static void Test_PropGetResponse(char *requestId)
     MemFree(&serviceProp[1].event_time);
 }
 
-static void Test_ReportOTAVersion(void)
+static void Test_ReportOTAVersion(EN_IOTA_EVENT *message)
 {
     ST_IOTA_OTA_VERSION_INFO otaVersion;
 
     otaVersion.event_time = NULL;
     otaVersion.sw_version = "v1.0";
     otaVersion.fw_version = "v1.0";
-    otaVersion.object_device_id = NULL;
-
+    otaVersion.object_device_id = message == NULL ? NULL : message->object_device_id;
+ 
     int messageId = IOTA_OTAVersionReport(otaVersion, NULL);
     if (messageId != 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportOTAVersion() failed, messageId %d\n", messageId);
     }
 }
 
-static void Test_ReportUpgradeStatus(int i, char *version)
-{
+static void Test_ReportUpgradeStatus(int i, char *version, char *object_device_id)
     ST_IOTA_UPGRADE_STATUS_INFO statusInfo;
     if (i == 0) {
         statusInfo.description = "success";
@@ -595,7 +594,7 @@ static void Test_ReportUpgradeStatus(int i, char *version)
     }
 
     statusInfo.event_time = NULL;
-    statusInfo.object_device_id = NULL;
+    statusInfo.object_device_id = object_device_id;
 
     int messageId = IOTA_OTAStatusReport(statusInfo, NULL);
     if (messageId != 0) {
@@ -1106,7 +1105,7 @@ static void HandleEventOta(EN_IOTA_EVENT *message, int i)
 {
     if (message->services[i].event_type == EN_IOTA_EVENT_VERSION_QUERY) {
         // report OTA version
-        Test_ReportOTAVersion();
+        Test_ReportOTAVersion(message);
     }
 
     if ((message->services[i].event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE) ||
@@ -1118,7 +1117,7 @@ static void HandleEventOta(EN_IOTA_EVENT *message, int i)
         if (message->services[i].ota_paras->sign != NULL) {
             if (strcmp(pkg_sha256, message->services[i].ota_paras->sign)) { // V1 only
                 // report failed status
-                Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version);
+                Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version, message->object_device_id); 
             }
         }
 
@@ -1129,10 +1128,10 @@ static void HandleEventOta(EN_IOTA_EVENT *message, int i)
             usleep(3000 * 1000);
             PrintfLog(EN_LOG_LEVEL_DEBUG, "the filename is %s\n", filename);
             // report successful upgrade status
-            Test_ReportUpgradeStatus(0, message->services[i].ota_paras->version);
+            Test_ReportUpgradeStatus(0, message->services[i].ota_paras->version, message->object_device_id);
         } else {
             // report failed status
-            Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version);
+            Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version, message->object_device_id);
         }
     }
 }

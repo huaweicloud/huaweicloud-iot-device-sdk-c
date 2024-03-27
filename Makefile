@@ -78,6 +78,9 @@ $(TARGET): $(OBJ_DIRS) $(OUT_PATH)/device_demo.o $(OBJS)
 gateway_demo: $(OBJ_DIRS) $(OUT_PATH)/generic_tcp_protocol.o $(OUT_PATH)/gateway_server_demo.o $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OUT_PATH)/generic_tcp_protocol.o $(OUT_PATH)/gateway_server_demo.o $(OBJS) $(LIBS)
 
+gateway_client_demo: $(OBJ_DIRS) $(OUT_PATH)/generic_tcp_protocol.o $(OUT_PATH)/gateway_client_demo.o $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OUT_PATH)/generic_tcp_protocol.o $(OUT_PATH)/gateway_client_demo.o $(OBJS) $(LIBS)
+ 
 bootstrap_demo: $(OBJ_DIRS) $(OUT_PATH)/bootstrap_demo.o $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OUT_PATH)/bootstrap_demo.o $(OBJS) $(LIBS)
 
@@ -134,8 +137,11 @@ $(OUT_PATH)/generic_tcp_protocol.o: $(SRC_PATH)/gateway_demo/generic_tcp_protoco
 	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/protocol/ $(HEADER_PATH)
 	
 $(OUT_PATH)/gateway_server_demo.o: $(SRC_PATH)/gateway_demo/gateway_server_demo.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/protocol/ $(HEADER_PATH)
-
+	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/protocol/ $(HEADER_PATH) 
+ 
+$(OUT_PATH)/gateway_client_demo.o: $(SRC_PATH)/gateway_demo/gateway_client_demo.c
+	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/protocol/ $(HEADER_PATH)/third_party/libboundscheck/ $(HEADER_PATH)
+ 
 $(OUT_PATH)/device_demo.o: $(SRC_PATH)/device_demo/device_demo.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/third_party/libboundscheck/ $(HEADER_PATH)/service/device_rule/   $(HEADER_PATH) $(HEADER_PATH)/tunnel/ $(HEADER_PATH)/nopoll
 	
@@ -184,7 +190,7 @@ $(DEVICE_RULE_OBJS):$(OUT_PATH)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(DEVICE_RULE_INC)
 
 .PHONY: all
-all:	$(TARGET) gateway_demo bootstrap_demo
+all:	$(TARGET) gateway_demo bootstrap_demo gateway_client_demo
 
 
 $(OBJ_DIRS):

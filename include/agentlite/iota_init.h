@@ -72,6 +72,10 @@ typedef struct {
     HW_CHAR *version;
     HW_CHAR *url;
     HW_INT file_size;
+    HW_CHAR *file_name;
+    HW_CHAR *task_id; // 批量任务id
+    HW_INT sub_device_count; // 子设备数量
+    HW_CHAR *task_ext_info; // 创建批量任务时添加的扩展信息
     HW_CHAR *access_token;
     HW_INT expires;
     HW_CHAR *sign;

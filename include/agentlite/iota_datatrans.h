@@ -526,7 +526,7 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
                                         void *context, MQTTV5_DATA *mqttv5);
 #endif
 
-#define SDK_VERSION                     "C_v1.1.3"
+#define SDK_VERSION                     "C_v1.1.5"
 #define OTA_PORT                        8943
 #define BUFSIZE                         4096
 #define PKGNAME_MAX                     1024  // the max length of the package name
@@ -544,7 +544,7 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define OTA_HTTP_VERSION                " HTTP/1.1\n"   // do not delete the blank space and '\n'
 #define OTA_HTTP_HOST                   "Host: "    // do not delete the blank space
 #define HTTP_OK                         "200"
-#define FILE_NAME                       "filename="
+#define FILE_NAME_EQUAL                 "filename="
 #define OTA_LINEFEED                    "\n"
 #define OTA_CONTENT_TYPE                "Content-Type: application/json\n"  // do not delete the blank space and '\n
 #define OTA_AUTH                        "Authorization:Bearer "   // do not delete the blank space
@@ -612,6 +612,10 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define SOFTWARE_UPGRADE_V2             "software_upgrade_v2"
 #define URL                             "url"
 #define FILE_SIZE                       "file_size"
+#define FILE_NAME                       "file_name"
+#define TASK_ID                         "task_id"
+#define SUBDEVICE_COUNT                 "sub_device_count"
+#define TASKEXT_INFO                    "task_ext_info"
 #define ACCESS_TOKEN                    "access_token"
 #define EXPIRES                         "expires"
 #define SIGN                            "sign"
