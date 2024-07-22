@@ -33,7 +33,7 @@
 #define MQTTV5_UTIL_H
 
 // #define MQTTV5  // If not defined, use MQTT3, else MQTT5.0
-#if defined(MQTTV5)
+
 // ------------------------ Create Connection -------------------------------------
 #define TOPIC_ALIAS_MAX 20 // MQTT v5 Maximum number of subject aliases
 
@@ -72,10 +72,17 @@ typedef struct {
      * the response message with the request message
     */
     char *correlation_data;
+    /*
+     * It allows users to reduce the bandwidth consumption when publishing 
+     * messages by reducing long and commonly used topic names to a double byte integer.
+     * 
+    */
+    unsigned int topic_alias;
 } MQTTV5_DATA;
 
+#ifdef MQTTV5
 void mqttV5_listFree(MQTTV5_USER_PRO *mqttData);
 
-#define mqttv5_initializer {NULL, NULL, NULL, NULL }
+#define mqttv5_initializer {NULL, NULL, NULL, NULL, -1}
 #endif
 #endif

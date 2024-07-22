@@ -35,74 +35,134 @@
 #include "iota_error_type.h"
 #include "subscribe.h"
 
-int SubscribeMessageDown(void)
+static int SubsribeTopic(char *topic, const int qos);
+
+int SubscribeMessageDownQos(int qos)
 {
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeMessageDown() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeMessageDown() getUserName failed.\n");
         return IOTA_FAILURE;
     }
     char *topic = CombineStrings(3, TOPIC_PREFIX, userName, TOPIC_SUFFIX_MESSAGEDOWN);
-    return SubsribeTopic(topic, 0);
+    return SubsribeTopic(topic, qos);
 }
 
-int SubscribeCommand(void)
+int SubscribeMessageDown(void)
 {
+    SubscribeMessageDownQos(0);
+}
+
+int SubscribeCommandQos(int qos)
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeCommand() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeCommand() getUserName failed.\n");
         return IOTA_FAILURE;
     }
     char *topic = CombineStrings(4, TOPIC_PREFIX, userName, TOPIC_SUFFIX_COMMAND, WILDCARD);
-    return SubsribeTopic(topic, 0);
+    return SubsribeTopic(topic, qos);
 }
 
-int SubscribePropSet(void)
+int SubscribeCommand(void)
 {
+    SubscribeCommandQos(0);
+}
+
+int SubscribePropSetQos(int qos)
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropSet() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropSet() getUserName failed.\n");
         return IOTA_FAILURE;
     }
     char *topic = CombineStrings(4, TOPIC_PREFIX, userName, TOPIC_SUFFIX_PROP_SET, WILDCARD);
-    return SubsribeTopic(topic, 0);
+    return SubsribeTopic(topic, qos);
 }
 
-int SubscribePropget(void)
+int SubscribePropSet(void)
 {
+    SubscribePropSetQos(0);
+}
+
+int SubscribePropgetQos(int qos)
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropget() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropget() getUserName failed.\n");
         return IOTA_FAILURE;
     }
     char *topic = CombineStrings(4, TOPIC_PREFIX, userName, TOPIC_SUFFIX_PROP_GET, WILDCARD);
-    return SubsribeTopic(topic, 0);
+    return SubsribeTopic(topic, qos);
 }
 
-int SubscribePropResp(void)
+int SubscribePropget(void)
 {
+    SubscribePropgetQos(0);
+}
+
+int SubscribePropRespQos(int qos)
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropResp() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropResp() getUserName failed.\n");
         return IOTA_FAILURE;
     }
     char *topic = CombineStrings(4, TOPIC_PREFIX, userName, TOPIC_SUFFIX_PROP_RSP, WILDCARD);
-    return SubsribeTopic(topic, 0);
+    return SubsribeTopic(topic, qos);
 }
 
-int SubscribeSubDeviceEvent(void)
+int SubscribePropResp(void)
 {
+    SubscribePropRespQos(0);
+}
+
+int SubscribeSubDeviceEventQos(int qos)
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeSubDeviceEvent() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeSubDeviceEvent() getUserName failed.\n");
         return IOTA_FAILURE;
     }
     char *topic = CombineStrings(3, TOPIC_PREFIX, userName, TOPIC_SUFFIX_EVENT_DOWN);
-    return SubsribeTopic(topic, 0);
+    return SubsribeTopic(topic, qos);
 }
 
-int SubscribeUserTopic(char *topicParas)
+int SubscribeSubDeviceEvent(void)
 {
+    SubscribeSubDeviceEventQos(0);
+}
+
+int SubscribeUserTopicQos(char *topicParas, int qos)
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeUserTopic() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     if (topicParas == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeUserTopic() the topicParas is invalid.\n");
         return IOTA_FAILURE;
@@ -113,11 +173,30 @@ int SubscribeUserTopic(char *topicParas)
         return IOTA_FAILURE;
     }
     char *topic = CombineStrings(4, TOPIC_PREFIX, userName, TOPIC_SUFFIX_USER, topicParas);
-    return SubsribeTopic(topic, 0);
+    return SubsribeTopic(topic, qos);
 }
 
-int SubsribeTopic(char *topic, const int qos)
+int SubscribeUserTopic(char *topicParas)
 {
+    SubscribeUserTopicQos(topicParas, 0);
+}
+
+int SubscribeCustomTopic(char *topic, const int qos) 
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
+    char *topicMalloc = CombineStrings(1, topic);
+    return SubsribeTopic(topicMalloc, qos);
+}
+
+static int SubsribeTopic(char *topic, const int qos)
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     if (topic == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubsribeTopic() error, the topic is invalid.\n");
         return IOTA_FAILURE;
@@ -132,68 +211,113 @@ int SubsribeTopic(char *topic, const int qos)
     return ret;
 }
 
-int SubscribeJsonCmdV3(void)
+int SubscribeJsonCmdV3Qos(int qos)
 {
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeJsonCmdV3() getUserName failed.\n");
         return IOTA_FAILURE;
     }
     char *topic = CombineStrings(4, TOPIC_PREFIX_V3, userName, COMMAND_V3, JSON_V3);
-    return SubsribeTopic(topic, 0);
+    return SubsribeTopic(topic, qos);
 }
 
-int SubscribeBinaryCmdV3(void)
+int SubscribeJsonCmdV3(void)
 {
+    SubscribeJsonCmdV3Qos(0);
+}
+
+int SubscribeBinaryCmdV3Qos(int qos)
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() getUserName failed.\n");
         return IOTA_FAILURE;
     }
     char *topic = CombineStrings(4, TOPIC_PREFIX_V3, userName, COMMAND_V3, BINARY_V3);
-    return SubsribeTopic(topic, 0);
+    return SubsribeTopic(topic, qos);
 }
 
-int SubscribeBootstrap(void)
+int SubscribeBinaryCmdV3(void)
 {
+    SubscribeBinaryCmdV3Qos(0);
+}
+
+int SubscribeBootstrapQos(int qos)
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
     char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (userName == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() getUserName failed.\n");
         return IOTA_FAILURE;
     }
     char *topic = CombineStrings(3, TOPIC_PREFIX, userName, BOOTSTRAP_DOWN);
-    return SubsribeTopic(topic, 0);
+    return SubsribeTopic(topic, qos);
+}
+
+int SubscribeBootstrap(void)
+{
+    SubscribeBootstrapQos(0);
+}
+
+int SubscribeM2mQos(int qos)
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeM2m() qos only supports 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
+    char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
+    if (userName == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeM2m() getUserName failed.\n");
+        return IOTA_FAILURE;
+    }
+    char *topic = CombineStrings(4, TOPIC_PREFIX_M2M, userName, FORWARD_SLASH, WILDCARD);
+    return SubsribeTopic(topic, qos);
 }
 
 int SubscribeM2m(void)
 {
-    char *userName = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
-    if (userName == NULL) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeBinaryCmdV3() getUserName failed.\n");
+    SubscribeM2mQos(0);
+}
+ 
+void SubscribeAllQos(int qos) 
+{
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeAll() qos only supports 0 or 1.\n");
         return IOTA_FAILURE;
     }
-    char *topic = CombineStrings(4, TOPIC_PREFIX_M2M, userName, FORWARD_SLASH, WILDCARD);
-    return SubsribeTopic(topic, 0);
+    if (SubscribeMessageDownQos(qos) < IOTA_SUCCESS) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeMessageDown failed.\n");
+    }
+    if (SubscribeCommandQos(qos) < IOTA_SUCCESS) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeCommand failed.\n");
+    }
+    if (SubscribePropSetQos(qos) < IOTA_SUCCESS) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropSet failed.\n");
+    }
+    if (SubscribePropgetQos(qos) < IOTA_SUCCESS) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropget failed.\n");
+    }
+    if (SubscribeSubDeviceEventQos(qos) < IOTA_SUCCESS) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeSubDeviceEvent failed.\n");
+    }
+    if (SubscribePropRespQos(qos) < IOTA_SUCCESS) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropResp failed.\n");
+    }
 }
 
 void SubscribeAll(void)
 {
-    if (SubscribeMessageDown() < IOTA_SUCCESS) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeMessageDown failed.\n");
-    }
-    if (SubscribeCommand() < IOTA_SUCCESS) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeCommand failed.\n");
-    }
-    if (SubscribePropSet() < IOTA_SUCCESS) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropSet failed.\n");
-    }
-    if (SubscribePropget() < IOTA_SUCCESS) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropget failed.\n");
-    }
-    if (SubscribeSubDeviceEvent() < IOTA_SUCCESS) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribeSubDeviceEvent failed.\n");
-    }
-    if (SubscribePropResp() < IOTA_SUCCESS) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "Subscribe: SubscribePropResp failed.\n");
-    }
+    SubscribeAllQos(0);
 }

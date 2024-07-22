@@ -2,6 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+defines = [
+  "SSH_SWITCH = 1",
+  "BRIDGE_SWITCH = 1",
+  #"MQTTV5 = 1"
+]
+
 if (target_os == "") {
   target_os = host_os
 }

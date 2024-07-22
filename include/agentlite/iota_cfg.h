@@ -52,7 +52,9 @@ typedef enum {
     EN_IOTA_CFG_PRIVATE_KEY_PASSWORD = 12, // private key password in cert mode device
     EN_IOTA_CFG_BS_SCOPE_ID = 13,
     EN_IOTA_CFG_BS_MODE = 14,  //  see the ENUM_IOTA_CFG_BS
-    EN_IOTA_CFG_CHECK_STAMP_METHOD = 15
+    EN_IOTA_CFG_CHECK_STAMP_METHOD = 15,
+    EN_IOTA_CFG_BS_GROUP_SECRET = 16,
+    EN_IOTA_CFG_BRIDGE_MODE = 17
 } EN_IOTA_CFG_TYPE;
 
 typedef enum enum_IOTA_CFG_AUTH_MODE {
@@ -71,8 +73,12 @@ typedef enum {
     EN_IOTA_CFG_BS_SELF_REG = 1
 } ENUM_IOTA_CFG_BS;
 
+typedef enum {
+    EN_IOTA_CFG_BRIDGE_OFF = 0,
+    EN_IOTA_CFG_BRIDGE_ON = 1
+} ENUM_IOTA_CFG_BRIDGE;
+
 HW_API_FUNC HW_INT IOTA_ConfigSetStr(HW_INT item, HW_CHAR *value);
 HW_API_FUNC HW_INT IOTA_ConfigSetUint(HW_INT item, HW_UINT value);
 
 #endif
-

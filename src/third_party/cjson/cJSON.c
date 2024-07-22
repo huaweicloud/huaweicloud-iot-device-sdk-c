@@ -2138,6 +2138,10 @@ CJSON_PUBLIC(cJSON*) cJSON_AddNumberToObject(cJSON * const object, const char * 
 
 CJSON_PUBLIC(cJSON*) cJSON_AddStringToObject(cJSON * const object, const char * const name, const char * const string)
 {
+    if (string == NULL) 
+    {
+        return NULL;
+    }
     cJSON *string_item = cJSON_CreateString(string);
     if (add_item_to_object(object, name, string_item, &global_hooks, false))
     {
@@ -2548,7 +2552,6 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateIntArray(const int *numbers, int count)
     cJSON *n = NULL;
     cJSON *p = NULL;
     cJSON *a = NULL;
-
     if ((count < 0) || (numbers == NULL))
     {
         return NULL;

@@ -29,6 +29,7 @@ static_library("util") {
         "json_util.c",
         "log_util.c",
         "string_util.c",
+        "mqttv5_util.c"
     ]
     
     cflags = [ "-Wno-unused-variable" ]

@@ -42,22 +42,27 @@
 #include "MQTTAsync.h"
 #include "iota_init.h"
 
-#define ENCRYPT_LENGTH                  32
-#define PASSWORD_ENCRYPT_LENGTH         64
 #define DEFAULT_QOS                     1
 #define DEFAULT_KEEP_ALIVE_INTERVAL     120
 #define DEFAULT_CONNECT_TIME_OUT        30
 #define DEFAULT_RETRYINTERVAL           10
-#define TCP_URL_PREFIX                  "tcp://"
-#define SSL_URL_PREFIX                  "ssl://"
+#define DEFAULT_SERVERCERTAUTH          1  // Open server-side verification 
+#define DEFAULT_MAXINFIGHT              65535 // This controls how many messages can be in-flight simultaneously. Value range 1 ~ 65535
 #define MQTT_PORT                       "1883"
 #define MQTTS_PORT                      "8883"
 
 #define MQTT_TRACE_ON                   0  // Open or not MQTT_DEBUG
-#define MQTT_TRACE_LEVEL                MQTTASYNC_TRACE_MAXIMUM  // Please select according to your needs TraceLevel
+#define MQTT_TRACE_LEVEL                MQTTASYNC_TRACE_MINIMUM  // Please select according to your needs TraceLevel
+#define MAX_BUFFERED_MESSAGES           3 // Maximum number of broken chain storage entries
 
 #define CHECK_STAMP_LENGTH              6
 #define CHECK_STAMP_INDEX               3
+#define CHECK_STAMP_MODE                1
+
+#define TCP_URL_PREFIX                  "tcp://"
+#define SSL_URL_PREFIX                  "ssl://"
+#define ENCRYPT_LENGTH                  32
+#define PASSWORD_ENCRYPT_LENGTH         64
 
 typedef enum {
     EN_MQTT_BASE_CALLBACK_CONNECT_SUCCESS = 0,
@@ -86,9 +91,11 @@ typedef enum {
     EN_MQTT_BASE_CONFIG_RESET_SECRET_IN_PROGRESS = 10,
     EN_MQTT_BASE_CONFIG_QOS = 11,
     EN_MQTT_BASE_PRIVATE_KEY_PASSWORD = 12,
-    EN_MQTT_BASE_BS_SCOPE_ID = 13,
-    EN_MQTT_BASE_BS_MODE = 14,
-    EN_MQTT_BASE_CHECK_STAMP = 15
+    EN_MQTT_BASE_BS_SCOPE_ID = 13, // scope id填写
+    EN_MQTT_BASE_BS_MODE = 14,  // 设备发放 为1是注册组发放
+    EN_MQTT_BASE_CHECK_STAMP = 15,
+    EN_MQTT_BASE_BS_GROUP_SECRET = 16, // 设备发放注册组密钥认证
+    EN_MQTT_BASE_BRIDGE_MODE = 17
 } ENUM_MQTT_BASE_CONFIG;
 
 typedef void (*MQTT_BASE_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp);
@@ -123,6 +130,7 @@ int MqttBase_CreateConnection(void);
 int MqttBase_ReleaseConnection(void);
 int MqttBase_subscribe(const char *topic, const int qos);
 int MqttBase_publish(const char *topic, void *payload, int len, void* context, void *properties);
+int MqttBase_publishSetQos(const char *topic, void *payload, int len, int qos, void *context, void *properties);
 int MqttBase_StringLength(char *str);
 int MqttBase_destory(void);
 int MqttBase_IsConnected(void);

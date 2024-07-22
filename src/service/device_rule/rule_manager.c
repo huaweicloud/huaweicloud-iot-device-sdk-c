@@ -45,6 +45,7 @@
 #include "iota_datatrans.h"
 #include "rule_execution.h"
 #include "rule_manager.h"
+#include "stdlib.h"
 
 #ifdef DEVICE_RULE_ENALBE
 
@@ -57,7 +58,7 @@ static unsigned long long GeySysTmeInMs(void)
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    return ((unsigned long long)tv.tv_sec) * 1000 + tv.tv_usec / 1000;
+    return ((unsigned long long)tv.tv_sec) * 1000ull + (unsigned long long)tv.tv_usec / 1000ull;
 }
 
 static HW_BOOL AtomicStringInit(AtomicString *self)
@@ -128,7 +129,6 @@ static cJSON *g_ruleInfosListJSON = NULL;
 static AtomicString g_currentUserName;
 
 static cJSON *g_cacheDeviceDataJSON = NULL;
-
 typedef struct {
     char *deviceId;
     Command command;
@@ -293,7 +293,6 @@ static HW_BOOL getPropertyCallback(const char *serviceId, const char *propertyNa
             PropertyValueSetDouble(value, propertyItem->valuedouble);
             return HW_TRUE;
         }
-
         return HW_TRUE;
     }
 
@@ -506,14 +505,13 @@ static void *RuleMgr_CheckAndExecute(void *args)
         pthread_mutex_unlock(&g_ruleMutex);
 
         if (!isEmptyRule) {
-            DEVICE_RULE_INFO(">>>>>>>>>>>>>>>>>start to check rules: %lld>>>>>>>>>>>>>>>>", (long long)epochTime);
             pthread_mutex_lock(&g_ruleMutex);
             CheckRuleInfoListAndExecute(&g_ruleInfosList, getPropertyCallback, executeCommandCallback,
                 HW_TRUE, epochTime);
             pthread_mutex_unlock(&g_ruleMutex);
         }
 
-        int sleepMs = 1000 - GeySysTmeInMs() % 1000;
+        int sleepMs = 1000 - (int)(GeySysTmeInMs() % 1000);
         usleep(sleepMs * 1000);
     }
 

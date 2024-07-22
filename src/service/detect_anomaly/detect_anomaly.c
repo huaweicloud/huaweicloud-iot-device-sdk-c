@@ -180,7 +180,10 @@ static void Detect_ReportPortInfo(cJSON *content)
         used = cJSON_CreateIntArray(arrayInfo->array, arrayInfo->arrayLen);
     }
     cJSON_AddItemToObject(content, USED, used);
-    Detect_ReportModuleInfo(PORT_REPORT, content);
+    if (arrayInfo != NULL) {
+        MemFree(&arrayInfo->array);   
+        MemFree(&arrayInfo);
+    }
 }
 
 static void Detect_ReportCpuUsageInfo(cJSON *content)
@@ -271,7 +274,7 @@ static bool InotifyReadEventsAndIterate(int monitorFd, InotifyEventCallback even
     while (true) {
         ssize_t length = read(monitorFd, buf, EVENT_BUF_LEN);
         if (length < 0 && errno == EAGAIN) {
-            PrintfLog(EN_LOG_LEVEL_DEBUG, "cannot read inotify events, try again later");
+            PrintfLog(EN_LOG_LEVEL_INFO, "cannot read inotify events, try again later\n");
             ret = false;
             goto EXIT;
         }
@@ -282,7 +285,7 @@ static bool InotifyReadEventsAndIterate(int monitorFd, InotifyEventCallback even
                 ret = false;
                 goto EXIT;
             }
-            i += EVENT_SIZE + event->len;
+            i += (ssize_t)(EVENT_SIZE + event->len);
         }
     }
 EXIT:
@@ -864,22 +867,22 @@ void Detect_ParseShadowGetOrPropertiesSet(char *propertiesDown)
 
     cJSON *memoryThreshold = cJSON_GetObjectItem(properties, MEMORY_THRESHOLD);
     if (memoryThreshold != NULL) {
-        g_securityDetection.memoryThreshold = cJSON_GetNumberValue(memoryThreshold);
+        g_securityDetection.memoryThreshold = (int)cJSON_GetNumberValue(memoryThreshold);
     }
 
     cJSON *cpuUsageThreshold = cJSON_GetObjectItem(properties, CPU_USAGE_THRESHOLD);
     if (cpuUsageThreshold != NULL) {
-        g_securityDetection.cpuUsageThreshold = cJSON_GetNumberValue(cpuUsageThreshold);
+        g_securityDetection.cpuUsageThreshold = (int)cJSON_GetNumberValue(cpuUsageThreshold);
     }
 
     cJSON *diskSpaceThreshold = cJSON_GetObjectItem(properties, DISK_SPACE_THRESHOLD);
     if (diskSpaceThreshold != NULL) {
-        g_securityDetection.diskSpaceThreshold = cJSON_GetNumberValue(diskSpaceThreshold);
+        g_securityDetection.diskSpaceThreshold = (int)cJSON_GetNumberValue(diskSpaceThreshold);
     }
 
     cJSON *batteryPctThreshold = cJSON_GetObjectItem(properties, BATTERY_PERCENTAGE_THRESHOLD);
     if (batteryPctThreshold != NULL) {
-        g_securityDetection.batteryPercentageThreshold = cJSON_GetNumberValue(batteryPctThreshold);
+        g_securityDetection.batteryPercentageThreshold = (int)cJSON_GetNumberValue(batteryPctThreshold);
     }
 
     size_t i;

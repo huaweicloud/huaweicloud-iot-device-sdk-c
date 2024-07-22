@@ -81,15 +81,15 @@ int FileWrite(char *format, va_list args)
         
         fp = fopen(fileWay, "a+");
         if (fp == NULL) {
-            printf("ERROR FileWrite() fopen err! fileWay = %s\n", fileWay);
+            PrintfLog(EN_LOG_LEVEL_ERROR, "ERROR FileWrite() fopen err! fileWay = %s\n", fileWay);
             return -1;
         }
-        PrintfLog(EN_LOG_LEVEL_INFO, " FileWrite() fileName = %s\n", fileWay);
+        PrintfLog(EN_LOG_LEVEL_INFO, "FileWrite() fileName = %s\n", fileWay);
     }
     
     ret = vfprintf(fp, format, args);
     if (ret == EOF) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, " FileWrite() fputs err!\n");
+        PrintfLog(EN_LOG_LEVEL_ERROR, "FileWrite() fputs err!\n");
     }
     (void)fflush(fp);
     return ret;

@@ -79,6 +79,7 @@ static int g_QoS = DEFAULT_QOS;                              // default value of
 static int g_keepAliveInterval = DEFAULT_KEEP_ALIVE_INTERVAL; // default value of g_keepAliveInterval is 120s
 static int g_connectTimeout = DEFAULT_CONNECT_TIME_OUT;       // default value of connect timeout is 30s
 static int g_retryInterval = DEFAULT_RETRYINTERVAL;           // default value of connect g_retryInterval is 10s
+static int g_maxInflight = DEFAULT_MAXINFIGHT;                // This controls how many messages can be in-flight simultaneously.
 
 static char *g_serverIp = NULL;
 static char *g_port = NULL;
@@ -86,16 +87,21 @@ static char *g_username = NULL; // deviceId
 static char *g_password = NULL;
 static int g_authMode = 0;
 static char *g_urlPrefix = TCP_URL_PREFIX;
+
+// --- 设备发放参数 ----
 static char *g_bsScopeId = NULL;
 static int g_bsRegMode = 0;
+static char *g_bsGroupSecret = NULL;
 
 static char *g_workDir = NULL;
-
-static int g_verifyCert = 0;
+static int g_verifyCert = DEFAULT_SERVERCERTAUTH;
 static int g_initFlag = 0;
 static int g_checkTimestamp = 0;         // checking timestamp, 0 is not checking, others are checking.The default value is 0;
 static int g_mqttClientCreateFlag = 0;   // this mqttClientCreateFlag is used to control the invocation of MQTTAsync_create,
 // otherwise, there would be message leak.
+
+// ---- 网关参数 ------
+static int g_bridgeMode = 0;
 
 static char *g_caPath = NULL;
 static char *g_certPath = NULL;
@@ -112,7 +118,7 @@ static  char *g_encryptedPassword = NULL;
 
 int GetEncryptedPassword(char **timestamp, char **encryptedPwd)
 {
-    if (g_password == NULL) {
+    if (g_password == NULL && g_bsGroupSecret == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR,
             "MqttBase: GetEncryptedPassword() error, password is NULL, please set the required parameters properly\n");
         return IOTA_PARAMETER_EMPTY;
@@ -123,7 +129,6 @@ int GetEncryptedPassword(char **timestamp, char **encryptedPwd)
         PrintfLog(EN_LOG_LEVEL_ERROR, "GetEncryptedPassword(): there is not enough memory here.\n");
         return IOTA_FAILURE;
     }
-
     char *tempEncryptedPwd = NULL;
     StringMalloc(&tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH + 1);
     if (tempEncryptedPwd == NULL) {
@@ -133,24 +138,36 @@ int GetEncryptedPassword(char **timestamp, char **encryptedPwd)
         return IOTA_FAILURE;
     }
 
-    int ret = EncryptWithHMac(tempPwd, timestamp, ENCRYPT_LENGTH, tempEncryptedPwd, g_checkTimestamp);
-    if (ret != IOTA_SUCCESS) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: GetEncryptedPassword() error, encrypt failed %d\n", ret);
-        (void)memset_s(tempPwd, StringLength(tempPwd), 0, StringLength(tempPwd));
-        (void)memset_s(tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH, 0, PASSWORD_ENCRYPT_LENGTH);
-        MemFree(&tempPwd);
-        MemFree(&tempEncryptedPwd);
-        return IOTA_SECRET_ENCRYPT_FAILED;
-    }
+    int returnValue = IOTA_SUCCESS;
+    do {
+        if (g_bsRegMode) {
+            char *bsTempEncryptedPwd = NULL;
+            StringMalloc(&bsTempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH + 1);
+            int ret = EncryptWithHMac(g_bsGroupSecret, &g_username, ENCRYPT_LENGTH, bsTempEncryptedPwd, g_checkTimestamp);
+            if (ret != IOTA_SUCCESS) {
+                PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: GetEncryptedPassword() bsRegMode error, encrypt failed %d\n", ret);
+                returnValue = IOTA_SECRET_ENCRYPT_FAILED;
+                break;
+            }
+            (void)memset_s(tempPwd, StringLength(tempPwd), 0, StringLength(tempPwd));
+            MemFree(&tempPwd);
+            tempPwd = bsTempEncryptedPwd;
+        }
+        
+        int ret = EncryptWithHMac(tempPwd, timestamp, ENCRYPT_LENGTH, tempEncryptedPwd, g_checkTimestamp);
+        if (ret != IOTA_SUCCESS) {
+            PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: GetEncryptedPassword() error, encrypt failed %d\n", ret);
+            returnValue = IOTA_SECRET_ENCRYPT_FAILED;
+            break;
+        }
 
-    if (CopyStrValue(encryptedPwd, (const char *)tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH) < 0) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "GetEncryptedPassword(): there is not enough memory here.\n");
-        (void)memset_s(tempPwd, StringLength(tempPwd), 0, StringLength(tempPwd));
-        (void)memset_s(tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH, 0, PASSWORD_ENCRYPT_LENGTH);
-        MemFree(&tempPwd);
-        MemFree(&tempEncryptedPwd);
-        return IOTA_FAILURE;
-    }
+        if (CopyStrValue(encryptedPwd, (const char *)tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH) < 0) {
+            PrintfLog(EN_LOG_LEVEL_ERROR, "GetEncryptedPassword(): there is not enough memory here.\n");
+            returnValue = IOTA_FAILURE;
+            break;
+        }
+    } while(0);
+
     // clear sensitive password info
     (void)memset_s(tempPwd, StringLength(tempPwd), 0, StringLength(tempPwd));
     (void)memset_s(tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH, 0, PASSWORD_ENCRYPT_LENGTH);
@@ -166,7 +183,7 @@ static void LogProperties(MQTTProperties *props)
     pMQTTProperty_getType MQTTProperty_getType = (pMQTTProperty_getType)GetProcAddress(mqttdll, "MQTTProperty_getType");
 #endif
     for (i = 0; i < props->count; ++i) {
-        int id = props->array[i].identifier;
+        enum MQTTPropertyCodes id = props->array[i].identifier;
         const char *name = MQTTPropertyName(id);
         char *intformat = "Property name %s value %d\n";
 
@@ -185,11 +202,14 @@ static void LogProperties(MQTTProperties *props)
                 break;
             case MQTTPROPERTY_TYPE_BINARY_DATA:
             case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
-                PrintfLog(EN_LOG_LEVEL_DEBUG, "Property name %s value len %s\n", name, props->array[i].value.data.data);
+                PrintfLog(EN_LOG_LEVEL_DEBUG, "Property name=%s,value=%s\n", name, props->array[i].value.data.data);
                 break;
             case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
-                PrintfLog(EN_LOG_LEVEL_DEBUG, "Property name %s key %s value %s\n", name,
+                PrintfLog(EN_LOG_LEVEL_DEBUG, "Property name=%s,key=%s, value=%s\n", name,
                     props->array[i].value.data.data, props->array[i].value.value.data);
+                break;
+            default:
+                PrintfLog(EN_LOG_LEVEL_WARNING, "unknown property\n");
                 break;
         }
     }
@@ -308,6 +328,8 @@ static MQTTV5_DATA DataConversionArrived(MQTTProperties *props)
             mqttv5Porperties.response_topic = props->array[i].value.data.data;
         } else if (id == MQTTPROPERTY_CODE_CORRELATION_DATA) {
             mqttv5Porperties.correlation_data = props->array[i].value.data.data;
+        } else if (id == MQTTPROPERTY_CODE_TOPIC_ALIAS) {
+            mqttv5Porperties.topic_alias = props->array[i].value.data.data;
         }
     }
     mqttv5Porperties.properties = userHead;
@@ -320,7 +342,6 @@ static MQTTProperties DataConversion(MQTTV5_DATA *properties)
     MQTTProperty property;
 
     if (properties == NULL) {
-        PrintfLog(EN_LOG_LEVEL_INFO, "properties == NULL\n");
         return pro;
     }
     MQTTV5_USER_PRO *user = properties->properties;
@@ -353,6 +374,12 @@ static MQTTProperties DataConversion(MQTTV5_DATA *properties)
         property.identifier = MQTTPROPERTY_CODE_CORRELATION_DATA;
         property.value.data.data = properties->correlation_data;
         property.value.data.len = (int)strlen(property.value.data.data);
+        MQTTProperties_add(&pro, &property);
+    }
+
+    if (properties->topic_alias > 0) {
+        property.identifier = MQTTPROPERTY_CODE_TOPIC_ALIAS;
+        property.value.integer4 = (short)properties->topic_alias;
         MQTTProperties_add(&pro, &property);
     }
     return pro;
@@ -593,7 +620,7 @@ int MqttBase_OnMessageArrived(void *context, char *topicName, int topicLen, MQTT
         MemFree(&temp_topic);
         return -1;
     }
-    PrintfLog(EN_LOG_LEVEL_DEBUG, "MqttBase: MqttBase_OnMessageArrived() topic: %s, payload %s\n", temp_topic,
+    PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_OnMessageArrived() topic: %s, payload %s\n", temp_topic,
         temp_payload);
 
     if (onMessageA) {
@@ -730,8 +757,8 @@ static void MqttBase_SetPort(char *value, int valueLen)
 int MqttBase_SetConfig(ENUM_MQTT_BASE_CONFIG item, char *value)
 {
     int len = StringLength(value);
-    if (value == NULL || len == 0) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_SetConfig() error, the value to be set is NULL or empty\n");
+    if (value == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_SetConfig() error, the value to be set is NULL or empty %d\n", item);
         return IOTA_PARAMETER_EMPTY;
     }
 
@@ -831,6 +858,15 @@ int MqttBase_SetConfig(ENUM_MQTT_BASE_CONFIG item, char *value)
         case EN_MQTT_BASE_CHECK_STAMP:
             g_checkTimestamp = atoi(value);
             break;
+        case EN_MQTT_BASE_BS_GROUP_SECRET:
+            MemFree(&g_bsGroupSecret);
+            char *valueDecode = base64_decode(value);
+            CopyStrValue(&g_bsGroupSecret, (const char *)valueDecode, len);
+            MemFree(&valueDecode);
+            break;
+        case EN_MQTT_BASE_BRIDGE_MODE:
+            g_bridgeMode = atoi(value);
+            break;
         default:
             PrintfLog(EN_LOG_LEVEL_WARNING,
                 "MqttBase: MqttBase_SetConfig() warning, the item to be set is not available\n");
@@ -890,12 +926,12 @@ int MqttBase_subscribe(const char *topic, const int qos)
         return IOTA_FAILURE;
     }
 
-    PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_subscribe(), topic %s, messageId %d\n", topic, opts.token);
+    PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_subscribe(), topic %s, qos %d, messageId %d\n", topic, qos, opts.token);
 
     return opts.token;
 }
 
-int MqttBase_publish(const char *topic, void *payload, int len, void *context, void *properties)
+static int MqttBase_publishSet(const char *topic, void *payload, int len, int qos, void *context, void *properties)
 {
 #if defined(WIN32) || defined(WIN64)
     pMQTTAsync_sendMessage MQTTAsync_sendMessage =
@@ -917,7 +953,7 @@ int MqttBase_publish(const char *topic, void *payload, int len, void *context, v
 
     pubmsg.payload = payload;
     pubmsg.payloadlen = len;
-    pubmsg.qos = g_QoS;
+    pubmsg.qos = qos;
     pubmsg.retained = 0;
 
 #if defined(MQTTV5)
@@ -925,7 +961,6 @@ int MqttBase_publish(const char *topic, void *payload, int len, void *context, v
     opts.onFailure5 = MqttBase_OnPublishFailure5;
     pubmsg.properties = DataConversion((MQTTV5_DATA *)properties);
 
-    printf("-------------------------->>\n");
     LogProperties(&pubmsg.properties);
     int ret = MQTTAsync_sendMessage(g_client, topic, &pubmsg, &opts);
 
@@ -939,7 +974,18 @@ int MqttBase_publish(const char *topic, void *payload, int len, void *context, v
         return IOTA_FAILURE;
     }
     MQTTProperties_free(&pubmsg.properties);
+    PrintfLog(EN_LOG_LEVEL_DEBUG, "PUBLISH: topic=%s, messageId %d, payload is %s==>\n", topic,  opts.token, payload);
     return opts.token;
+}
+
+int MqttBase_publish(const char *topic, void *payload, int len, void *context, void *properties)
+{
+    return MqttBase_publishSet(topic, payload, len, g_QoS, context, properties);
+}
+
+int MqttBase_publishSetQos(const char *topic, void *payload, int len, int qos, void *context, void *properties)
+{
+    return MqttBase_publishSet(topic, payload, len, qos, context, properties);
 }
 
 #if defined(MQTTV5)
@@ -959,7 +1005,12 @@ static char *MqttBase_getClientId(char *authMode, int authModeLength, char *logi
     PrintfLog(EN_LOG_LEVEL_INFO, "username: %s, auth mode: %.*s, timestamp: %s\n",
         g_username, authModeLength, authMode, loginTimestamp);
     if (g_bsRegMode) {
-        clientId = CombineStrings(3, g_username, "_0_", g_bsScopeId);
+        if (g_authMode) {
+            clientId = CombineStrings(3, g_username, "_0_", g_bsScopeId);
+        } else {
+            char temp[4] = {'_', g_checkTimestamp + '0', '_', 0};
+            clientId = CombineStrings(5, g_username, "_0_", g_bsScopeId, temp, loginTimestamp);
+        }
     } else {
         clientId = CombineStrings(3, g_username, authMode, loginTimestamp);
     }
@@ -1003,8 +1054,11 @@ static int MqttBase_setConnOptsByClientCreate(char *loginTimestamp)
     g_connOpts.keepAliveInterval = g_keepAliveInterval;
     g_connOpts.connectTimeout = g_connectTimeout;
     g_connOpts.retryInterval = g_retryInterval;
+    if (g_maxInflight > 0 && g_maxInflight < 65536) {    
+        g_connOpts.maxInflight = g_maxInflight;
+    }
 #if defined(MQTTV5)
-    g_connOpts.cleansession = 0;
+    g_connOpts.cleansession = 1;
     g_connOpts.cleanstart = 1;
     g_connOpts.onSuccess5 = MqttBase_OnConnectSuccess5;
     g_connOpts.onFailure5 = MqttBase_OnConnectFailure5;
@@ -1056,18 +1110,14 @@ int MqttBase_CreateConnection(void)
     pMQTTAsync_create MQTTAsync_create = (pMQTTAsync_create)GetProcAddress(mqttdll, "MQTTAsync_create");
     pMQTTAsync_setCallbacks MQTTAsync_setCallbacks =
         (pMQTTAsync_setCallbacks)GetProcAddress(mqttdll, "MQTTAsync_setCallbacks");
-#if defined(MQTTV5)
     pMQTTAsync_createWithOptions MQTTAsync_createWithOptions =
         (pMQTTAsync_createWithOptions)GetProcAddress(mqttdll, "MQTTAsync_createWithOptions");
     pMQTTProperties_add MQTTProperties_add = (pMQTTProperties_add)GetProcAddress(mqttdll, "MQTTProperties_add");
-#endif
     pMQTTAsync_connect MQTTAsync_connect = (pMQTTAsync_connect)GetProcAddress(mqttdll, "MQTTAsync_connect");
 #endif
 
-#if defined(MQTTV5)
     MQTTProperty proprrty;
     MQTTAsync_createOptions creatOpts = MQTTAsync_createOptions_initializer;
-#endif
     if (g_workDir == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: MqttBase_CreateConnection() error, workPath can not be NULL.\n");
         return IOTA_FAILURE;
@@ -1085,7 +1135,9 @@ int MqttBase_CreateConnection(void)
 
     char tempAuthMode[CHECK_STAMP_LENGTH] = "_0_0_";
     tempAuthMode[CHECK_STAMP_INDEX] = '0' + g_checkTimestamp;
-
+    if (g_bridgeMode) {
+        tempAuthMode[CHECK_STAMP_MODE] = '3';
+    }
     if (!g_mqttClientCreateFlag) {
         if ((g_serverIp == NULL) || (g_port == NULL) || (g_username == NULL)) {
             PrintfLog(EN_LOG_LEVEL_ERROR,
@@ -1096,25 +1148,34 @@ int MqttBase_CreateConnection(void)
         char *loginTimestamp = GetClientTimesStamp();
         int ret = MqttBase_setConnOptsByClientCreate(loginTimestamp);
         if (ret < 0) {
+            PrintfLog(EN_LOG_LEVEL_ERROR,
+                "MqttBase: MqttBase_CreateConnection() error, parameters serverIp/port/username can not be NULL.\n");
             MemFree(&loginTimestamp);
             pthread_mutex_unlock(&g_loginLocker);
             return ret;
         }
         char *serverAddress = CombineStrings(4, g_urlPrefix, g_serverIp, ":", g_port);
         char *clientId = MqttBase_getClientId(tempAuthMode, CHECK_STAMP_LENGTH, loginTimestamp);
-
         MemFree(&loginTimestamp);
 
         PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_CreateConnection() create in\n");
 #if defined(MQTTV5)
         creatOpts.MQTTVersion = MQTTVERSION_5;
+#else
+        creatOpts.MQTTVersion = MQTTVERSION_3_1_1;
+#endif
+        if (MAX_BUFFERED_MESSAGES > 0) {
+            creatOpts.maxBufferedMessages = MAX_BUFFERED_MESSAGES;
+        }
+        creatOpts.sendWhileDisconnected = 1;
         creatOpts.struct_version = 1;
-        PrintfLog(EN_LOG_LEVEL_INFO, "server_address = %s\n clientId = %s", serverAddress, clientId);
+        
+        PrintfLog(EN_LOG_LEVEL_INFO, "server_address = %s\n clientId = %s\n", serverAddress, clientId);
         int createRet = MQTTAsync_createWithOptions(&g_client, serverAddress, clientId, MQTTCLIENT_PERSISTENCE_NONE,
             NULL, &creatOpts);
-#else
-        int createRet = MQTTAsync_create(&g_client, serverAddress, clientId, MQTTCLIENT_PERSISTENCE_NONE, NULL);
-#endif
+
+        // int createRet = MQTTAsync_create(&g_client, serverAddress, clientId, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+
         MemFree(&serverAddress);
         MemFree(&clientId);
         if (createRet) {
@@ -1189,7 +1250,6 @@ int MqttBase_ReleaseConnection(void)
     discOpts.onSuccess = MqttBase_OnDisconnectSuccess;
     discOpts.onFailure = MqttBase_OnDisconnectFailure;
 #endif
-    PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: MqttBase_ReleaseConnection()\n");
 
 #if defined(MQTTV5)
     proprrty.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
@@ -1223,7 +1283,8 @@ int MqttBase_destory(void)
     }
 
     g_initFlag = 0;
-
+    g_bsRegMode = 0;
+    g_bridgeMode = 0;
     usleep(1000 * 1000); // wait connection released
 
     MemFree(&g_serverIp);
@@ -1234,6 +1295,7 @@ int MqttBase_destory(void)
     MemFree(&g_encryptedPassword);
     MemFree(&g_caPath);
     MemFree(&g_bsScopeId);
+    MemFree(&g_bsGroupSecret);
 
     if (g_authMode) {
         MemFree(&g_certPath);

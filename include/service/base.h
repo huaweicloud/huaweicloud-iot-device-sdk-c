@@ -63,6 +63,14 @@
 #define M2M_FROM                          "/from/"
 #define FORWARD_SLASH                     "/"
 
+// bridge
+#define TOPIC_PREFIX_BRIDGE               "$oc/bridges/"
+#define TOPIC_SUFFIX_SYS                  "/sys/"
+#define TOPIC_SUFFIX_LOGIN                "/sys/login/response/request_id="
+#define TOPIC_SUFFIX_LOGOUT               "/sys/logout/response/request_id="
+#define TOPIC_SUFFIX_RESET_SECRET         "/sys/reset_secret/response/request_id="
+#define TOPIC_SUFFIX_DISCONNECT           "/sys/disconnect"
+#define TOPIC_SUFFIX_DEVICES              "/devices/"
 
 // see also EN_MQTT_BASE_CALLBACK_SETTING in MqttBase.h
 typedef enum enum_BASE_CONFIG {
@@ -94,6 +102,7 @@ typedef enum {
 
 int init(char *workPath);
 int SetConfig(int item, char *value);
+char *GetConfig(int item);
 int destory(void);
 
 #endif /* BASE_H */

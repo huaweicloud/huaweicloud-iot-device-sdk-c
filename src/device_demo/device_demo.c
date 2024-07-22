@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2024 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -51,6 +51,7 @@
 #include "iota_error_type.h"
 #include "mqttv5_util.h"
 #include "securec.h"
+#include "subscribe.h"
 #ifdef SSH_SWITCH
 #include "wss_client.h"
 #endif
@@ -76,12 +77,14 @@ static int g_port = 8883;
 static char *g_username = "设备id";
 static char *g_password = "设备密钥";
 
-static int g_disconnected = 0;
-
 // for batch properties report
 static char *g_subDeviceId = "XXXX";
 
-/* If you use #define CUSTOM_RECONNECT_SWITCH , enable customized reconnection example
+// for upload file, change to your file
+static char *g_uploadFilePath = NULL;
+
+/* 
+ * If you use #define CUSTOM_RECONNECT_SWITCH , enable customized reconnection example
  * it demostrates how to use IOTA_IsConnected() to check conneciton state and reconnect outside
  * the callback of EN_IOTA_CALLBACK_CONNECT_SUCCESS and EN_IOTA_CALLBACK_CONNECT_FAILURE.
  * Note: the change is only a sample, for reference only
@@ -145,7 +148,7 @@ void TimeSleep(int ms)
     usleep(ms * 1000);
 #endif
 }
-// -----------------Test  MQTT5.0 ------------------------
+// ----------------- Test MQTT5.0 ------------------------
 #if defined(MQTTV5)
 
 // V5 correlation data and response topic
@@ -174,6 +177,7 @@ static void Test_CorreaytionData()
     if (messageId != 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_CorreaytionData() failed, messageId %d\n", messageId);
     }
+    MemFree(&topic);
 }
 
 // v5 contnt type
@@ -254,7 +258,7 @@ static void Test_PropertiesReportV5()
     MQTTV5_DATA massv5 = mqttv5_initializer;
     MQTTV5_USER_PRO userProperty0;
     MQTTV5_USER_PRO userProperty1;
-    // ---------------the data of service1-------------------------------
+    // --------------- the data of service1 -------------------------------
     char *service1 = "{\"Load\":\"6\",\"ImbA_strVal\":\"7\"}";
 
     services[0].event_time =
@@ -262,7 +266,7 @@ static void Test_PropertiesReportV5()
     services[0].service_id = "parameter";
     services[0].properties = service1;
 
-    // ---------------the data of service2-------------------------------
+    // --------------- the data of service2 -------------------------------
     char *service2 = "{\"PhV_phsA\":\"9\",\"PhV_phsB\":\"8\"}";
 
     services[1].event_time = NULL;
@@ -291,14 +295,16 @@ static void Test_PropertiesReportV5()
     MemFree(&services[0].event_time);
 }
 #endif
-// ---------------------------Test  data report------------------------------------
 
+// --------------------------- Test data report ------------------------------------
 static void Test_MessageReport(void)
 {
     // default topic
-    int messageId = IOTA_MessageReport(NULL, "name", "id", "content", NULL, 0, NULL);
+    ST_IOTA_MESS_REP_INFO mass = {NULL, "name", "id", "content", NULL};
+    int messageId = IOTA_MessageDataReport(mass, NULL);
     /* // user topic
-    int messageId = IOTA_MessageReport(NULL, "name", "id", "content", "devMsg", 0, NULL);
+    * mass.topicParas = "devMsg";
+    * int messageId = IOTA_MessageDatReport(mass, NULL);
     */
     if (messageId != 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_MessageReport() failed, messageId %d\n", messageId);
@@ -311,7 +317,7 @@ static void Test_ReportJson(void)
     const int serviceNum = 2; // reported services' totol count
     ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
 
-    // ---------------the data of service1-------------------------------
+    // --------------- the data of service1 -------------------------------
     char *service1 = "{\"Load\":\"6\",\"ImbA_strVal\":\"7\"}";
 
     services[0].event_time =
@@ -319,7 +325,7 @@ static void Test_ReportJson(void)
     services[0].service_id = "LTE";
     services[0].properties = service1;
 
-    // ---------------the data of service2-------------------------------
+    // --------------- the data of service2 -------------------------------
     char *service2 = "{\"PhV_phsA\":\"9\",\"PhV_phsB\":\"8\"}";
 
     services[1].event_time = NULL;
@@ -379,6 +385,7 @@ static void Test_CmdRspV3(void)
  */
 #if defined(STORE_DATA_SWITCH)
 #define CACHE_SPACE_MAX 100
+
 typedef struct {
     ST_IOTA_SERVICE_DATA_INFO * services;
     int serviceNum;
@@ -399,7 +406,7 @@ static void Test_PropertiesStoreData(void)
         PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_PropertiesStoreData()  malloc failed! ");
         return;
     }
-    // ---------------the data of service1-------------------------------
+    // --------------- the data of service1 -------------------------------
     char *service1 = "{\"Load\":\"6\",\"ImbA_strVal\":\"7\"}";
 
     services->event_time =
@@ -407,7 +414,7 @@ static void Test_PropertiesStoreData(void)
     services->service_id = "parameter";
     services->properties = service1;
 
-    // ---------------the data of service2-------------------------------
+    // --------------- the data of service2 -------------------------------
     char *service2 = "{\"PhV_phsA\":\"9\",\"PhV_phsB\":\"8\"}";
 
     (services + 1)->event_time = NULL;
@@ -444,7 +451,7 @@ static void Test_PropertiesReport(void)
     const int serviceNum = 2; // reported services' totol count
     ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
 
-    // ---------------the data of service1-------------------------------
+    // --------------- the data of service1 -------------------------------
     char *service1 = "{\"Load\":\"6\",\"ImbA_strVal\":\"7\"}";
 
     services[0].event_time =
@@ -452,7 +459,7 @@ static void Test_PropertiesReport(void)
     services[0].service_id = "parameter";
     services[0].properties = service1;
 
-    // ---------------the data of service2-------------------------------
+    // --------------- the data of service2 -------------------------------
     char *service2 = "{\"PhV_phsA\":\"9\",\"PhV_phsB\":\"8\"}";
 
     services[1].event_time = NULL;
@@ -571,8 +578,8 @@ static void Test_ReportOTAVersion(EN_IOTA_EVENT *message)
     otaVersion.event_time = NULL;
     otaVersion.sw_version = "v1.0";
     otaVersion.fw_version = "v1.0";
-    otaVersion.object_device_id = message == NULL ? NULL : message->object_device_id;
- 
+    otaVersion.object_device_id = message->object_device_id;
+
     int messageId = IOTA_OTAVersionReport(otaVersion, NULL);
     if (messageId != 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportOTAVersion() failed, messageId %d\n", messageId);
@@ -600,6 +607,15 @@ static void Test_ReportUpgradeStatus(int i, char *version, char *object_device_i
     int messageId = IOTA_OTAStatusReport(statusInfo, NULL);
     if (messageId != 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: Test_ReportUpgradeStatus() failed, messageId %d\n", messageId);
+    }
+}
+
+void Test_GetUploadFileUrl(void)
+{
+    if (g_uploadFilePath) {
+        ST_IOTA_UPLOAD_FILE uploadFile = {0};
+        uploadFile.file_name = g_uploadFilePath;
+        IOTA_GetUploadFileUrl(&uploadFile, NULL);
     }
 }
 
@@ -659,7 +675,7 @@ static void Test_ReportDeviceInfo(void)
     deviceInfo.fw_version = "v1.0";
     deviceInfo.event_time = NULL;
     deviceInfo.device_ip = NULL;
-    deviceInfo.object_device_id = g_username;
+    deviceInfo.object_device_id = NULL;
 
     int messageId = IOTA_ReportDeviceInfo(&deviceInfo, NULL);
     if (messageId != 0) {
@@ -683,12 +699,17 @@ static void Test_M2MSendMsg(void)
 }
 
 // ---------------------------------------------------------------------------------------------
+static void SubscribeDeviceTpoic(void)
+{
+    /* After successful connection, please subscribe */
+    SubscribeAllQos(1);
+}
 
 static void HandleConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
     (void)rsp;
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: handleConnectSuccess(), login success\n");
-    g_disconnected = 0;
+    SubscribeDeviceTpoic();
 #if defined(STORE_DATA_SWITCH)
     int i = 0;
     if (g_cacheSpaceLen <= 0) {
@@ -720,9 +741,9 @@ static void HandleConnectionBroken(const char *handleName, const EN_IOTA_MQTT_PR
 
     g_connectFailedTimes++;
     if (g_connectFailedTimes < 10) {
-        TimeSleep(50);
-    } else if (g_connectFailedTimes < 50) {
-        TimeSleep(2500);
+        TimeSleep(5000);
+    } else {
+        TimeSleep(25000);
     }
 
     int ret = IOTA_Connect();
@@ -745,7 +766,6 @@ static void HandleConnectionLost(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 static void HandleDisConnectSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
     (void)rsp;
-    g_disconnected = 1;
 }
 
 static void HandleDisConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
@@ -801,7 +821,7 @@ static void HandlePublishFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
         rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 }
 
-// -------------------handle  message arrived-------------------------------
+// ------------------- handle  message arrived -------------------------------
 static bool GetMessageInSystemFormat(cJSON *root, char **objectDeviceId, char **name, char **id, char **content)
 {
     if (!cJSON_IsObject(root)) {
@@ -858,7 +878,6 @@ static void ProcessMQTT5Data(const char *functionName, void *mqttv5)
     if (mqtt->response_topic != NULL) {
         PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(),response_topic: %s\n", functionName, mqtt->response_topic);
     }
-    // 删除链表、释放内存
     mqttV5_listFree(mqtt->properties);
 #else
     (void)functionName;
@@ -932,12 +951,11 @@ static void HandlePropertiesSet(EN_IOTA_PROPERTY_SET *rsp)
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), object_device_id %s \n", rsp->object_device_id);
 
     int i = 0;
-    while (rsp->services_count > 0) {
+    while (rsp->services_count > i) {
         PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), service_id %s \n",
             rsp->services[i].service_id);
         PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandlePropertiesSet(), properties %s \n",
             rsp->services[i].properties);
-        rsp->services_count--;
         i++;
     }
 
@@ -969,7 +987,7 @@ static void HandleDeviceShadowRsp(EN_IOTA_DEVICE_SHADOW *rsp)
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), object_device_id %s \n", rsp->object_device_id);
 
     int i = 0;
-    while (rsp->shadow_data_count > 0) {
+    while (rsp->shadow_data_count > i) {
         PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), service_id %s \n",
             rsp->shadow[i].service_id);
         PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), desired properties %s \n",
@@ -977,7 +995,6 @@ static void HandleDeviceShadowRsp(EN_IOTA_DEVICE_SHADOW *rsp)
         PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), reported properties %s \n",
             rsp->shadow[i].reported_properties);
         PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleDeviceShadowRsp(), version    %d \n", rsp->shadow[i].version);
-        rsp->shadow_data_count--;
         i++;
     }
 }
@@ -989,6 +1006,14 @@ static void HandleUserTopicMessageDown(EN_IOTA_USER_TOPIC_MESSAGE *rsp)
     }
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: %s(), topic_para: %s\n", __FUNCTION__, rsp->topic_para);
     ProcessMessageData(__FUNCTION__, rsp->content, rsp->id, rsp->name, rsp->object_device_id);
+}
+
+static void HandletUndefinedMessageDown(EN_IOTA_UNDEFINED_MESSAGE *rsp)
+{
+   if (rsp == NULL) {
+        return;
+    }
+    PrintfLog(EN_LOG_LEVEL_INFO, "message_test: %s(), content: %s\n", __FUNCTION__,  rsp->payload);
 }
 
 static void HandleUserTopicRawMessageDown(EN_IOTA_USER_TOPIC_RAW_MESSAGE *rsp)
@@ -1118,7 +1143,7 @@ static void HandleEventOta(EN_IOTA_EVENT *message, int i)
         if (message->services[i].ota_paras->sign != NULL) {
             if (strcmp(pkg_sha256, message->services[i].ota_paras->sign)) { // V1 only
                 // report failed status
-                Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version, message->object_device_id); 
+                Test_ReportUpgradeStatus(-1, message->services[i].ota_paras->version, message->object_device_id);
             }
         }
 
@@ -1178,6 +1203,11 @@ static void HandleTunnelMgr(EN_IOTA_EVENT *message, int i)
 }
 #endif
 
+
+static void HandleFileMgr(EN_IOTA_SERVICE_EVENT *service) {
+    IOTA_UploadFile(g_uploadFilePath, service->file_mgr_paras->url, NULL);
+}
+
 static void HandleEventsDown(EN_IOTA_EVENT *message)
 {
     if (message == NULL) {
@@ -1188,7 +1218,7 @@ static void HandleEventsDown(EN_IOTA_EVENT *message)
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), services_count %d\n", message->services_count);
     PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), object_device_id %s\n", message->object_device_id);
     int i = 0;
-    while (message->services_count > 0) {
+    while (message->services_count > i) {
         // sub device manager
         if (message->services[i].servie_id == EN_IOTA_EVENT_SUB_DEVICE_MANAGER) {
             HandleSubDeviceManager(message, i);
@@ -1207,9 +1237,10 @@ static void HandleEventsDown(EN_IOTA_EVENT *message)
                 message->services[i].event_id);
             PrintfLog(EN_LOG_LEVEL_INFO, "device_demo: HandleEventsDown(), soft_bus_info: %s \n",
                 message->services[i].soft_bus_paras->bus_infos);
+        } else if (message->services[i].servie_id == EN_IOTA_EVENT_FILE_MANAGER) {
+            HandleFileMgr(&(message->services[i]));
         }
         i++;
-        message->services_count--;
     }
 }
 
@@ -1313,6 +1344,7 @@ static void SetMyCallbacks(void)
     IOTA_SetRawMessageCallback(HandleRawMessageDown);
     IOTA_SetM2mCallback(HandleM2mMessageDown);
     IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
+    IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
     // 推荐使用此API，可以处理自定格式的消息
     IOTA_SetUserTopicRawMsgCallback(HandleUserTopicRawMessageDown);
     IOTA_SetCmdCallback(HandleCommandRequest);
@@ -1343,7 +1375,7 @@ static void MyPrintLog(int level, char *format, va_list args)
     /*
      * if you want to printf log in system log files,you can do this:
      * vsyslog(level, format, args);
-     *   */
+     **/
 }
 
 #ifdef CUSTOM_RECONNECT_SWITCH
@@ -1398,8 +1430,10 @@ int main(int argc, char **argv)
     if (ret != 0) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "device_demo: IOTA_Auth() error, Auth failed, result %d\n", ret);
     }
+    while(!IOTA_IsConnected()) {
+        TimeSleep(300);
+    }
 
-    TimeSleep(10500);
 #else
     ReconnectDemo();
     while (!IOTA_IsConnected()) {
@@ -1409,16 +1443,16 @@ int main(int argc, char **argv)
         }
     }
 #endif
+    Test_GetUploadFileUrl();
+
+    Test_ReportDeviceInfo();
+    TimeSleep(1500);
 
     int count = 0;
     while (count < 10000) {
-        // report device info
-        Test_ReportDeviceInfo();
-        TimeSleep(1500);
-
+        
         // NTP
         IOTA_GetNTPTime(NULL);
-
         TimeSleep(1500);
 
         // report device log
@@ -1430,44 +1464,18 @@ int main(int argc, char **argv)
 
         // message up
         Test_MessageReport();
-
         TimeSleep(1500);
 
         // properties report
         Test_PropertiesReport();
-
         TimeSleep(1500);
 
         // batchProperties report
         Test_BatchPropertiesReport(g_subDeviceId);
-
         TimeSleep(1500);
-
-        // command response
-        Test_CommandResponse("1005");
-
-        TimeSleep(1500);
-
-        // propSetResponse
-        Test_PropSetResponse("1006");
-
-        TimeSleep(1500);
-
-        // propSetResponse
-        Test_PropGetResponse("1007");
-
-        TimeSleep(5500);
-
-        IOTA_SubscribeUserTopic("devMsg");
-
-        TimeSleep(1500);
-
-        // get device shadow
-        IOTA_GetDeviceShadow("1232", NULL, NULL, NULL);
 
         // m2m send msg
         Test_M2MSendMsg();
-
         count++;
     }
     count = 0;
@@ -1475,6 +1483,5 @@ int main(int argc, char **argv)
         count++;
         TimeSleep(11050);
     }
-
     return 0;
 }
