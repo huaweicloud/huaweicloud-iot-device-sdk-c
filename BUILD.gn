@@ -27,14 +27,11 @@
 #import("//build/ohos.gni")
 #import("//build/lite/config/component/lite_component.gni")
 
-# 设置使用的demo 以文件名
-# 当为bootstrap_demo 编译 ./bootstrap_demo中的bootstrap_demo.c文件
-# gateway_demo 编译 ./gateway_demo 中.c文件
+
 declare_args() {
     test_demo = "device_demo"
 }
 
-# 生成可执行文件 MQTT_Demo
 executable("mqtt_device_demo") {
 
   deps = [
@@ -49,19 +46,13 @@ executable("mqtt_device_demo") {
     "src/service/device_rule:device_rule",
     "src/service/sys_hal:sys_hal",
     "src/service/detect_anomaly:detect_anomaly",
+    "src/service/bridge:bridge_topic",
   ]
   
   if(test_demo == "device_demo"){
     deps += ["src/device_demo:device_demo",]
   }
-  if(test_demo == "bootstrap_demo"){
-    deps += ["src/bootstrap_demo:bootstrap_demo",]
-  }
-  if(test_demo == "gateway_demo"){
-    deps += ["src/gateway_demo:gateway_demo",]
-  } 
 
-  #设置动态依赖
   libs = [
     "./lib/libboundscheck.so",
     "./lib/libssl.so",
@@ -70,10 +61,10 @@ executable("mqtt_device_demo") {
     "./lib/libpaho-mqtt3as.so",
     "./lib/libssh.so",
     "./lib/libnopoll.so",
+    "./lib/libcurl.so",
     "pthread",
   ]
  
-  # 输出文件名
   output_name = "MQTT_Demo"
 }
 

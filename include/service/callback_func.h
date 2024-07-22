@@ -87,7 +87,57 @@ void SetDeviceRuleSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER callback
 typedef void (*M2M_CALLBACK_HANDLER)(EN_IOTA_M2M_MESSAGE *rsp);
 void SetM2mCallback(M2M_CALLBACK_HANDLER callbackHandler);
 
-typedef int (*DEVICE_CONFIG_CALLBACK_HANDLER)(JSON *cfg, char *description);
+typedef int (*DEVICE_CONFIG_CALLBACK_HANDLER)(JSON *cfg);
 void SetDeviceConfigCallback(DEVICE_CONFIG_CALLBACK_HANDLER callbackHandler);
+
+typedef void (*BRIDGES_DEVICE_LOGIN)(EN_IOTA_BRIDGES_LOGIN *rsp);
+void SetBridgesDeviceLoginCallback(BRIDGES_DEVICE_LOGIN callbackHandler);
+
+typedef void (*BRIDGES_DEVICE_LOGOUT)(EN_IOTA_BRIDGES_LOGOUT *rsp);
+void SetBridgesDeviceLogoutCallback(BRIDGES_DEVICE_LOGOUT callbackHandler);
+
+typedef void (*BRIDGES_DEVICE_RESET_SECRET)(EN_IOTA_BRIDGES_RESET_SECRET *rsp);
+void SetBridgesDeviceResetSecretCallback(BRIDGES_DEVICE_RESET_SECRET callbackHandler);
+
+typedef void (*BRIDGES_DEVICE_PLATE_DISCONNECT)(EN_IOTA_BRIDGES_PALLET_DISCONNECT *rsp);
+void SetBridgesDevicePalletDisConnCallback(BRIDGES_DEVICE_PLATE_DISCONNECT callbackHandler);
+
+typedef void (*UNDEFINED_MESSAGE_CALLBACK_HANDLER)(EN_IOTA_UNDEFINED_MESSAGE *rsp);
+void SetUndefinedMessageCallback(UNDEFINED_MESSAGE_CALLBACK_HANDLER callbackHandler);
+
+typedef void (*EVENT_CALLBACK_HANDLER_SPECIFY)(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message);
+void SetEvenSubDeviceCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+void SetNtpCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+void SetEvenDeviceLogCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+void SetEvenSoftBusCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+void SetEvenTunnelManagerCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+void SetEvenFileManagerCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+
+typedef void (*OTAVERSION_CALLBACK_HANDLER_SPECIFY)(char *objectDeviceId);
+void SetEvenOtaVersionUpCallback(OTAVERSION_CALLBACK_HANDLER_SPECIFY callbackHandler);
+
+typedef void (*OTAURL_CALLBACK_HANDLER_SPECIFY)(char *objectDeviceId, int event_type, EN_IOTA_OTA_PARAS *ota_paras);
+void SetEvenOtaUrlResponseCallback(OTAURL_CALLBACK_HANDLER_SPECIFY callbackHandler);
+
+// 事件细分回调函数
+typedef struct {
+    // get information of memory
+    void (*onSubDevice)(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message); // 子设备回调函数
+    // void (*onOTA)(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message); // ota回调
+    void (*onNTP)(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message);  // 时间回调
+    void (*onDeviceLog)(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message); // 设备信息
+    void (*onSoftBus)(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message); //软总线
+    void (*onTunnelManager)(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message); // 远程登录
+    void (*onFileManager)(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message); // 文件上传下载
+    void (*onDeviceRule)(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message); // 规则引擎
+} TagEventsOps;
+
+void SetTagEventsOps(TagEventsOps ops);
+
+// ota回调细化
+typedef struct {
+    void (*onDeviceVersionUp)(char *objectDeviceId); // ota版本上报回调
+    void (*onUrlResponse)(char *objectDeviceId, HW_INT event_type, EN_IOTA_OTA_PARAS *ota_paras); // ota获取平台url回调
+} TagOtaOps;
 
 #endif /* CALLBACK_FUNC_H */

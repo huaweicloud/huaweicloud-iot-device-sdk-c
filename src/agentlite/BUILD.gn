@@ -24,12 +24,18 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+declare_args() {
+    bridge = 1
+}
+
 static_library("agentlite") {
     sources = [
         "iota_init.c",
         "iota_login.c",
         "iota_datatrans.c",
-    ]
+        "iota_payload.c",
+        "iota_defaultCallback.c",
+    ] 
     
     cflags = [ "-Wno-unused-variable" ]
     cflags += [ "-Wno-unused-but-set-variable" ]
@@ -44,7 +50,16 @@ static_library("agentlite") {
         "../../include/third_party/libboundscheck",
         "../../include/service/device_rule",
         "../../include/",
+        "../../include/curl",
+        "../../include/service/bridge",
+        "../../include/tunnel",
+        "../../include/nopoll",
     ]
+    
+    if(bridge == 1){
+      sources += ["iota_bridge.c",]
+      include_dirs += ["../../include/base",]
+    }
 }
 print("-----------------------> agentlite!")
 

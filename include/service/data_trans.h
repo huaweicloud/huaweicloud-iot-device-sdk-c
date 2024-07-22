@@ -44,7 +44,7 @@ int ReportSubDeviceInfo(char *payload, void *context);
 int EventUp(char *payload, void *context);
 int ReportDevicePropertiesV3(char *payload, int codecMode, void *context);
 int BinaryReportV3(char *payload);
-int Bootstrap(void);
+int Bootstrap(char *payload);
 int OCM2MSendMsg(char *to, char *from, char *payload, char *requestId, char *context);
 
 #endif /* DATATRANS_H */

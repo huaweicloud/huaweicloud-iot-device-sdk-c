@@ -51,12 +51,6 @@ void RuleMgr_CachePropertiesValue(const cJSON *pServiceData);
 HW_BOOL RuleMgr_GetList(const cJSON *properties, RuleInfoList *delList, RuleInfoList *addList);
 void RuleMgr_DelRule(RuleInfoList *delList);
 
-#ifdef CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE
-void RuleMgr_EnableDeviceRuleStorage(const char *filepath);
-#else // CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE
-#define RuleMgr_EnableDeviceRuleStorage(filepath)
-#endif //  CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE
-
 #else //  DEVICE_RULE_ENALBE
 
 #define RuleMgr_Init() HW_FALSE
@@ -73,5 +67,11 @@ void RuleMgr_EnableDeviceRuleStorage(const char *filepath);
 #define RuleMgr_EnableDeviceRuleStorage(filepath)
 
 #endif // DEVICE_RULE_ENALBE
+
+#ifdef CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE
+void RuleMgr_EnableDeviceRuleStorage(const char *filepath);
+#else // CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE
+#define RuleMgr_EnableDeviceRuleStorage(filepath)
+#endif //  CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE
 
 #endif

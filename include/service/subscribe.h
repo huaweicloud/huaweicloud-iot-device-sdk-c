@@ -40,9 +40,26 @@ int SubscribePropget(void);
 int SubscribePropResp(void);
 int SubscribeSubDeviceEvent(void);
 int SubscribeUserTopic(char *topicParas);
-int SubsribeTopic(char *topic, const int qos);
 int SubscribeJsonCmdV3(void);
 int SubscribeBinaryCmdV3(void);
 int SubscribeBootstrap(void);
+
+
+// qos
+void SubscribeAllQos(int qos);
+int SubscribeCustomTopic(char *topic, const int qos); 
+int SubscribeM2mQos(int qos);
+int SubscribeCommandQos(int qos);
+void SubscribeAllQos(int qos);
+int SubscribeMessageDownQos(int qos);
+int SubscribePropSetQos(int qos);
+int SubscribePropgetQos(int qos);
+int SubscribePropRespQos(int qos);
+int SubscribeSubDeviceEventQos(int qos);
+int SubscribeUserTopicQos(char *topicParas, int qos);
+int SubscribeJsonCmdV3Qos(int qos);
+int SubscribeBinaryCmdV3Qos(int qos);
+int SubscribeBootstrapQos(int qos);
+
 
 #endif /* SUBSCRIBE_H */

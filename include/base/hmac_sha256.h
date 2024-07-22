@@ -37,6 +37,8 @@ extern "C" {
 
 /* failed return -1, success return 0 */
 int EncryptWithHMac(const char *inputData, char **inputKey, int inEncryDataLen, char *outData, int checkTimestamp);
+unsigned char *base64_encode(unsigned char *str);  
+unsigned char *base64_decode(unsigned char *code);
 
 #define TIME_STAMP_LENGTH            10
 #define TRY_MAX_TIME                 100

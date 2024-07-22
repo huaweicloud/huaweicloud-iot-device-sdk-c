@@ -97,11 +97,16 @@ typedef struct {
 } ST_IOTA_DEL_SUB_DEVICE;
 
 typedef struct {
-    HW_CHAR *object_device_id;
-    HW_CHAR *name;
-    HW_CHAR *id;
-    HW_CHAR *content;
-    HW_CHAR *topicParas;
+    HW_CHAR *object_device_id;  // the target device id, NULL means the target device id is the gateway device id
+    HW_CHAR *name;              // the message name
+    HW_CHAR *id;                // the message id
+    HW_CHAR *content;           // the message content
+    /*
+     * topicParas
+     * customize the topic parameters, such as "devmsg" (do not add '/' or special characters in front of it) 
+     * If it is set to NULL, the platform default topic will be used for reporting.
+     */
+    HW_CHAR *topicParas;        
 } ST_IOTA_MESS_REP_INFO;
 
 /**
@@ -155,6 +160,12 @@ typedef struct {
     HW_CHAR description[MaxDescriptionLen];
 } ST_IOTA_DEVICE_CONFIG_RESULT;
 
+typedef struct {
+    const HW_CHAR *file_name;
+    const HW_CHAR *hash_code;
+    const long size; // optional 0 means no report this field.
+} ST_IOTA_UPLOAD_FILE, ST_IOTA_DOWNLOAD_FILE;
+
 /**
  * @Description: report message to IoT platform
  * @param object_device_id: the target device id, NULL means the target device id is the gateway device id
@@ -170,6 +181,15 @@ typedef struct {
  */
 HW_API_FUNC HW_INT IOTA_MessageReport(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHAR *id, HW_CHAR *content,
                                       HW_CHAR *topicParas, HW_INT compressFlag, void *context);
+
+/**
+ * @Description: report message to IoT platform
+ * @param mass : the ST_IOTA_MESS_REP_INFO structure
+ * @param compressFlag : 0 for no compression, 1 for compression
+                    or failure callback functions to provide access to the context information in the callback.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_MessageDataReport(ST_IOTA_MESS_REP_INFO mass, void *context);
 
 /**
  * @Description: report device properties to IoT platform
@@ -323,6 +343,15 @@ HW_API_FUNC HW_INT IOTA_GetOTAPackages(HW_CHAR *url, HW_CHAR *token, HW_INT time
 HW_API_FUNC HW_INT IOTA_GetOTAPackages_Ext(HW_CHAR *url, HW_CHAR *token, HW_INT timeout,
                                            const HW_CHAR *otaFilePath, HW_CHAR *otaFilename);
 /**
+ * @Description  OTA download file verification
+ * @param sign ： SHA256 value issued by the platform
+ * @param otaFilePath : The path to store the package
+ * @param otaFilename[out] ：The filename of the package
+ * @return IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_OTAVerifySign(HW_CHAR *sign, const HW_CHAR *otaFilePath, HW_CHAR *otaFilename);
+
+/**
  * @Description: subscribe user topic
  * @param topicParas: customize the topic parameters,
  *                    such as "devmsg" (do not add '/' or special characters in front of it)
@@ -376,9 +405,10 @@ HW_API_FUNC HW_INT IOTA_GetNTPTime(void *context);
 
 /**
  * @Description: get the access address
+ * @param baseStrategyKeyword
  * @return: IOTA_SUCCESS represents success, others represent specific failure
  */
-HW_API_FUNC HW_INT IOTA_Bootstrap(void);
+HW_API_FUNC HW_INT IOTA_Bootstrap(char *baseStrategyKeyword);
 
 /**
  * @Description: subscribe the V3 topic of json command . Not recommended
@@ -454,7 +484,7 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceLog(HW_CHAR *type, HW_CHAR *content, HW_CHAR
 
 /**
  * @Description: report device info to the iot platform
- * @param timestamp: ST_IOTA_DEVICE_INFO_REPORT structure
+ * @param device_info_report: ST_IOTA_DEVICE_INFO_REPORT structure
  * @param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success
  *                  or failure callback functions to provide access to the context information in the callback.
  * @return: IOTA_SUCCESS represents success, others represent specific failure
@@ -469,6 +499,81 @@ HW_API_FUNC HW_INT IOTA_ReportDeviceInfo(ST_IOTA_DEVICE_INFO_REPORT *device_info
  * @return: IOTA_SUCCESS represents success, others represent specific failure
  */
 HW_API_FUNC HW_INT IOTA_RptDeviceConfigRst(const ST_IOTA_DEVICE_CONFIG_RESULT *device_config_report, void *context);
+
+
+/**
+ * @Description: get the url for uploading file
+ * @param upload: the pointer of ST_IOTA_UPLOAD_FILE structure.
+ * @param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success
+                    or failure callback functions to provide access to the context information in the callback.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_GetUploadFileUrl(const ST_IOTA_UPLOAD_FILE *upload, void *context);
+
+
+/**
+ * @Description: get the url for uploading file
+ * @param filePath: the file to be uploaded
+ * @param url:  the usl get by coressponding IOTA_GetUploadFileUrl
+ * @param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success
+                    or failure callback functions to provide access to the context information in the callback.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_UploadFile(const char *filePath, const char *url, void *context);
+
+/**
+ * @Description: report message to IoT platform
+ * @param topic: customize the topic parameters, Cannot be null
+ * @param payload: message, Cannot be null
+ * @param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success
+ *                  or failure callback functions to provide access to the context information in the callback.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_RawTopicMessageReport(HW_CHAR *topic, HW_CHAR *payload, int qos, void *context);
+
+/**
+ * @Description: get the url for Downloading file
+ * @param upload: the pointer of ST_IOTA_DOWNLOAD_FILE structure.
+ * @param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success
+                    or failure callback functions to provide access to the context information in the callback.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_GetDownloadFileUrl(const ST_IOTA_UPLOAD_FILE *upload, void *context);
+
+
+/**
+ * @Description: get the url for Downloading file
+ * @param filePath: the file to be Download
+ * @param url:  the usl get by coressponding IOTA_GetDownloadFileUrl
+ * @param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success
+                    or failure callback functions to provide access to the context information in the callback.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_DownloadFile(const char *filePath, const char *url, void *context);
+
+/**
+ * @Description: used by a device to report the file upload result.
+ * @param object_device_id: Indicates the device that the event is about. If this parameter is not carried, 
+                    the device specified in the topic is considered to be the device involved.
+ * @param object_name: Indicates the name of the object uploaded to OBS.
+ * @param result_code: ndicates the file upload result. 0: successful upload 1: upload failure.
+ * @param status_code: Indicates the status code returned by OBS after a file upload.
+ * @param status_description: Indicates the status description returned by OBS after a file upload.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_UploadFileResultReport(char *object_device_id, char *object_name, int result_code, int status_code, char *status_description);
+
+/**
+ * @Description: used by a device to report the file download result.
+ * @param object_device_id: Indicates the device that the event is about. If this parameter is not carried, 
+                    the device specified in the topic is considered to be the device involved.
+ * @param object_name: Indicates the name of the object downloaded from OBS.
+ * @param result_code: Indicates the download result. 0: successful download 1: download failure.
+ * @param status_code: Indicates the status code returned by OBS after a file download.
+ * @param status_description: Indicates the status description returned by OBS after a file download.
+ * @return: IOTA_SUCCESS represents success, others represent specific failure
+ */
+HW_API_FUNC HW_INT IOTA_DownloadFileResultReport(char *object_device_id, char *object_name, int result_code, int status_code, char *status_description);
 
 #if defined(MQTTV5)
 /**
@@ -524,9 +629,20 @@ HW_API_FUNC HW_INT IOTA_PropertiesReportV5(ST_IOTA_SERVICE_DATA_INFO pServiceDat
  */
 HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compressFlag,
                                         void *context, MQTTV5_DATA *mqttv5);
+
+/**
+ * @Description: MQTT5.0 report message to IoT platform
+ * @param topic: customize the topic parameters, Cannot be null
+ * @param payload: message, Cannot be null
+ * @param context:  A pointer to any application-specific context. The the <i>context</i> pointer is passed to success
+ *                  or failure callback functions to provide access to the context information in the callback.
+ * @param mqttv5 : the MQTTV5_DATA structure
+ * @return: success greater than 0, failure less than 0.
+ */
+HW_API_FUNC HW_INT IOTA_RawTopicMessageReportV5(HW_CHAR *topic, HW_CHAR *payload, int qos, void *context, MQTTV5_DATA *mqttv5);
 #endif
 
-#define SDK_VERSION                     "C_v1.1.5"
+#define SDK_VERSION                     "C_v1.2.0"
 #define OTA_PORT                        8943
 #define BUFSIZE                         4096
 #define PKGNAME_MAX                     1024  // the max length of the package name
@@ -566,10 +682,11 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define TARGET_DEVICE_ID                "target_device_id"
 #define DEVICE_ID                       "device_id"
 #define DEVICE_IP                       "device_ip"
-#define SERVICE_ID                      "service_id"
+#define NEW_SECRET                      "new_secret"
 #define EVENT_TIME                      "event_time"
 #define EVENT_ID                        "event_id"
 #define PROPERTIES                      "properties"
+#define BASE_STRATEGY_KEYWORD           "baseStrategyKeyword"
 #define RESPONSE_NAME                   "response_name"
 #define PARAS                           "paras"
 #define RESULT_DESC                     "result_desc"
@@ -602,6 +719,7 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define DELETE_SUB_DEVICE_NOTIFY        "delete_sub_device_notify"
 #define ADD_SUB_DEVICE_RESPONSE         "add_sub_device_response"
 #define DEL_SUB_DEVICE_RESPONSE         "delete_sub_device_response"
+#define UPDATE_SUB_DEVICE_RESPONSE      "sub_device_update_status_response"
 #define SUCCESSFUL_DEVICES              "successful_devices"
 #define FAILED_DEVICES                  "failed_devices"
 #define ERROR_CODE                      "error_code"
@@ -656,6 +774,7 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define ONLINE                          "ONLINE"
 #define OFFLINE                         "OFFLINE"
 #define ADDRESS                         "address"
+#define DEVICE_SECRET                   "deviceSecret"
 #define LOG                             "$log"
 #define LOG_CONFIG                      "log_config"
 #define SWITCH                          "switch"
@@ -745,6 +864,15 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 #define DEVICE_CONFIG_UPDATE                        "config_update"
 #define DEVICE_CONFIG_CONTENT                       "config_content"
 #define DEVICE_CONFIG_UPDATE_RESPONSE               "config_update_response"
+
+
+#define FILE_MANAGER                                "$file_manager"
+#define GET_UPLOAD_URL                              "get_upload_url"
+#define GET_UPLOAD_URL_RESPONSE                     "get_upload_url_response"
+#define GET_DOWNLOAD_URL                            "get_download_url"
+#define GET_DOWNLOAD_URL_RESPONSE                   "get_download_url_response"
+#define UPLOAD_RESULT_REPORT                        "upload_result_report"
+#define DOWNLOAD_RESULT_REPORT                      "download_result_report"
 
 #define TIMESTAMP_STR_LEN 14
 /**

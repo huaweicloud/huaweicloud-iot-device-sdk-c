@@ -469,18 +469,17 @@ void CheckRuleInfoListAndExecute(RuleInfoList *list, const GetPropertyValueCallB
 {
     RuleInfo *ruleItem;
     DyListFor (ruleItem, list) {
-        DEVICE_RULE_DEBUG("start to check rule %s", ruleItem->ruleName);
         if (strcmp(ruleItem->status, "active") != 0) {
-            DEVICE_RULE_DEBUG("rule %s: \"%s\" is inactive, skip", ruleItem->ruleName, ruleItem->ruleId);
+            // DEVICE_RULE_DEBUG("rule %s: \"%s\" is inactive, skip", ruleItem->ruleName, ruleItem->ruleId);
             continue;
         }
         if (RuleInfoHasTimer(ruleItem) && !isTimerRule) {
-            DEVICE_RULE_DEBUG("require no-timer rule but %s is not, skip", ruleItem->ruleId);
+            // DEVICE_RULE_DEBUG("require no-timer rule but %s is not, skip", ruleItem->ruleId);
             continue;
         }
 
         if (!RuleInfoHasTimer(ruleItem) && isTimerRule) {
-            DEVICE_RULE_DEBUG("require timer rule but %s is not, skip", ruleItem->ruleId);
+           //  DEVICE_RULE_DEBUG("require timer rule but %s is not, skip", ruleItem->ruleId);
             continue;
         }
         if (!TimeRangeIsNuLL(&ruleItem->timeRange)) {

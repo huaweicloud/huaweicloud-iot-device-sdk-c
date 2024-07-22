@@ -67,36 +67,44 @@ USER_TOPIC_RAW_MSG_CALLBACK_HANDLER onUserTopicRawMessage;
 BOOTSTRAP_CALLBACK_HANDLER onBootstrap;
 M2M_CALLBACK_HANDLER onM2mMessage;
 DEVICE_CONFIG_CALLBACK_HANDLER onDeviceConfig = NULL;
+TagEventsOps tagEventsOps;
+TagOtaOps tagOtaOps;
+BRIDGES_DEVICE_LOGIN onBridgesDeviceLogin;
+BRIDGES_DEVICE_LOGOUT onBridgesDeviceLogout;
+BRIDGES_DEVICE_RESET_SECRET onBridgesDeviceResetSecret;
+BRIDGES_DEVICE_PLATE_DISCONNECT onBridgesDeviceDisconnect;
+UNDEFINED_MESSAGE_CALLBACK_HANDLER onOtherUndefined;
 
 static void OnLoginSuccess(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
 {
     // The platform subscribes to system topic with QoS of 1 by default
     // SubscribeAll();
-    SubscribeM2m();
-    SysHalInit();
+    // SubscribeM2m();
+    SysHalInit(); 
     if (onConnSuccess) {
         (onConnSuccess)(rsp);
     }
+    /*
+        // report device log
+        unsigned long long timestamp = getTime();
+        char timeStampStr[TIMESTAMP_STR_LEN] = {0};
+        (void)sprintf_s(timeStampStr, sizeof(timeStampStr), "%llu", timestamp);
+        char *log = "login success";
+        IOTA_ReportDeviceLog("DEVICE_STATUS", log, timeStampStr, NULL);
 
-    // report device log
-    unsigned long long timestamp = getTime();
-    char timeStampStr[TIMESTAMP_STR_LEN] = {0};
-    (void)sprintf_s(timeStampStr, sizeof(timeStampStr), "%llu", timestamp);
-    char *log = "login success";
-    IOTA_ReportDeviceLog("DEVICE_STATUS", log, timeStampStr, NULL);
+        // report sdk version
+        ST_IOTA_DEVICE_INFO_REPORT deviceInfo;
 
-    // report sdk version
-    ST_IOTA_DEVICE_INFO_REPORT deviceInfo;
+        deviceInfo.device_sdk_version = SDK_VERSION;
+        deviceInfo.sw_version = NULL;
+        deviceInfo.fw_version = NULL;
+        deviceInfo.event_time = NULL;
+        deviceInfo.object_device_id = NULL;
+        deviceInfo.device_ip = NULL;
 
-    deviceInfo.device_sdk_version = SDK_VERSION;
-    deviceInfo.sw_version = NULL;
-    deviceInfo.fw_version = NULL;
-    deviceInfo.event_time = NULL;
-    deviceInfo.object_device_id = NULL;
-    deviceInfo.device_ip = NULL;
-
-    IOTA_ReportDeviceInfo(&deviceInfo, NULL);
-    IOTA_GetDeviceShadow(DEVICE_RULE_REQUEST_ID, NULL, NULL, NULL);
+        IOTA_ReportDeviceInfo(&deviceInfo, NULL);
+        IOTA_GetDeviceShadow(DEVICE_RULE_REQUEST_ID, NULL, NULL, NULL);
+    */
 }
 
 static void OnBootstrapDownArrived(void *context, int token, int code, const char *message)
@@ -118,6 +126,7 @@ static void OnBootstrapDownArrived(void *context, int token, int code, const cha
 
     JSON *root = JSON_Parse(message);
     bootstrap_msg->message = JSON_GetStringFromObject(root, ADDRESS, "-1");
+    bootstrap_msg->deviceSecret =  JSON_GetStringFromObject(root, DEVICE_SECRET, "-1");
     if (onBootstrap) {
         (onBootstrap)(bootstrap_msg);
     }
@@ -164,14 +173,18 @@ static bool GetMessageInSystemFormat(cJSON *root, char **objectDeviceId, char **
     if ((objectDeviceIdObject && !cJSON_IsNull(objectDeviceIdObject) && !cJSON_IsString(objectDeviceIdObject)) ||
         (nameObject && !cJSON_IsNull(nameObject) && !cJSON_IsString(nameObject)) ||
         (idObject && !cJSON_IsNull(idObject) && !cJSON_IsString(idObject)) ||
-        (contentObject && !cJSON_IsNull(contentObject) && !cJSON_IsString(contentObject))) {
+        (contentObject && !cJSON_IsNull(contentObject) && (!cJSON_IsString(contentObject) && !cJSON_IsObject(contentObject)))) {
         return false; // is not system format
     }
 
     *objectDeviceId = cJSON_GetStringValue(objectDeviceIdObject);
     *name = cJSON_GetStringValue(nameObject);
     *id = cJSON_GetStringValue(idObject);
-    *content = cJSON_GetStringValue(contentObject);
+    if (cJSON_IsObject(contentObject)) {
+        *content = JSON_Print(contentObject);
+    } else {
+        *content = cJSON_GetStringValue(contentObject);
+    }
     return true;
 }
 
@@ -201,7 +214,7 @@ EXIT:
 }
 
 
-static void OnMessagesDownArrived(void *context, int token, int code, char *message, int messageLength, void *mqttv5)
+static void OnMessagesDownArrived(void *context, int token, int code, char *bridgeDeviceId, char *message, int messageLength, void *mqttv5)
 {
     OnRawMessageDownArrived(context, token, code, message, messageLength, mqttv5);
 
@@ -211,7 +224,7 @@ static void OnMessagesDownArrived(void *context, int token, int code, char *mess
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnMessagesDownArrived(): there is not enough memory here.\n");
         goto EXIT;
     }
-
+    msg->bridge_device_id = bridgeDeviceId;
     msg->mqtt_msg_info = CreateMqttMsgInfo(context, token, code);
     if (msg->mqtt_msg_info == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnMessagesDownArrived(): there is not enough memory here.\n");
@@ -234,7 +247,35 @@ EXIT:
     MemFree(&msg);
 }
 
-static void OnM2mMessagesDownArrived(void *context, int token, int code, const char *message)
+static void OnOtherUndefinedTopicArrived(void *context, int token, int code, char *bridgeDeviceId, const char *message)
+{
+    EN_IOTA_UNDEFINED_MESSAGE *msg = (EN_IOTA_UNDEFINED_MESSAGE *)malloc(sizeof(EN_IOTA_UNDEFINED_MESSAGE));
+    if (msg == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnOtherUndefinedTopicArrived(): there is not enough memory here.\n");
+        return;
+    }
+    
+    msg->bridge_device_id = bridgeDeviceId;
+    msg->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO *)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+    if (msg->mqtt_msg_info == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnOtherUndefinedTopicArrived(): there is not enough memory here.\n");
+        free(msg);
+        return;
+    }
+    msg->mqtt_msg_info->context = context;
+    msg->mqtt_msg_info->messageId = token;
+    msg->mqtt_msg_info->code = code;
+    msg->payload = message;
+    if (onOtherUndefined) {
+        (onOtherUndefined)(msg);
+    }
+
+    MemFree(&msg->mqtt_msg_info);
+    MemFree(&msg);
+    return;
+}
+
+static void OnM2mMessagesDownArrived(void *context, int token, int code, char *bridgeDeviceId, const char *message)
 {
     EN_IOTA_M2M_MESSAGE *m2mMsg = (EN_IOTA_M2M_MESSAGE *)malloc(sizeof(EN_IOTA_M2M_MESSAGE));
     if (m2mMsg == NULL) {
@@ -312,7 +353,7 @@ static void OnV1DevicesArrived(void *context, int token, int code, const char *m
     return;
 }
 
-static void OnCommandsArrived(void *context, int token, int code, const char *topic, const char *message)
+static void OnCommandsArrived(void *context, int token, int code, char *bridgeDeviceId, const char *topic, const char *message)
 {
     char *requestId_value = strstr(topic, "=");
     char *request_id = strstr(requestId_value + 1, "");
@@ -332,6 +373,7 @@ static void OnCommandsArrived(void *context, int token, int code, const char *to
     command->mqtt_msg_info->context = context;
     command->mqtt_msg_info->messageId = token;
     command->mqtt_msg_info->code = code;
+    command->bridge_device_id = bridgeDeviceId;
 
     command->request_id = request_id;
 
@@ -362,7 +404,7 @@ static void OnCommandsArrived(void *context, int token, int code, const char *to
     return;
 }
 
-static void OnPropertiesSetArrived(void *context, int token, int code, const char *topic, const char *message)
+static void OnPropertiesSetArrived(void *context, int token, int code, char *bridgeDeviceId, const char *topic, const char *message)
 {
     char *requestId_value = strstr(topic, "=");
     char *request_id = strstr(requestId_value + 1, "");
@@ -382,6 +424,7 @@ static void OnPropertiesSetArrived(void *context, int token, int code, const cha
     prop_set->mqtt_msg_info->context = context;
     prop_set->mqtt_msg_info->messageId = token;
     prop_set->mqtt_msg_info->code = code;
+    prop_set->bridge_device_id = bridgeDeviceId;
 
     prop_set->request_id = request_id;
 
@@ -425,12 +468,8 @@ static void OnPropertiesSetArrived(void *context, int token, int code, const cha
             prop_set->services[i].properties = prop[i];
             if (strcmp(service_id, DEVICE_RULE) == 0) {
                 RuleTrans_DeviceRuleUpdate(prop[i]);
-                MemFree(&prop[i]);
-                i--;
             } else if (strcmp(service_id, SECURITY_DETECTION_CONFIG) == 0) {
                 Detect_ParseShadowGetOrPropertiesSet(prop[i]);
-                MemFree(&prop[i]);
-                i--;
             }
         }
         i++;
@@ -467,7 +506,7 @@ static void OnPropertiesSetArrived(void *context, int token, int code, const cha
     return;
 }
 
-static void OnPropertiesGetArrived(void *context, int token, int code, const char *topic, const char *message)
+static void OnPropertiesGetArrived(void *context, int token, int code, char *bridgeDeviceId, const char *topic, const char *message)
 {
     char *requestId_value = strstr(topic, "=");
     char *request_id = strstr(requestId_value + 1, "");
@@ -487,7 +526,7 @@ static void OnPropertiesGetArrived(void *context, int token, int code, const cha
     prop_get->mqtt_msg_info->context = context;
     prop_get->mqtt_msg_info->messageId = token;
     prop_get->mqtt_msg_info->code = code;
-
+    prop_get->bridge_device_id = bridgeDeviceId;
     prop_get->request_id = request_id;
 
     JSON *root = JSON_Parse(message);
@@ -508,7 +547,7 @@ static void OnPropertiesGetArrived(void *context, int token, int code, const cha
     return;
 }
 
-static void OnShadowGetResponseArrived(void *context, int token, int code, const char *topic, char *message)
+static void OnShadowGetResponseArrived(void *context, int token, int code, char *bridgeDeviceId, const char *topic, char *message)
 {
     char *requestId_value = strstr(topic, "=");
     char *request_id = strstr(requestId_value + 1, "");
@@ -528,7 +567,7 @@ static void OnShadowGetResponseArrived(void *context, int token, int code, const
     device_shadow->mqtt_msg_info->context = context;
     device_shadow->mqtt_msg_info->messageId = token;
     device_shadow->mqtt_msg_info->code = code;
-
+    device_shadow->bridge_device_id = bridgeDeviceId;
     device_shadow->request_id = request_id;
 
     JSON *root = JSON_Parse(message);
@@ -650,6 +689,111 @@ EXIT:
     MemFree(&rawMsg);
 }
 
+static void OnBridgesLoginOrLogoutArrived(void *context, int token, int code, char *bridgeDeviceId, char *topic, char *message, int isLogin)
+{
+    char *requestId_value = strstr(topic, "=");
+    char *request_id = strstr(requestId_value + 1, "");
+
+    EN_IOTA_BRIDGES_LOGIN *log = (EN_IOTA_BRIDGES_LOGIN *)malloc(sizeof(EN_IOTA_BRIDGES_LOGIN));
+    if (log == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnBridgesLoginOrLogoutArrived(): there is not enough memory here.\n");
+        return;
+    }
+    
+    log->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO *)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+    if (log->mqtt_msg_info == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "there is not enough memory here.\n");
+        MemFree(&log);
+        return;
+    }
+    log->mqtt_msg_info->context = context;
+    log->mqtt_msg_info->messageId = token;
+    log->mqtt_msg_info->code = code;
+    log->bridge_device_id = bridgeDeviceId;
+
+    log->request_id = request_id;
+
+    JSON *root = JSON_Parse(message);
+    log->result_code = JSON_GetIntFromObject(root, RESULT_CODE, -1);
+
+    if (isLogin && onBridgesDeviceLogin) {
+        (onBridgesDeviceLogin)(log);
+    }
+    if (!isLogin && onBridgesDeviceLogout) {
+        (onBridgesDeviceLogout)(log);
+    }
+    cJSON_Delete(root);
+    MemFree(&log->mqtt_msg_info);
+    MemFree(&log);
+}
+
+static void OnBridgesResetSecretArrived(void *context, int token, int code, char *bridgeDeviceId, char *topic, char *message)
+{
+    char *requestId_value = strstr(topic, "=");
+    char *request_id = strstr(requestId_value + 1, "");
+
+    EN_IOTA_BRIDGES_RESET_SECRET *resetSecret = (EN_IOTA_BRIDGES_RESET_SECRET *)malloc(sizeof(EN_IOTA_BRIDGES_RESET_SECRET));
+    if (resetSecret == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnBridgesResetSecretArrived(): there is not enough memory here.\n");
+        return;
+    }
+    
+    resetSecret->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO *)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+    if (resetSecret->mqtt_msg_info == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "there is not enough memory here.\n");
+        MemFree(&resetSecret);
+        return;
+    }
+    resetSecret->mqtt_msg_info->context = context;
+    resetSecret->mqtt_msg_info->messageId = token;
+    resetSecret->mqtt_msg_info->code = code;
+    resetSecret->bridge_device_id = bridgeDeviceId;
+    resetSecret->request_id = request_id;
+
+    JSON *root = JSON_Parse(message);
+    resetSecret->result_code = JSON_GetIntFromObject(root, RESULT_CODE, -1);
+
+    JSON *paras = JSON_GetObjectFromObject(root, PARAS);
+    resetSecret->paras = cJSON_Print(paras);
+    resetSecret->new_secret = JSON_GetStringFromObject(root, NEW_SECRET, "-1");
+    
+    if (onBridgesDeviceResetSecret) {
+        (onBridgesDeviceResetSecret)(resetSecret);
+    }
+
+    cJSON_Delete(root);
+    MemFree(&resetSecret->mqtt_msg_info);
+    MemFree(&resetSecret);
+}
+
+static void OnBridgesDeviceDisconnectArrived(void *context, int token, int code, char *bridgeDeviceId, char *message)
+{
+
+    EN_IOTA_BRIDGES_PALLET_DISCONNECT *disConnect = (EN_IOTA_BRIDGES_PALLET_DISCONNECT *)malloc(sizeof(EN_IOTA_BRIDGES_PALLET_DISCONNECT));
+    if (disConnect == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnBridgesDeviceDisconnectArrived(): there is not enough memory here.\n");
+        return;
+    }
+    
+    disConnect->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO *)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+    if (disConnect->mqtt_msg_info == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "there is not enough memory here.\n");
+        MemFree(&disConnect);
+        return;
+    }
+    disConnect->mqtt_msg_info->context = context;
+    disConnect->mqtt_msg_info->messageId = token;
+    disConnect->mqtt_msg_info->code = code;
+    disConnect->bridge_device_id = bridgeDeviceId;
+
+    if (onBridgesDeviceDisconnect) {
+        (onBridgesDeviceDisconnect)(disConnect);
+    }
+
+    MemFree(&disConnect->mqtt_msg_info);
+    MemFree(&disConnect);
+}
+
 static void OnUserTopicArrived(void *context, int token, int code, char *topic, char *message, int messageLength)
 {
     char *topicParasValue = strstr(topic, "user/");
@@ -708,9 +852,10 @@ static int OnEventsGatewayAddOrDelete(int i, char *event_type, EN_IOTA_EVENT *ev
     event->services[i].paras->devices = (EN_IOTA_DEVICE_INFO *)malloc(sizeof(EN_IOTA_DEVICE_INFO) * devices_count);
     if (event->services[i].paras->devices == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsGatewayAddOrDelete(): there is not enough memory here.\n");
-        while (i >= 0) {
-            MemFree(&event->services[i].paras);
-            i--;
+        int k = i;
+        while (k >= 0) {
+            MemFree(&event->services[k].paras);
+            k--;
         }
         return -1;
     }
@@ -816,9 +961,10 @@ static int OnEventsAddSubDeviceResponse(int i, EN_IOTA_EVENT *event, JSON *paras
     if (event->services[i].gtw_add_device_paras->successful_devices == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsAddSubDeviceResponse(): "
             "successful_devices is not enough memory here.\n");
-        while (i >= 0) {
-            MemFree(&event->services[i].gtw_add_device_paras);
-            i--;
+        int k = i; 
+        while (k >= 0) {
+            MemFree(&event->services[k].gtw_add_device_paras);
+            k--;
         }
         return -1;
     }
@@ -979,6 +1125,28 @@ static int OnEventsDownManagerArrived(int i, char *event_type, EN_IOTA_EVENT *ev
         int ret = OnEventsDeleteSubDeviceResponse(i, event, paras, serviceEvent);
         return ret;
     }
+
+    //  the update status of gateway deleting a sub device
+    if (!strcmp(event_type, UPDATE_SUB_DEVICE_RESPONSE)) {
+        int ret = OnEventsDeleteSubDeviceResponse(i, event, paras, serviceEvent);
+        return ret;
+    }
+    return 1;
+}
+
+static int OnEventsDownFileManager(EN_IOTA_SERVICE_EVENT *services, char *event_type, JSON *paras)
+{
+    if (!strcmp(event_type, GET_UPLOAD_URL_RESPONSE)) {
+        services->event_type = EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE;
+    } else if (!strcmp(event_type, GET_DOWNLOAD_URL_RESPONSE)) {
+        services->event_type = EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE;
+    }
+    services->file_mgr_paras = (EN_IOTA_OTA_PARAS *)malloc(sizeof(EN_IOTA_FILE_MGR_PARAS));
+    if (services->file_mgr_paras == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsDownFileManager(): there is not enough memory here.\n");
+        return -1;
+    }
+    services->file_mgr_paras->url = JSON_GetStringFromObject(paras, URL, NULL);
     return 1;
 }
 
@@ -992,6 +1160,7 @@ static int OnEventsDownOtaArrived(EN_IOTA_SERVICE_EVENT *services, char *event_t
 
     if (!strcmp(event_type, VERSION_QUERY)) {
         services->event_type = EN_IOTA_EVENT_VERSION_QUERY;
+        
     } else if (!strcmp(event_type, FIRMWARE_UPGRADE)) {
         services->event_type = EN_IOTA_EVENT_FIRMWARE_UPGRADE;
     } else if (!strcmp(event_type, SOFTWARE_UPGRADE)) {
@@ -1018,16 +1187,16 @@ static int OnEventsDownOtaArrived(EN_IOTA_SERVICE_EVENT *services, char *event_t
 
         char *file_name = JSON_GetStringFromObject(paras, FILE_NAME, NULL);
         services->ota_paras->file_name = file_name;
- 
+
         char *task_id = JSON_GetStringFromObject(paras, TASK_ID, NULL);
         services->ota_paras->task_id = task_id;
         
         int sub_device_count = JSON_GetIntFromObject(paras, SUBDEVICE_COUNT, -1);
         services->ota_paras->sub_device_count = sub_device_count;
- 
+
         char *task_ext_info = JSON_GetStringFromObject(paras, TASKEXT_INFO, NULL);
         services->ota_paras->task_ext_info = task_ext_info;
- 
+
         char *access_token = JSON_GetStringFromObject(paras, ACCESS_TOKEN, NULL);
         services->ota_paras->access_token = access_token;
 
@@ -1170,7 +1339,7 @@ static int OnEventsDownRemoteCfgArrived(EN_IOTA_SERVICE_EVENT *services, const c
         }
         deviceCfgRpt.object_device_id = object_device_id;
         if (onDeviceConfig) {
-            deviceCfgRpt.result_code = onDeviceConfig(cfg, deviceCfgRpt.description);
+            deviceCfgRpt.result_code = onDeviceConfig(cfg);
         }
         IOTA_RptDeviceConfigRst(&deviceCfgRpt, NULL);
     }
@@ -1205,6 +1374,8 @@ static void OnEventsDownMemFree(EN_IOTA_EVENT *event, int services_count)
             MemFree(&event->services[m].tunnel_mgr_paras);
         } else if (event->services[m].servie_id == EN_IOTA_EVENT_SOFT_BUS) {
             MemFree(&event->services[m].soft_bus_paras);
+        } else if (event->services[m].servie_id == EN_IOTA_EVENT_FILE_MANAGER) {
+            MemFree(&event->services[m].file_mgr_paras);
         }
     }
 
@@ -1214,8 +1385,153 @@ static void OnEventsDownMemFree(EN_IOTA_EVENT *event, int services_count)
     return;
 }
 
+static void setOtaCallback(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message)
+{
+    if (message->event_type == EN_IOTA_EVENT_VERSION_QUERY) {
+        if (tagOtaOps.onDeviceVersionUp) {
+            tagOtaOps.onDeviceVersionUp(objectDeviceId);
+        }
+    } 
+    if ((message->event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE) ||
+        (message->event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE) ||
+        (message->event_type == EN_IOTA_EVENT_FIRMWARE_UPGRADE_V2) ||
+        (message->event_type == EN_IOTA_EVENT_SOFTWARE_UPGRADE_V2)) {
+        
+        if (tagOtaOps.onUrlResponse) {
+            tagOtaOps.onUrlResponse(objectDeviceId, message->event_type, message->ota_paras);
+        }
 
-static void OnEventsDownArrived(void *context, int token, int code, const char *message)
+    }
+}
+
+static int OnEventsDownArrivedJosnSplicing(EN_IOTA_EVENT *event, JSON *services, const char *message, int services_count)
+{
+    int i = 0;
+    JSON *serviceEvent = NULL;
+    cJSON_ArrayForEach(serviceEvent, services) {
+        if (serviceEvent) {
+            char *service_id = JSON_GetStringFromObject(serviceEvent, SERVICE_ID, NULL); 
+            event->services[i].servie_id = EN_IOTA_EVENT_ERROR;
+
+            char *event_type = NULL; // To determine whether to add or delete a sub device
+            event_type = JSON_GetStringFromObject(serviceEvent, EVENT_TYPE, NULL);
+            event->services[i].event_type = EN_IOTA_EVENT_TYPE_ERROR;
+
+            char *event_time = JSON_GetStringFromObject(serviceEvent, EVENT_TIME, NULL);
+            event->services[i].event_time = event_time;
+
+            JSON *paras = JSON_GetObjectFromObject(serviceEvent, PARAS);
+
+            // sub device manager
+            if (!strcmp(service_id, SUB_DEVICE_MANAGER)) {
+                event->services[i].servie_id = EN_IOTA_EVENT_SUB_DEVICE_MANAGER;
+                int ret = OnEventsDownManagerArrived(i, event_type, event, paras, message, serviceEvent);
+                if (ret < 0) {
+                    PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsDownArrived(): there is not enough memory here.\n");
+                    return -1;
+                }
+                if (tagEventsOps.onSubDevice) {
+                    tagEventsOps.onSubDevice(event->object_device_id, event->mqtt_msg_info, &event->services[i]);
+                }
+            }
+
+            // OTA
+            if (!strcmp(service_id, OTA)) {
+                event->services[i].servie_id = EN_IOTA_EVENT_OTA;
+                int ret = OnEventsDownOtaArrived(&event->services[i], event_type, paras);
+                if (ret < 0) {
+                    return -1;
+                }
+                setOtaCallback(event->object_device_id, event->mqtt_msg_info, &event->services[i]);
+            }
+
+            // NTP
+            if (!strcmp(service_id, SDK_TIME)) {
+                event->services[i].servie_id = EN_IOTA_EVENT_TIME_SYNC;
+                int ret = OnEventsDownNtpArrived(&event->services[i], event_type, message);
+                if (ret < 0) {
+                    return -1;
+                }
+                if (tagEventsOps.onNTP) {
+                    tagEventsOps.onNTP(event->object_device_id, event->mqtt_msg_info, &event->services[i]);
+                }
+            }
+
+            // device log
+            if (!strcmp(service_id, LOG)) {
+                event->services[i].servie_id = EN_IOTA_EVENT_DEVICE_LOG;
+                int ret = OnEventsDownLogArrived(&event->services[i], event_type, paras);
+                if (ret < 0) {
+                    return -1;
+                }
+                if (tagEventsOps.onDeviceLog) {
+                    tagEventsOps.onDeviceLog(event->object_device_id, event->mqtt_msg_info, &event->services[i]);
+                }
+            }
+
+            // soft bus
+            if (!strcmp(service_id, SOFT_BUS_SERVICEID)) {
+                event->services[i].servie_id = EN_IOTA_EVENT_SOFT_BUS;
+                char *event_id = JSON_GetStringFromObject(serviceEvent, EVENT_ID, NULL);
+                event->services[i].event_id = event_id;
+                int ret = OnEventsDownSoftBus(&event->services[i], event_type, paras);
+                if (ret < 0) {
+                    return -1;
+                }
+                if (tagEventsOps.onSoftBus){
+                    tagEventsOps.onSoftBus(event->object_device_id, event->mqtt_msg_info, &event->services[i]);
+                }
+            }
+
+            // tunnel manager
+            if (!strcmp(service_id, TUNNEL_MGR)) {
+                event->services[i].servie_id = EN_IOTA_EVENT_TUNNEL_MANAGER;
+                int ret = OnEventsDownTunnelArrived(&event->services[i], event_type, paras);
+                if (ret < 0) {
+                    return -1;
+                }
+                if (tagEventsOps.onTunnelManager) {
+                    tagEventsOps.onTunnelManager(event->object_device_id, event->mqtt_msg_info, &event->services[i]);
+                }
+            }
+            // file manager
+            if (!strcmp(service_id, FILE_MANAGER)) {
+                event->services[i].servie_id = EN_IOTA_EVENT_FILE_MANAGER;
+                int ret = OnEventsDownFileManager(&event->services[i], event_type, paras);
+                if (ret < 0) {
+                    return -1;
+                }
+                if (tagEventsOps.onFileManager) {
+                    tagEventsOps.onFileManager(event->object_device_id, event->mqtt_msg_info, &event->services[i]);
+                }
+            }
+            // device rule
+            if (!strcmp(service_id, DEVICE_RULE)) {
+                char *payload = cJSON_Print(paras);
+                if (payload == NULL) {
+                    return -2;
+                }
+                RuleMgr_Parse(payload);
+                MemFree(&payload);
+                i--;
+            }
+            // device remote config
+            if (!strcmp(service_id, DEVICE_CONFIG)) {
+                event->services[i].servie_id = EN_IOTA_EVENT_DEVICE_CONFIG;
+                int ret = OnEventsDownRemoteCfgArrived(&event->services[i], event_type, paras, event->object_device_id);
+                if (ret < 0) {
+                    return -1;
+                }
+            }
+        }
+        i++;
+        services_count--;
+    }
+    event->services_count = i;
+    return 0;
+}
+
+static void OnEventsDownArrived(void *context, int token, int code, char *bridgeDeviceId, const char *message)
 {
     EN_IOTA_EVENT *event = (EN_IOTA_EVENT *)malloc(sizeof(EN_IOTA_EVENT));
     if (event == NULL) {
@@ -1229,15 +1545,17 @@ static void OnEventsDownArrived(void *context, int token, int code, const char *
         MemFree(&event);
         return;
     }
+
     event->mqtt_msg_info->context = context;
     event->mqtt_msg_info->messageId = token;
     event->mqtt_msg_info->code = code;
-
+    event->bridge_device_id = bridgeDeviceId;
     JSON *root = JSON_Parse(message);
     if (root == NULL) {
         MemFree(&event->mqtt_msg_info);
         return;
     }
+
     char *object_device_id = JSON_GetStringFromObject(root, OBJECT_DEVICE_ID, "-1");
     event->object_device_id = object_device_id;
 
@@ -1261,187 +1579,135 @@ static void OnEventsDownArrived(void *context, int token, int code, const char *
         MemFree(&event);
         return;
     }
-
-    int i = 0;
-    JSON *serviceEvent = NULL;
-    cJSON_ArrayForEach(serviceEvent, services) {
-        if (serviceEvent) {
-            char *service_id = JSON_GetStringFromObject(serviceEvent, SERVICE_ID, NULL); 
-            event->services[i].servie_id = EN_IOTA_EVENT_ERROR;
-
-            char *event_type = NULL; // To determine whether to add or delete a sub device
-            event_type = JSON_GetStringFromObject(serviceEvent, EVENT_TYPE, NULL);
-            event->services[i].event_type = EN_IOTA_EVENT_TYPE_ERROR;
-
-            char *event_time = JSON_GetStringFromObject(serviceEvent, EVENT_TIME, NULL);
-            event->services[i].event_time = event_time;
-
-            JSON *paras = JSON_GetObjectFromObject(serviceEvent, PARAS);
-
-            // sub device manager
-            if (!strcmp(service_id, SUB_DEVICE_MANAGER)) {
-                event->services[i].servie_id = EN_IOTA_EVENT_SUB_DEVICE_MANAGER;
-                int ret = OnEventsDownManagerArrived(i, event_type, event, paras, message, serviceEvent);
-                if (ret == 0) {
-                    break;
-                } else if (ret < 0) {
-                    PrintfLog(EN_LOG_LEVEL_ERROR, "OnEventsDownArrived(): there is not enough memory here.\n");
-                    MemFree(&event->services);
-                    MemFree(&event->mqtt_msg_info);
-                    MemFree(&event);
-                    return;
-                }
-            }
-
-            // OTA
-            if (!strcmp(service_id, OTA)) {
-                event->services[i].servie_id = EN_IOTA_EVENT_OTA;
-                int ret = OnEventsDownOtaArrived(&event->services[i], event_type, paras);
-                if (ret < 0) {
-                    MemFree(&event->services);
-                    MemFree(&event->mqtt_msg_info);
-                    MemFree(&event);
-                    return;
-                }
-            }
-
-            // NTP
-            if (!strcmp(service_id, SDK_TIME)) {
-                event->services[i].servie_id = EN_IOTA_EVENT_TIME_SYNC;
-                int ret = OnEventsDownNtpArrived(&event->services[i], event_type, message);
-                if (ret < 0) {
-                    MemFree(&event->services);
-                    MemFree(&event->mqtt_msg_info);
-                    MemFree(&event);
-                    return;
-                }
-            }
-
-            // device log
-            if (!strcmp(service_id, LOG)) {
-                event->services[i].servie_id = EN_IOTA_EVENT_DEVICE_LOG;
-                int ret = OnEventsDownLogArrived(&event->services[i], event_type, paras);
-                if (ret < 0) {
-                    MemFree(&event->services);
-                    MemFree(&event->mqtt_msg_info);
-                    MemFree(&event);
-                    return;
-                }
-            }
-
-            // soft bus
-            if (!strcmp(service_id, SOFT_BUS_SERVICEID)) {
-                event->services[i].servie_id = EN_IOTA_EVENT_SOFT_BUS;
-                char *event_id = JSON_GetStringFromObject(serviceEvent, EVENT_ID, NULL);
-                event->services[i].event_id = event_id;
-                int ret = OnEventsDownSoftBus(&event->services[i], event_type, paras);
-                if (ret < 0) {
-                    MemFree(&event->services);
-                    MemFree(&event->mqtt_msg_info);
-                    MemFree(&event);
-                    return;
-                }
-            }
-
-            // tunnel manager
-            if (!strcmp(service_id, TUNNEL_MGR)) {
-                event->services[i].servie_id = EN_IOTA_EVENT_TUNNEL_MANAGER;
-                int ret = OnEventsDownTunnelArrived(&event->services[i], event_type, paras);
-                if (ret < 0) {
-                    MemFree(&event->services);
-                    MemFree(&event->mqtt_msg_info);
-                    MemFree(&event);
-                    return;
-                }
-            }
-            // device rule
-            if (!strcmp(service_id, DEVICE_RULE)) {
-                char *payload = cJSON_Print(paras);
-                if (payload == NULL) {
-                    return;
-                }
-                RuleMgr_Parse(payload);
-                MemFree(&payload);
-                i--;
-            }
-            // device remote config
-            if (!strcmp(service_id, DEVICE_CONFIG)) {
-                event->services[i].servie_id = EN_IOTA_EVENT_DEVICE_CONFIG;
-                int ret = OnEventsDownRemoteCfgArrived(&event->services[i], event_type, paras, object_device_id);
-                if (ret < 0) {
-                    MemFree(&event->services);
-                    MemFree(&event->mqtt_msg_info);
-                    MemFree(&event);
-                    return;
-                }
-            }
+    int ret = OnEventsDownArrivedJosnSplicing(event, services, message, services_count);
+    if (ret < 0) { 
+        if (ret == -1) {
+            MemFree(&event->services);
+            MemFree(&event->mqtt_msg_info);
+            MemFree(&event);
         }
-
-        i++;
-        services_count--;
+        return;
     }
-    event->services_count = i;
 
     if (onEventDown) {
         (onEventDown)(event);
     }
-
     JSON_Delete(root);
-    OnEventsDownMemFree(event, i);
+    OnEventsDownMemFree(event, event->services_count);
     return;
 }
 
+char *getBridgeDeviceId(char *topic)
+{
+    char *start = StrInStr(topic, TOPIC_SUFFIX_DEVICES);
+    if  (start != NULL) {
+       start += sizeof(char) * strlen(TOPIC_SUFFIX_DEVICES);
+    }
+    char *finish = StrInStr(topic, TOPIC_SUFFIX_SYS);
+    if (start >= finish) {
+        return NULL;
+    }
+    unsigned int len = sizeof(char) * (finish - start);
+    char *bridgeDeviceId = (char *)malloc(sizeof(char) * (len + 1));
+    if (bridgeDeviceId == NULL) {
+        return NULL;
+    }
+    if (strncpy_s(bridgeDeviceId, len + 1, start, len) != 0) {
+        MemFree(&bridgeDeviceId);
+        return NULL;
+    }
+    return bridgeDeviceId;
+}
+
+static int OnBridgeArrived(void *context, int token, int code, char *topic, char *bridgeDeviceId, char *message)
+{
+    
+    if (StringLength(StrInStr(topic, TOPIC_SUFFIX_LOGIN)) > 0) {
+        OnBridgesLoginOrLogoutArrived(context, token, code, bridgeDeviceId, topic, message, 1);
+        return 0;
+    }
+
+    if (StringLength(StrInStr(topic, TOPIC_SUFFIX_LOGOUT)) > 0) {
+        OnBridgesLoginOrLogoutArrived(context, token, code, bridgeDeviceId, topic, message, 0);
+        return 0;
+    }
+
+    if (StringLength(StrInStr(topic, TOPIC_SUFFIX_RESET_SECRET)) > 0) {
+        OnBridgesResetSecretArrived(context, token, code, bridgeDeviceId, topic, message);
+        return 0;
+    }
+
+    if (StringLength(StrInStr(topic, TOPIC_SUFFIX_DISCONNECT)) > 0) {
+        OnBridgesDeviceDisconnectArrived(context, token, code, bridgeDeviceId, message);
+        return 0;
+    }
+    return -1;
+}
+// todo
 static void OnMessageArrived(void *context, int token, int code, char *topic, char *message, int messageLength,
     void *mqttv5)
 {
+    char *bridgeDeviceId = NULL;
+    if (StrInStr(topic, TOPIC_PREFIX_BRIDGE) == topic) {
+        bridgeDeviceId = getBridgeDeviceId(topic);
+    }
     if (StringLength(StrInStr(topic, BOOTSTRAP_DOWN)) > 0) {
         OnBootstrapDownArrived(context, token, code, message);
-        return;
+        goto EXIT;
     }
 
     if (StringLength(StrInStr(topic, TOPIC_SUFFIX_MESSAGEDOWN)) > 0) {
-        OnMessagesDownArrived(context, token, code, message, messageLength, mqttv5);
-        return;
+        OnMessagesDownArrived(context, token, code, bridgeDeviceId, message, messageLength, mqttv5);
+        goto EXIT;
     }
 
     if (StringLength(StrInStr(topic, TOPIC_PREFIX_V3)) > 0) {
         OnV1DevicesArrived(context, token, code, message);
-        return;
+ 
+        goto EXIT;
     }
 
     if (StringLength(StrInStr(topic, TOPIC_SUFFIX_COMMAND)) > 0) {
-        OnCommandsArrived(context, token, code, topic, message);
-        return;
+        OnCommandsArrived(context, token, code, bridgeDeviceId, topic, message);
+        goto EXIT;
     }
 
     if (StringLength(StrInStr(topic, TOPIC_SUFFIX_PROP_SET)) > 0) {
-        OnPropertiesSetArrived(context, token, code, topic, message);
-        return;
+        OnPropertiesSetArrived(context, token, code, bridgeDeviceId, topic, message);
+        goto EXIT;
     }
 
     if (StringLength(StrInStr(topic, TOPIC_SUFFIX_PROP_GET)) > 0) {
-        OnPropertiesGetArrived(context, token, code, topic, message);
-        return;
+        OnPropertiesGetArrived(context, token, code, bridgeDeviceId, topic, message);
+        goto EXIT;
     }
 
     if (StringLength(StrInStr(topic, TOPIC_SUFFIX_PROP_RSP)) > 0) {
-        OnShadowGetResponseArrived(context, token, code, topic, message);
-        return;
+        OnShadowGetResponseArrived(context, token, code, bridgeDeviceId, topic, message);
+        goto EXIT;
     }
 
     if (StringLength(StrInStr(topic, TOPIC_SUFFIX_USER)) > 0) {
         OnUserTopicArrived(context, token, code, topic, message, messageLength);
-        return;
+        goto EXIT;
     }
-
     if (StringLength(StrInStr(topic, TOPIC_SUFFIX_EVENT_DOWN)) > 0) {
-        OnEventsDownArrived(context, token, code, message);
-        return;
+        OnEventsDownArrived(context, token, code, bridgeDeviceId, message);
+        goto EXIT;
     }
 
     if (StringLength(StrInStr(topic, TOPIC_PREFIX_M2M)) > 0) {
-        OnM2mMessagesDownArrived(context, token, code, message);
-        return;
+        OnM2mMessagesDownArrived(context, token, code, bridgeDeviceId, message);
+        goto EXIT;
+    }
+    if (OnBridgeArrived(context, token, code, topic, bridgeDeviceId, message) < 0) {
+        goto EXIT;
+    }
+    OnOtherUndefinedTopicArrived(context, token, code, bridgeDeviceId, message);  
+
+EXIT:
+    if (bridgeDeviceId) {
+            MemFree(&bridgeDeviceId);
     }
 }
 
@@ -1547,6 +1813,36 @@ void SetUserTopicRawMsgCallback(USER_TOPIC_RAW_MSG_CALLBACK_HANDLER callbackHand
     MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }
 
+void SetBridgesDeviceLoginCallback(BRIDGES_DEVICE_LOGIN callbackHandler)
+{
+    onBridgesDeviceLogin = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetBridgesDeviceLogoutCallback(BRIDGES_DEVICE_LOGOUT callbackHandler)
+{
+    onBridgesDeviceLogout = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetBridgesDeviceResetSecretCallback(BRIDGES_DEVICE_RESET_SECRET callbackHandler) 
+{
+    onBridgesDeviceResetSecret = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetBridgesDevicePalletDisConnCallback(BRIDGES_DEVICE_PLATE_DISCONNECT callbackHandler)
+{
+    onBridgesDeviceDisconnect = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetUndefinedMessageCallback(UNDEFINED_MESSAGE_CALLBACK_HANDLER callbackHandler)
+{
+    onOtherUndefined = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
 void SetBootstrapCallback(BOOTSTRAP_CALLBACK_HANDLER callbackHandler)
 {
     onBootstrap = callbackHandler;
@@ -1567,4 +1863,58 @@ void SetM2mCallback(M2M_CALLBACK_HANDLER callbackHandler)
 void SetDeviceConfigCallback(DEVICE_CONFIG_CALLBACK_HANDLER callbackHandler)
 {
     onDeviceConfig = callbackHandler;
+}
+
+void SetTagEventsOps(TagEventsOps ops) 
+{
+    tagEventsOps = ops;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetEvenSubDeviceCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    tagEventsOps.onSubDevice = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetEvenOtaVersionUpCallback(OTAVERSION_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    tagOtaOps.onDeviceVersionUp = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetEvenOtaUrlResponseCallback(OTAURL_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    tagOtaOps.onUrlResponse = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetNtpCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    tagEventsOps.onNTP = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetEvenDeviceLogCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    tagEventsOps.onDeviceLog = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetEvenSoftBusCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    tagEventsOps.onSoftBus = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetEvenTunnelManagerCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    tagEventsOps.onTunnelManager = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
+}
+
+void SetEvenFileManagerCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    tagEventsOps.onFileManager = callbackHandler;
+    MqttBase_SetMessageArrivedCallback(OnMessageArrived);
 }

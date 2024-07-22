@@ -39,6 +39,7 @@
 #define LONG_LONG_MAX_LENGTH        (20)
 #define LOCAL_TIME_LENGTH           (19)
 #define LOCAL_TIME_WITH_MS_LENGTH   (LOCAL_TIME_LENGTH + 4)
+#define LOCAL_TIME_COMPACT_LENGTH   (14)
 
 int StringLength(const char *str);
 char *StrInStr(const char *str, const char *subStr);
@@ -49,6 +50,7 @@ int CopyStrValue(char **dst, const char *src, int length);
 char *GetClientTimesStamp(void);
 char *GetEventTimesStamp(void);
 char *Timeval2Str(const struct timeval *tv);
+char *Timeval2CompactStr(const struct timeval *tv);
 char *GetLocalTimeWithMs(void);
 char *PrependLocalTimeWithMs(const char *);
 int GetSubStrIndex(const char *str, const char *substr);

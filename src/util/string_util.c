@@ -217,6 +217,31 @@ char *GetClientTimesStamp(void)
 
 /*
  * NOTE: the caller need to free the return char pointer.
+ * return: convert timeval to the string in the format of . "20230128153829"
+ *
+ * return NULL if any errors occur.
+ */
+char *GetClientTimesStampWithSec(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    time_t t = (time_t)tv.tv_sec;
+    struct tm *lt = localtime(&t);
+
+    char *destStr = malloc(LOCAL_TIME_COMPACT_LENGTH + 1);
+    if (destStr == NULL) {
+        return NULL;
+    }
+
+    if (strftime(destStr, LOCAL_TIME_COMPACT_LENGTH + 1, "%Y%m%d%H%M%S", lt) == 0) {
+        MemFree(&destStr);
+        return NULL;
+    }
+    return destStr;
+}
+
+/*
+ * NOTE: the caller need to free the return char pointer.
  * return: convert timeval to the string in the format of year:month:day hour:minute:second.microsecond,
  * e.g. "2023-01-28 15:38:29.609"
  *
@@ -240,7 +265,7 @@ char *Timeval2Str(const struct timeval *tv)
         return NULL;
     }
 
-    if (sprintf_s(destStr, LOCAL_TIME_WITH_MS_LENGTH + 1, "%s.%03d", timeSec, tv->tv_usec / 1000) == -1) {
+    if (sprintf_s(destStr, LOCAL_TIME_WITH_MS_LENGTH + 1, "%s.%03ld", timeSec, tv->tv_usec / 1000) == -1) {
         MemFree(&destStr);
         return NULL;
     }
@@ -254,7 +279,7 @@ char *Timeval2Str(const struct timeval *tv)
  *
  * return NULL if any errors occur.
  */
-char *GetLocalTimeWithMs()
+char *GetLocalTimeWithMs(void)
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -377,9 +402,9 @@ int gZIPCompress(const char *src, int srcLength, unsigned char *dest, int destLe
             return -1;
         }
         c_stream.next_in = (Bytef *)src;
-        c_stream.avail_in = srcLength;
+        c_stream.avail_in = (unsigned int)srcLength;
         c_stream.next_out = (Bytef *)dest;
-        c_stream.avail_out = destLength;
+        c_stream.avail_out = (unsigned int)destLength;
         while (c_stream.avail_in != 0 && c_stream.total_out < (uInt)destLength) {
             if (deflate(&c_stream, Z_NO_FLUSH) != Z_OK) {
                 return -1;
@@ -407,7 +432,7 @@ int gZIPCompress(const char *src, int srcLength, unsigned char *dest, int destLe
 // Reassign memory
 char *ReassignMemory(char *oldMemory, unsigned int resultLen)
 {
-    if (resultLen <= 0 || oldMemory == NULL) {
+    if (resultLen == 0 || oldMemory == NULL) {
         return oldMemory;
     }
     char *result = (char *)malloc(resultLen);

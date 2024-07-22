@@ -46,3 +46,8 @@ int SetConfig(int item, char *value)
 {
     return MqttBase_SetConfig(item, value);
 }
+
+char *GetConfig(int item)
+{
+    return MqttBase_GetConfig(item);
+}

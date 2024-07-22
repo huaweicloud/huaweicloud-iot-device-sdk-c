@@ -45,5 +45,6 @@ static_library("device_demo") {
         "../../include/third_party/libboundscheck",
         "../../include/service/device_rule",
         "../../include/tunnel",
+        "../../include/util",
     ]
 }

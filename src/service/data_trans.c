@@ -214,7 +214,6 @@ int ReportData(char *topic, char *payload, void *context, void *properties)
         PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: ReportDeviceData() error, the input is invalid.\n");
         return IOTA_FAILURE;
     }
-
     int ret = MqttBase_publish((const char *)topic, payload, (int)strlen(payload), context, properties);
     MemFree(&topic);
     if (ret < 0) {
@@ -223,6 +222,26 @@ int ReportData(char *topic, char *payload, void *context, void *properties)
     }
 
     return IOTA_SUCCESS;
+}
+
+int ReportDataSetQos(char *topic, char *payload, int qos, void *context, void *properties)
+{
+    if (topic == NULL || payload == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: ReportDeviceData() error, the input is invalid.\n");
+        return IOTA_FAILURE;
+    }
+    if (qos < 0 || qos > 1) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: ReportDeviceData() error, qos not 0 or 1.\n");
+        return IOTA_FAILURE;
+    }
+    int ret = MqttBase_publishSetQos((const char *)topic, payload, (int)strlen(payload), qos, context, properties);
+    MemFree(&topic);
+    if (ret < 0) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "DataTrans: ReportDeviceData() error, publish failed, result %d\n", ret);
+        return IOTA_FAILURE;
+    }
+
+    return ret;
 }
 
 // codecMode: 0 is json mode, others are binary mode
@@ -243,7 +262,7 @@ int ReportDevicePropertiesV3(char *payload, int codecMode, void *context)
     return ReportData(topic, payload, context, NULL);
 }
 
-int Bootstrap(void)
+int Bootstrap(char *payload)
 {
     char *username = MqttBase_GetConfig(EN_MQTT_BASE_CONFIG_USERNAME);
     if (username == NULL) {
@@ -252,7 +271,7 @@ int Bootstrap(void)
     }
     char *topic = NULL;
     topic = CombineStrings(3, TOPIC_PREFIX, username, BOOTSTRAP);
-    int ret = MqttBase_publish((const char *)topic, "", 0, NULL, NULL);
+    int ret = MqttBase_publish((const char *)topic, payload, strlen(payload), NULL, NULL);
     MemFree(&topic);
 
     if (ret < 0) {
@@ -260,7 +279,7 @@ int Bootstrap(void)
         return IOTA_FAILURE;
     }
 
-    return IOTA_SUCCESS;
+    return ret;
 }
 
 int OCM2MSendMsg(char *to, char *from, char *payload, char *requestId, char *context)
@@ -274,5 +293,5 @@ int OCM2MSendMsg(char *to, char *from, char *payload, char *requestId, char *con
         return IOTA_FAILURE;
     }
 
-    return IOTA_SUCCESS;
+    return ret;
 }

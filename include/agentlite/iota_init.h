@@ -113,7 +113,7 @@ typedef struct {
     HW_CHAR *device_id;
     HW_CHAR *error_code;
     HW_CHAR *error_msg;
-} EN_IOTA_DEL_DEVICE_FAILED_REASON;
+} EN_IOTA_DEL_DEVICE_FAILED_REASON, EN_IOTA_SUB_UPDATE_REASON;
 
 typedef struct {
     HW_CHAR **successful_devices;
@@ -121,6 +121,18 @@ typedef struct {
     EN_IOTA_DEL_DEVICE_FAILED_REASON *failed_devices;
     HW_INT failed_devices_count;
 } EN_IOTA_GTW_DEL_DEVICE_PARAS;
+
+typedef struct {
+    HW_CHAR *device_id;
+    HW_CHAR *status;
+} EN_IOTA_UODATE_STATUS_INFO;
+
+typedef struct {
+    EN_IOTA_UODATE_STATUS_INFO *successful_devices;
+    HW_INT successful_devices_count;
+    EN_IOTA_SUB_UPDATE_REASON *failed_devices;
+    HW_INT failed_devices_count;
+} EN_IOTA_GTW_UODATE_STATUS_PARAS;
 
 typedef struct {
     HW_CHAR *log_switch;
@@ -133,6 +145,10 @@ typedef struct {
 } EN_IOTA_TUNNEL_MGR_PARAS;
 
 typedef struct {
+    HW_CHAR *url;
+} EN_IOTA_FILE_MGR_PARAS;
+
+typedef struct {
     HW_INT servie_id;  // see the enum EN_IOTA_EVENT_SERVICE_ID
     HW_INT event_type;  // see the enum EN_IOTA_EVENT_TYPE
     HW_CHAR *event_time;
@@ -142,9 +158,11 @@ typedef struct {
     EN_IOTA_NTP_PARAS *ntp_paras;
     EN_IOTA_GTW_ADD_DEVICE_PARAS *gtw_add_device_paras;
     EN_IOTA_GTW_DEL_DEVICE_PARAS *gtw_del_device_paras;
+    EN_IOTA_GTW_UODATE_STATUS_PARAS *gtw_update_status_paras;
     EN_IOTA_DEVICE_LOG_PARAS *device_log_paras;
     EN_IOTA_DEVICE_RULE_PARAS *device_rule_paras;
     EN_IOTA_TUNNEL_MGR_PARAS *tunnel_mgr_paras;
+    EN_IOTA_FILE_MGR_PARAS *file_mgr_paras;
     EN_IOTA_SOFT_BUS_PARAS *soft_bus_paras;
 } EN_IOTA_SERVICE_EVENT;
 
@@ -153,6 +171,7 @@ typedef struct {
     HW_CHAR *object_device_id;
     EN_IOTA_SERVICE_EVENT *services;
     HW_INT services_count;
+    HW_CHAR *bridge_device_id;
 } EN_IOTA_EVENT;
 
 typedef struct {
@@ -162,6 +181,7 @@ typedef struct {
     HW_CHAR *command_name;
     HW_CHAR *paras;
     HW_CHAR *request_id;
+    HW_CHAR *bridge_device_id;
 } EN_IOTA_COMMAND;
 
 typedef struct {
@@ -176,6 +196,7 @@ typedef struct {
 typedef struct {
     EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info;
     HW_CHAR *message;
+    HW_CHAR *deviceSecret;
 } EN_IOTA_MQTT_PROTOCOL_RSP;
 
 typedef struct {
@@ -184,7 +205,15 @@ typedef struct {
     HW_CHAR *name;
     HW_CHAR *id;
     HW_CHAR *content;
+    HW_CHAR *bridge_device_id;
 } EN_IOTA_MESSAGE;
+
+typedef struct {
+    EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info;
+    HW_CHAR *object_device_id;
+    HW_CHAR *payload;
+    HW_CHAR *bridge_device_id;
+} EN_IOTA_UNDEFINED_MESSAGE;
 
 typedef struct {
     EN_IOTA_MQTT_MSG_INFO *mqttMsgInfo;
@@ -212,6 +241,7 @@ typedef struct {
     HW_CHAR *request_id;
     EN_IOTA_SERVICE_PROPERTY *services;
     HW_INT services_count;
+    HW_CHAR *bridge_device_id;
 } EN_IOTA_PROPERTY_SET;
 
 typedef struct {
@@ -219,6 +249,7 @@ typedef struct {
     HW_CHAR *object_device_id;
     HW_CHAR *request_id;
     HW_CHAR *service_id;
+    HW_CHAR *bridge_device_id;
 } EN_IOTA_PROPERTY_GET;
 
 typedef struct {
@@ -236,6 +267,7 @@ typedef struct {
     HW_CHAR *request_id;
     EN_IOTA_SHADOW_DATA *shadow;
     HW_INT shadow_data_count;
+    HW_CHAR *bridge_device_id;
 } EN_IOTA_DEVICE_SHADOW;
 
 typedef struct {
@@ -255,6 +287,26 @@ typedef struct {
     HW_CHAR *topicPara;
 } EN_IOTA_USER_TOPIC_RAW_MESSAGE;
 
+typedef struct {
+    EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info;
+    HW_INT result_code;
+    HW_CHAR *bridge_device_id;
+    HW_CHAR *request_id;
+} EN_IOTA_BRIDGES_LOGIN, EN_IOTA_BRIDGES_LOGOUT;
+
+typedef struct {
+    EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info;
+    HW_INT result_code;
+    HW_CHAR *bridge_device_id;
+    HW_CHAR *paras;
+    HW_CHAR *request_id;
+    HW_CHAR *new_secret;
+} EN_IOTA_BRIDGES_RESET_SECRET;
+
+typedef struct {
+    EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info;
+    HW_CHAR *bridge_device_id;
+} EN_IOTA_BRIDGES_PALLET_DISCONNECT;
 typedef enum {
     EN_IOTA_CALLBACK_CONNECT_SUCCESS = 0,
     EN_IOTA_CALLBACK_CONNECT_FAILURE = 1,
@@ -270,6 +322,7 @@ typedef enum {
 HW_API_FUNC HW_INT IOTA_Init(HW_CHAR *workPath);
 HW_API_FUNC HW_INT IOTA_Destroy(void);
 HW_API_FUNC HW_VOID IOTA_SetPrintLogCallback(PFN_LOG_CALLBACK_HANDLER pfnLogCallbackHandler);
+HW_API_FUNC HW_INT IOTA_ConnectConfigSet(HW_CHAR *ip, HW_CHAR *port, HW_CHAR *deviceId, HW_CHAR *password);
 
 typedef HW_VOID (*PFN_PROTOCOL_CALLBACK_HANDLER)(EN_IOTA_MQTT_PROTOCOL_RSP *message);
 HW_API_FUNC HW_VOID IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SETTING item,
@@ -314,6 +367,35 @@ HW_API_FUNC HW_VOID IOTA_SetDeviceRuleSendMsgCallback(PFN_DEVICE_RULE_SEND_MSG_C
 typedef HW_VOID (*PFN_M2M_CALLBACK_HANDLER)(EN_IOTA_M2M_MESSAGE *message);
 HW_API_FUNC HW_VOID IOTA_SetM2mCallback(PFN_M2M_CALLBACK_HANDLER callbackHandler);
 
+typedef HW_VOID (*PFN_BRIDGES_DEVICE_LOGIN)(EN_IOTA_BRIDGES_LOGIN *message);
+HW_API_FUNC HW_VOID IOTA_SetBridgesDeviceLoginCallback(PFN_BRIDGES_DEVICE_LOGIN callbackHandler);
+
+typedef HW_VOID (*PFN_BRIDGES_DEVICE_LOGOUT)(EN_IOTA_BRIDGES_LOGOUT *message);
+HW_API_FUNC HW_VOID IOTA_SetBridgesDeviceLogoutCallback(PFN_BRIDGES_DEVICE_LOGOUT callbackHandler);
+
+typedef HW_VOID (*PFN_BRIDGES_DEVICE_RESET_SECRET)(EN_IOTA_BRIDGES_RESET_SECRET *message);
+HW_API_FUNC HW_VOID IOTA_SetBridgesDeviceResetSecretCallback(PFN_BRIDGES_DEVICE_RESET_SECRET callbackHandler);
+
+typedef HW_VOID (*PFN_BRIDGES_DEVICE_PLATE_DISCONNECT)(EN_IOTA_BRIDGES_PALLET_DISCONNECT *message);
+HW_API_FUNC HW_VOID IOTA_SetBridgesDeviceDisConnCallback(PFN_BRIDGES_DEVICE_PLATE_DISCONNECT callbackHandler);
+
+typedef HW_VOID (*PFN_UNDEFINED_MSG_CALLBACK_HANDLER)(EN_IOTA_UNDEFINED_MESSAGE *message);
+HW_API_FUNC HW_VOID IOTA_SetUndefinedMessageCallback(PFN_UNDEFINED_MSG_CALLBACK_HANDLER callbackHandler);
+
+typedef void (*PFN_EVENT_CALLBACK_HANDLER_SPECIFY)(char *objectDeviceId, EN_IOTA_MQTT_MSG_INFO *mqtt_msg_info, EN_IOTA_SERVICE_EVENT *message);
+HW_API_FUNC HW_VOID IOTA_SetEvenSubDeviceCallback(PFN_EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+HW_API_FUNC HW_VOID IOTA_SetNtpCallback(PFN_EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+HW_API_FUNC HW_VOID IOTA_SetEvenDeviceLogCallback(PFN_EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+HW_API_FUNC HW_VOID IOTA_SetEvenSoftBusCallback(PFN_EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+HW_API_FUNC HW_VOID IOTA_SetEvenTunnelManagerCallback(PFN_EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+HW_API_FUNC HW_VOID IOTA_SetEvenFileManagerCallback(PFN_EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler);
+
+typedef void (*PFN_OTAVERSION_CALLBACK_HANDLER_SPECIFY)(char *objectDeviceId);
+HW_API_FUNC HW_VOID IOTA_SetEvenOtaVersionUpCallback(PFN_OTAVERSION_CALLBACK_HANDLER_SPECIFY callbackHandler);
+
+typedef void (*PFN_OTAURL_CALLBACK_HANDLER_SPECIFY)(char *objectDeviceId, int event_type, EN_IOTA_OTA_PARAS *ota_paras);
+HW_API_FUNC HW_VOID IOTA_SetEvenOtaUrlResponseCallback(PFN_OTAURL_CALLBACK_HANDLER_SPECIFY callbackHandler);
+
 /**
  * @Description: device configure callback function
  * @param cfg: Configuration data in JSON format
@@ -334,7 +416,7 @@ typedef enum {
     EN_IOTA_EVENT_OTA = 1,
     EN_IOTA_EVENT_TIME_SYNC = 2,
     EN_IOTA_EVENT_DEVICE_LOG = 3,
-    // EN_IOTA_EVENT_FILE_MANAGER = 4,
+    EN_IOTA_EVENT_FILE_MANAGER = 4,
     // EN_IOTA_EVENT_SDK_INFO = 5,
     EN_IOTA_EVENT_DEVICE_RULE = 6,
     EN_IOTA_EVENT_TUNNEL_MANAGER = 7,
@@ -353,12 +435,13 @@ typedef enum {
     EN_IOTA_EVENT_ADD_SUB_DEVICE_RESPONSE = 6,
     EN_IOTA_EVENT_DEL_SUB_DEVICE_RESPONSE = 7,
     EN_IOTA_EVENT_LOG_CONFIG = 8,
-    // EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE = 9,
-    // EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE = 10,
+    EN_IOTA_EVENT_GET_UPLOAD_URL_RESPONSE = 9,
+    EN_IOTA_EVENT_GET_DOWNLOAD_URL_RESPONSE = 10,
     EN_IOTA_EVENT_TUNNEL_NOTIFY = 11,
     EN_IOTA_EVENT_DEVICE_CONFIG_UPDATE = 12,
     EN_IOTA_EVENT_FIRMWARE_UPGRADE_V2 = 13,
     EN_IOTA_EVENT_SOFTWARE_UPGRADE_V2 = 14,
+    EN_IOTA_EVENT_UPDATE_SUB_DEVICE_RESPONSE = 15,
     EN_IOTA_EVENT_TYPE_ERROR = -1
 } EN_IOTA_EVENT_TYPE;
 

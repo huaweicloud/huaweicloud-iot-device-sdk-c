@@ -59,10 +59,10 @@ typedef enum {
 #else
 
 typedef enum enum_LOG_LEVEL {
-    EN_LOG_LEVEL_DEBUG = 7,
-    EN_LOG_LEVEL_INFO = 6,
-    EN_LOG_LEVEL_WARNING = 4,
-    EN_LOG_LEVEL_ERROR = 3,
+    EN_LOG_LEVEL_DEBUG,
+    EN_LOG_LEVEL_INFO,
+    EN_LOG_LEVEL_WARNING,
+    EN_LOG_LEVEL_ERROR,
     // for MQTT debug printing
     EN_LOG_LEVEL_MQTT_MAXIMUM = 8,
     EN_LOG_LEVEL_MQTT_MEDIUM,

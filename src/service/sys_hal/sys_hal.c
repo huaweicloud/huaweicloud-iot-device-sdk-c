@@ -74,7 +74,7 @@ ArrayInfo *SysHalGetPortUsed(void)
 
 int SysHalGetCpuUsage(void)
 {
-    float cpuUsage = 0;
+    int cpuUsage = 0;
     if ((g_sysHalCb != NULL) && (g_sysHalCb->ops != NULL) && (g_sysHalCb->ops->getCpuUsage != NULL)) {
         cpuUsage = g_sysHalCb->ops->getCpuUsage();
     }

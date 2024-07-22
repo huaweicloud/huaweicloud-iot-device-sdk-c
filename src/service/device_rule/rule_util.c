@@ -166,7 +166,7 @@ void DynamicArrayRemoveItem(DynamicArray *arr, void *element, size_t itemSize, D
     funcItemDtor(element);
     void *end = DynamicArrayGetItem(arr, arr->size, itemSize);
     void *start = ((uint8_t *)element) + itemSize;
-    ptrdiff_t size = (uintptr_t)end - (uintptr_t)start;
+    ptrdiff_t size = (ptrdiff_t)((uintptr_t)end - (uintptr_t)start);
     arr->size -= 1;
     if (size == 0) {
         return;

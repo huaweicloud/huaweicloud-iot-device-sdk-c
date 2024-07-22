@@ -54,6 +54,47 @@ HW_API_FUNC HW_INT IOTA_Destroy()
     return destory();
 }
 
+static void GetConnectEnv()
+{
+    char *ip = getenv("IOTDA_MQTTC_ADDRESS");
+    if (ip && strlen (ip) != 0) {
+        SetConfig(EN_IOTA_CFG_MQTT_ADDR, ip);
+    }
+    
+    char *port = getenv("IOTDA_MQTTC_PORT");
+    if (port && strlen (port) != 0) {
+        SetConfig(EN_IOTA_CFG_MQTT_PORT, port);
+    }
+
+    char *deviceId = getenv("IOTDA_MQTTC_DEVICEID");
+    if (deviceId && strlen (deviceId) != 0) {
+    SetConfig(EN_IOTA_CFG_DEVICEID, deviceId);
+    }
+
+    char *pasw = getenv("IOTDA_MQTTC_PASSWOROD");
+    if (pasw && strlen (pasw) != 0) {
+        SetConfig(EN_IOTA_CFG_DEVICESECRET, pasw);
+    }
+}
+
+HW_API_FUNC HW_INT IOTA_ConnectConfigSet(HW_CHAR *ip, HW_CHAR *port, HW_CHAR *deviceId, HW_CHAR *password) 
+{
+    if (ip == NULL || port == NULL || deviceId == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_ConnectConfigSet err, ip or port or deviceId == NULL\n");
+        return;
+    }
+    SetConfig(EN_IOTA_CFG_MQTT_ADDR, ip);
+    RuleMgr_SetCurrentUserName(deviceId);
+    SetConfig(EN_IOTA_CFG_DEVICEID, deviceId);
+    SetConfig(EN_IOTA_CFG_MQTT_PORT, port);
+    if (password != NULL) {
+        SetConfig(EN_IOTA_CFG_DEVICESECRET, password);
+    }
+#ifdef GLOBAL_VAR_CONFIG
+    GetConnectEnv();
+#endif
+}
+
 HW_API_FUNC HW_INT IOTA_ConfigSetStr(HW_INT item, HW_CHAR *value)
 {
     if (item == EN_IOTA_CFG_DEVICEID) {
@@ -157,6 +198,31 @@ HW_API_FUNC HW_VOID IOTA_SetUserTopicMsgCallback(PFN_USER_TOPIC_MSG_CALLBACK_HAN
     SetUserTopicMsgCallback(callbackHandler);
 }
 
+HW_API_FUNC HW_VOID IOTA_SetBridgesDeviceLoginCallback(PFN_BRIDGES_DEVICE_LOGIN callbackHandler)
+{
+    SetBridgesDeviceLoginCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetBridgesDeviceLogoutCallback(PFN_BRIDGES_DEVICE_LOGOUT callbackHandler)
+{
+    SetBridgesDeviceLogoutCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetBridgesDeviceResetSecretCallback(PFN_BRIDGES_DEVICE_RESET_SECRET callbackHandler)
+{
+    SetBridgesDeviceResetSecretCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetBridgesDeviceDisConnCallback(PFN_BRIDGES_DEVICE_PLATE_DISCONNECT callbackHandler)
+{
+    SetBridgesDevicePalletDisConnCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetUndefinedMessageCallback(PFN_UNDEFINED_MSG_CALLBACK_HANDLER callbackHandler)
+{
+    SetUndefinedMessageCallback(callbackHandler);
+}
+
 HW_API_FUNC HW_VOID IOTA_SetUserTopicRawMsgCallback(PFN_USER_TOPIC_RAW_MSG_CALLBACK_HANDLER callbackHandler)
 {
     SetUserTopicRawMsgCallback(callbackHandler);
@@ -186,3 +252,45 @@ HW_API_FUNC HW_VOID IOTA_SetDeviceConfigCallback(PFN_DEVICE_CONFIG_CALLBACK_HAND
 {
     SetDeviceConfigCallback(callbackHandler);
 }
+
+HW_API_FUNC HW_VOID IOTA_SetEvenSubDeviceCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    SetEvenSubDeviceCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetEvenOtaVersionUpCallback(OTAVERSION_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    SetEvenOtaVersionUpCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetEvenOtaUrlResponseCallback(OTAURL_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    SetEvenOtaUrlResponseCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetNtpCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    SetNtpCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetEvenDeviceLogCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    SetEvenDeviceLogCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetEvenSoftBusCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    SetEvenSoftBusCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetEvenTunnelManagerCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    SetEvenTunnelManagerCallback(callbackHandler);
+}
+
+HW_API_FUNC HW_VOID IOTA_SetEvenFileManagerCallback(EVENT_CALLBACK_HANDLER_SPECIFY callbackHandler)
+{
+    SetEvenFileManagerCallback(callbackHandler);
+}
+
+
