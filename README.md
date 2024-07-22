@@ -687,7 +687,7 @@ Demo compilation and running:
 ```c
 Modify the connection parameters in basic_test.c:
 // You can get the access address from IoT Console "Overview" -> "Access Information"
-char *g_address = "域名"; 
+char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id";
 char *g_password = "Device Key";
@@ -827,7 +827,7 @@ Demo example: [./demos/device_demo/message_test.c](./demos/device_demo/message_t
 ```c
 Modify the connection parameters in message_test.c:
 // You can get the access address from IoT Console "Overview" -> "Access Information"
-char *g_address = "域名"; 
+char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
 char *g_password = "Device Key"; // Please enter the device password during key authentication
@@ -1198,7 +1198,7 @@ void main(int argc, char **argv) {
 ```c
 Modify the connection parameters in shadow_test.c:
 // You can get the access address from IoT Console "Overview" -> "Access Information"
-char *g_address = "域名"; 
+char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
 char *g_password = "Device Key"; // Please enter the device password during key authentication
