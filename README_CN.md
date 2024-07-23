@@ -19,7 +19,7 @@
   -  [3.8 编译curl库](#3.8)
   -  [3.9 上传profile及注册设备](#3.9)
 - [4.快速体验](#4)
--  [5.设备初始化](#5)
+- [5.设备初始化](#5)
   -  [5.1 底层数据初始化](#5.1)
   -  [5.2 设置日志打印函数](#5.2)
   -  [5.3 初始化连接参数](#5.3)
@@ -336,8 +336,9 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 <h2 id = "3.8">3.8 编译curl库</h2>
 在generatingLib目录下执行以下命令， 注意--with-openssl后面换成自己的openssl安装路径：
+
 ```shell 
-  curl https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.tar.gz | tar -xzvf - &&
+    curl https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.tar.gz | tar -xzvf - &&
     cd curl-8.4.0 &&
     ./configure --with-openssl=/home/test/openssl &&
     make &&
@@ -523,34 +524,34 @@ void main() {
 SDK针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消息成功/失败、设备发布消息成功/失败、设备接收消息/命令等动作，以回调函数的方式供开发者调用，开发者可以针对不同的事件设置回调函数来实现业务处理逻辑。
 
 ```c
-  void setMyCallbacks(){	
-    IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
-  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
+void setMyCallbacks(){	
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
   
-  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisConnectSuccess);
-  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisConnectFailure);
-  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisConnectSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisConnectFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);
   
-  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);
-  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);
   
-  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);
-  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);
+	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
   
-  	IOTA_SetMessageCallback(HandleMessageDown);
-    // 推荐使用此API，可以处理自定格式的消息
-  	IOTA_SetRawMessageCallback(HandleRawMessageDown);
-  	IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
-    // 推荐使用此API，可以处理自定格式的消息
-  	IOTA_SetUserTopicRawMsgCallback(HandleUserTopicRawMessageDown);
-    IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
-      
-  	IOTA_SetCmdCallback(HandleCommandRequest);
-  	IOTA_SetPropSetCallback(HandlePropertiesSet);
-  	IOTA_SetPropGetCallback(HandlePropertiesGet);
-  	IOTA_SetEventCallback(HandleEventsDown);
-  	IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
-  }
+	IOTA_SetMessageCallback(HandleMessageDown);
+	// 推荐使用此API，可以处理自定格式的消息
+	IOTA_SetRawMessageCallback(HandleRawMessageDown);
+	IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
+	// 推荐使用此API，可以处理自定格式的消息
+	IOTA_SetUserTopicRawMsgCallback(HandleUserTopicRawMessageDown);
+	IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
+  
+	IOTA_SetCmdCallback(HandleCommandRequest);
+	IOTA_SetPropSetCallback(HandlePropertiesSet);
+	IOTA_SetPropGetCallback(HandlePropertiesGet);
+	IOTA_SetEventCallback(HandleEventsDown);
+	IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
+}
 ```
 
 ```C
@@ -886,10 +887,10 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
     
     int main(int argc, char **argv)
     {
-          ...
-            // 消息下发回调函数注册
-          IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
-            ...
+        ...
+        // 消息下发回调函数注册
+        IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
+        ...
     }
     ```
 
@@ -983,7 +984,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
   通过该接口上报的数据平台会解析，并且结构体中的数据需跟profile中定义的属性保持一致，ST_IOTA_SERVICE_DATA_INFO为结构体数组，可以同时上报多个服务，serviceNum为上报的服务个数。入参具体说明请参考API文档，demo中的Test_propertiesReport函数演示了对该接口的调用方法。
 
   ```c
-void Test_propertiesReport() {
+  void Test_propertiesReport() {
     int serviceNum = 1;//上报的service个数
     ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
   
@@ -1503,10 +1504,10 @@ char *downloadFilePath = "downloadFilePath.txt"; // The file directory downloade
 
   ```c
   	ST_IOTA_UPLOAD_FILE uploadFile = {NULL , NULL, 0};
-      uploadFile.file_name = "hello.txt";
+    uploadFile.file_name = "hello.txt";
   	uploadFile.hash_code = NULL;
   	uploadFile.size = 0;
-      IOTA_GetUploadFileUrl(&uploadFile, NULL);
+    IOTA_GetUploadFileUrl(&uploadFile, NULL);
   ```
 
 - 获取文件下载URL：
@@ -1516,11 +1517,11 @@ char *downloadFilePath = "downloadFilePath.txt"; // The file directory downloade
   该函数用于获取文件下载URL。upload为结构体，包括上传到OBS中的文件名称、文件hash值、文件大小(如果为0则默认为)等参数。具体API参数说明请见：[API文档](https://support.huaweicloud.com/api-iothub/iot_06_v5_3036.html)。
 
   ```c
-      ST_IOTA_UPLOAD_FILE downloadFlie = {NULL , NULL, 0};
-      downloadFlie.file_name = "hello.txt";
+    ST_IOTA_UPLOAD_FILE downloadFlie = {NULL , NULL, 0};
+    downloadFlie.file_name = "hello.txt";
   	downloadFlie.hash_code = NULL;
   	downloadFlie.size = 0;
-      IOTA_GetDownloadFileUrl(&downloadFlie, NULL);
+    IOTA_GetDownloadFileUrl(&downloadFlie, NULL);
   ```
 
 - 文件上传下载回调函数：
@@ -2216,8 +2217,8 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
   替换为：
   
   ```c
-  #define MQTT_PORT         				"7882"
-  #define MQTTS_PORT         				"7883"
+  #define MQTT_PORT							"7882"
+  #define MQTTS_PORT						"7883"
   ```
   
 - 4.测试Demo：
