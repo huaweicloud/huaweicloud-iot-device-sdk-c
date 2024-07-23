@@ -1,4 +1,4 @@
-﻿[English](./README.md) | [Simplified Chinese](./README_CN.md)
+﻿[English](./README.md) | [简体中文](./README_CN.md)
 
 # huaweicloud-iot-device-sdk-c Development Guide
 - [0.Version update instructions](#0)
@@ -334,6 +334,7 @@ The SDK needs to run on the Linux operating system, and gcc must be installed (v
 
 <h2 id = "3.8">3.8 Compile curl library</h2>
 Execute the following command in the generatingLib directory. Note that after --with-openssl, replace it with your own openssl installation path:
+
 ```shell 
     curl https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.tar.gz | tar -xzvf - &amp;&amp;
     cd curl-8.4.0 &amp;&amp;
@@ -440,8 +441,8 @@ Before initiating business, you need to initialize Agent Lite related resources 
 In the ./include/base/mqtt_base.h file, there are MQTT connection related parameters:
 
 ```c
-#define DEFAULT_QOS 					1 // Default communication quality (Qos)
-#define DEFAULT_KEEP_ALIVE_INTERVAL 	120 // Connection heartbeat duration unit s
+#define DEFAULT_QOS						1 // Default communication quality (Qos)
+#define DEFAULT_KEEP_ALIVE_INTERVAL		120 // Connection heartbeat duration unit s
 #define DEFAULT_CONNECT_TIME_OUT 		30 // Maximum connection request duration unit s
 #define DEFAULT_RETRYINTERVAL 			10 // Default retry interval unit s
 #define MQTT_PORT 						"1883" // Default MQTT port
@@ -518,7 +519,7 @@ Before a device is connected to the IoT platform, the platform's address, port, 
 The SDK provides callback functions for developers to call for actions such as success/failure of device authentication, success/failure of device disconnection, success/failure of device subscription messages, success/failure of device publishing messages, and device reception of messages/commands. Developers Callback functions can be set for different events to implement business processing logic.
 
 ```c
-  void setMyCallbacks(){	
+  void setMyCallbacks(){
     IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
   	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
   
@@ -539,7 +540,7 @@ The SDK provides callback functions for developers to call for actions such as s
     // It is recommended to use this API, which can handle custom format messages
   	IOTA_SetUserTopicRawMsgCallback(HandleUserTopicRawMessageDown);
     IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
-      
+  
   	IOTA_SetCmdCallback(HandleCommandRequest);
   	IOTA_SetPropSetCallback(HandlePropertiesSet);
   	IOTA_SetPropGetCallback(HandlePropertiesGet);
@@ -976,7 +977,7 @@ A readable and writable integer (int) attribute Smoke_Value is defined in the se
   The data platform reported through this interface will be parsed, and the data in the structure must be consistent with the attributes defined in the profile. ST_IOTA_SERVICE_DATA_INFO is a structure array, which can report multiple services at the same time. serviceNum is the number of reported services. Please refer to the API documentation for specific instructions on entering parameters. The Test_propertiesReport function in the demo demonstrates how to call this interface.
 
   ```c
-void Test_propertiesReport() {
+  void Test_propertiesReport() {
     int serviceNum = 1; // The number of reported services
     ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
   
