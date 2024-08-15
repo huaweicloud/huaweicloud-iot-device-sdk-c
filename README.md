@@ -400,7 +400,7 @@ Execute the following command in the generatingLib directory. Note that after --
     5.1 Load library files
 
     ```shell
-     LD_LIBRARY_PATH=./lib/
+     export LD_LIBRARY_PATH=./lib/
     ```
 
     5.2 Execute the following command:
