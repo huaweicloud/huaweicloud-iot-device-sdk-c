@@ -403,7 +403,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
     5.1 加载库文件
 
     ```shell
-     LD_LIBRARY_PATH=./lib/
+     export LD_LIBRARY_PATH=./lib/
     ```
 
     5.2 执行如下命令：
