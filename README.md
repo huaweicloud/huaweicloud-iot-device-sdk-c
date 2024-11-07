@@ -2170,6 +2170,12 @@ To run the related demo, run in the root directory:
 
 Before using the SSH remote login function, you need to refer to [3.6 Compile libssh library] (#3.6 Compile libssh library) and [3.7 Compile libnopoll library] (#3.7 Compile libnopoll library) to compile libssh and libnopoll libraries, and the device must be online. Platform operations can be found at: [Remote Login](https://support.huaweicloud.com/intl/en-us/usermanual-iothub/iot_01_00301.html). The SDK code implementation can be found in the SDK: [./demos/device_demo/remote_login_test.c](./demos/device_demo/remote_login_test.c).
 
+It is worth noting that the remote login function is turned off by default in this SDK. If you want to enable this function, you need to turn on the following comments in the Makefile.
+
+```c
+  SSH_SWITCH := 1
+```
+
 Instructions for compiling and running the demo:
 
 ```c
@@ -2182,7 +2188,7 @@ char *g_password = "Device Key"; // Please enter the device password during key 
 
 To run the related demo, run in the root directory:
     make device_demo
-    ./device_rule_test
+    ./remote_login_test
 ```
 
 Run the demo first, and in the IoTDA console, select "Monitoring operation and maintenance - remote login - {own online device} - enter username and password - confirm"

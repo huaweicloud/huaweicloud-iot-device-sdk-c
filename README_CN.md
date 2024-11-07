@@ -2172,7 +2172,13 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
 
 <h2 id = "6.22">6.22 远程登录</h2>
 
-使用SSH远程登录功能前，需参考[3.6 编译libssh库](#3.6 编译libssh库)和[3.7 编译libnopoll库](#3.7 编译libnopoll库)实现libssh和libnopoll库的编译，并且设备必须在线。平台操作可见：[远程登录](https://support.huaweicloud.com/usermanual-iothub/iot_01_00301.html)。SDK代码实现可见SDK：[./demos/device_demo/remote_login_test.c](./demos/device_demo/remote_login_test.c)。
+使用SSH远程登录功能前，需参考[3.6 编译libssh库](#3.6)和[3.7 编译libnopoll库](#3.7)实现libssh和libnopoll库的编译，并且设备必须在线。平台操作可见：[远程登录](https://support.huaweicloud.com/usermanual-iothub/iot_01_00301.html)。SDK代码实现可见SDK：[./demos/device_demo/remote_login_test.c](./demos/device_demo/remote_login_test.c)。
+
+值得注意的是：在该SDK中远程登陆功能是默认关闭的，若是想要开启该功能，需要在MakeFile中将以下注释打开。
+
+```c
+SSH_SWITCH := 1
+```
 
 编译及运行demo指导：
 
@@ -2183,10 +2189,10 @@ char *g_address = "域名";
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
 char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
-
+ 
 若要运行相关demo，在根目录运行： 
     make device_demo
-    ./device_rule_test
+    ./remote_login_test
 ```
 
 先运行demo，在IoTDA控制台, 选择"监控运维——远程登录——{自己的在线设备}——输入用户名密码——确认"
