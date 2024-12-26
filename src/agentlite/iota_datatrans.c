@@ -690,8 +690,8 @@ HW_API_FUNC HW_INT IOTA_OTAVerifySign(HW_CHAR *sign, const HW_CHAR *otaFilePath,
     unsigned char data[1024];
     unsigned int bytes;
 
-    if (sign == NULL || strlen(sign) != SHA256_DIGEST_LENGTH) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_OTAVerifySign() sign is NULL or strlen(sign) !=  32\n");
+    if (sign == NULL || strlen(sign) != SHA256_DIGEST_LENGTH * 2) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_OTAVerifySign() sign is NULL or strlen(sign) !=  64\n");
         return 0;
     }
 
@@ -723,10 +723,14 @@ HW_API_FUNC HW_INT IOTA_OTAVerifySign(HW_CHAR *sign, const HW_CHAR *otaFilePath,
     SHA256_Final(hash, &sha256);
     fclose(file);
 
-    int i;
+    int i, j;
+    char mac32[2] = {0};
     for(i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        if (sign[i] != hash[i]) {
-            return IOTA_FAILURE;
+        snprinf_s(mac32, 4, 4, "%02x", hash[i]);
+        for (j = 0; j < 2; j++) {
+            if (sign[i*2 + j] != mac32[j]) {
+                return IOTA_FAILURE;
+            }
         }
     }
     return IOTA_SUCCESS;
