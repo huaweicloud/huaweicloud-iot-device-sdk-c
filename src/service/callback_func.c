@@ -1339,7 +1339,7 @@ static int OnEventsDownRemoteCfgArrived(EN_IOTA_SERVICE_EVENT *services, const c
         }
         deviceCfgRpt.object_device_id = object_device_id;
         if (onDeviceConfig) {
-            deviceCfgRpt.result_code = onDeviceConfig(cfg);
+            deviceCfgRpt.result_code = onDeviceConfig(cfg, deviceCfgRpt.description);
         }
         IOTA_RptDeviceConfigRst(&deviceCfgRpt, NULL);
     }
