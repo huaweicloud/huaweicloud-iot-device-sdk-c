@@ -87,7 +87,7 @@ void SetDeviceRuleSendMsgCallback(DEVICE_RULE_SEND_MSG_CALLBACK_HANDLER callback
 typedef void (*M2M_CALLBACK_HANDLER)(EN_IOTA_M2M_MESSAGE *rsp);
 void SetM2mCallback(M2M_CALLBACK_HANDLER callbackHandler);
 
-typedef int (*DEVICE_CONFIG_CALLBACK_HANDLER)(JSON *cfg);
+typedef int (*DEVICE_CONFIG_CALLBACK_HANDLER)(JSON *cfg, char *description);
 void SetDeviceConfigCallback(DEVICE_CONFIG_CALLBACK_HANDLER callbackHandler);
 
 typedef void (*BRIDGES_DEVICE_LOGIN)(EN_IOTA_BRIDGES_LOGIN *rsp);
