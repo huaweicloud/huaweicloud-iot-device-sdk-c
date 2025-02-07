@@ -726,7 +726,7 @@ HW_API_FUNC HW_INT IOTA_OTAVerifySign(HW_CHAR *sign, const HW_CHAR *otaFilePath,
     int i, j;
     char mac32[2] = {0};
     for(i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        snprinf_s(mac32, 4, 4, "%02x", hash[i]);
+        snprintf_s(mac32, 4, 4, "%02x", hash[i]);
         for (j = 0; j < 2; j++) {
             if (sign[i*2 + j] != mac32[j]) {
                 return IOTA_FAILURE;
