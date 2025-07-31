@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2022-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -45,11 +45,15 @@ char *IOTA_MessageReportPayload(HW_CHAR *object_device_id, HW_CHAR *name, HW_CHA
     cJSON_AddStringToObject(root, OBJECT_DEVICE_ID, object_device_id);
     cJSON_AddStringToObject(root, NAME, name);
     cJSON_AddStringToObject(root, ID, id);
-    cJSON_AddStringToObject(root, CONTENT, content);
+    cJSON *contentCjson = cJSON_Parse(content);
+    if (contentCjson) {
+        cJSON_AddItemToObject(root, CONTENT, contentCjson);
+    } else {
+        cJSON_AddStringToObject(root, CONTENT, content);
+    }
 
     char *payload = cJSON_Print(root);
     cJSON_Delete(root);
-
     return payload;
 }
 
@@ -287,11 +291,7 @@ char *IOTA_AddSubDevicePayload(ST_IOTA_SUB_DEVICE_INFO *subDevicesInfo, HW_INT d
         PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_AddSubDevice() error, the input is invalid.\n");
         return NULL;
     }
-    if ((subDevicesInfo->deviceInfo == NULL)) {
-        PrintfLog(EN_LOG_LEVEL_ERROR,
-            "iota_datatrans: IOTA_AddSubDevice() error, the input of subDevicesInfo->deviceInfo is invalid.\n");
-        return NULL;
-    }
+    
     cJSON *root = cJSON_CreateObject();
     cJSON *services = cJSON_CreateArray();
     cJSON *subDeviceInfo = cJSON_CreateArray();

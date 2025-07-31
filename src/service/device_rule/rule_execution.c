@@ -196,6 +196,7 @@ static HW_BOOL GetPropertyValueByPath(const char *path, PropertyValue *valRead, 
     const char *property = path + (serviceStrLen + 1);
     if (strncpy_s(service, serviceStrLen + 1, path, serviceStrLen) != EOK) {
         DEVICE_RULE_ERROR("strncpy_s failed\n");
+        MemFree(&(service));
         return HW_FALSE;
     }
     service[serviceStrLen] = 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -42,7 +42,12 @@
  * @return uint32_t 错误码。RESLUT_ENUM。在初始化客户端时，按输入顺序依次初始化，遇到第一个失败的 IP 地址则返回，
  *         后续的 IP 地址不会被处理。
  */
-DCONN_API_PUBLIC uint32_t InitDConnCaseOne(uint32_t type, const char *ipAry, char *errorIp) {};
+DCONN_API_PUBLIC uint32_t InitDConnCaseOne(uint32_t type, const char *ipAry, char *errorIp) {
+    memset_s(errorIp, sizeof(char) * 64, 0, sizeof(char) * 64);
+    char *returnData = "Please add proximal components.";
+    strncpy_s(errorIp, sizeof(char) * 64, returnData, strlen(returnData)); 
+    return -1; 
+};
 
 /**
  * @brief 注册回调函数
@@ -59,7 +64,7 @@ DCONN_API_PUBLIC void RegisterCallback(const CallbackParam *callback) {};
  * @param dataLen 数据字节长度
  * @return int 发送结果。此处并不能代表发送成功，请通过回调函数获取结果。
  */
-DCONN_API_PUBLIC uint32_t DConnSendData(const char *targetDeviceId, const char *data, uint32_t dataLen) {};
+DCONN_API_PUBLIC uint32_t DConnSendData(const char *targetDeviceId, const char *data, uint32_t dataLen) { return -1; };
 
 /**
  * @brief 取消注册回调函数
@@ -78,4 +83,4 @@ DCONN_API_PUBLIC void CloseDConnCaseOne(void) {};
  *
  * @return const* 字符串格式的版本号
  */
-DCONN_API_PUBLIC const char *GetDConnVersion(void) {};
+DCONN_API_PUBLIC const char *GetDConnVersion(void) { return NULL; };

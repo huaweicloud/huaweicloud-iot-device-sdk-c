@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,21 +34,21 @@
 #include "soft_bus_init.h"
 
 // 初始化服务端
-int InitServerKit(char *ipAry)
+int InitServerKit(char *ipAry, char *errorIp)
 {
     if (ipAry == NULL) {
         return -1;
     }
-    return InitDConnCaseOne(1, ipAry, NULL);
+    return InitDConnCaseOne(0, ipAry, errorIp);
 }
 
 // 初始化客户端
-int InitClientKit(char *ipAry)
+int InitClientKit(char *ipAry, char *errorIp)
 {
     if (ipAry == NULL) {
         return -1;
     }
-    return InitDConnCaseOne(0, ipAry, NULL);
+    return InitDConnCaseOne(1, ipAry, errorIp);
 }
 
 // 销毁服务端/客户端

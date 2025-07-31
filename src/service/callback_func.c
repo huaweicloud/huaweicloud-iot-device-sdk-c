@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -353,7 +353,8 @@ static void OnV1DevicesArrived(void *context, int token, int code, const char *m
     return;
 }
 
-static void OnCommandsArrived(void *context, int token, int code, char *bridgeDeviceId, const char *topic, const char *message)
+static void OnCommandsArrived(void *context, int token, int code, char *bridgeDeviceId,
+        const char *topic, const char *message)
 {
     char *requestId_value = strstr(topic, "=");
     char *request_id = strstr(requestId_value + 1, "");
@@ -461,6 +462,9 @@ static void OnPropertiesSetArrived(void *context, int token, int code, char *bri
     cJSON_ArrayForEach(service, services) {
         if (service) {
             char *service_id = JSON_GetStringFromObject(service, SERVICE_ID, NULL);
+            if (service_id == NULL) {
+                continue;
+            }
             prop_set->services[i].service_id = service_id;
 
             JSON *properties = JSON_GetObjectFromObject(service, PROPERTIES);
@@ -481,17 +485,20 @@ static void OnPropertiesSetArrived(void *context, int token, int code, char *bri
         (onPropertiesSet)(prop_set);
     }
 #if defined(SOFT_BUS_OPTION2)
-    if (strcmp(prop_set->services[0].service_id, SOFT_BUS_SERVICEID) == 0) {
-        usleep(5 * 1000);
-        ST_IOTA_SERVICE_DATA_INFO service_data[1];
-        service_data[0].properties = prop[0];
-        service_data[0].service_id = SOFT_BUS_SERVICEID;
-        service_data[0].event_time = NULL;
-        int messageId = IOTA_PropertiesReport(service_data, 1, 0, NULL);
-        if (messageId != 0) {
-            PrintfLog(EN_LOG_LEVEL_ERROR, "callback_func: report shadow value failed, the result is %d\n", messageId);
+    int x = 0;
+    while (x < prop_set->services_count) {
+        // 软总线获取
+        if (strcmp(prop_set->services[x].service_id, SOFT_BUS_SERVICEID) != 0) {
+            x++;
+            continue;
+        }
+        int messageId = IOTA_PropertiesSetResponse(request_id, 0, "success", NULL);
+        if (messageId < 0) {
+            PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_PropertiesSetResponse() failed, messageId %d\n", messageId);
         }
         usleep(5 * 1000);
+        IOTA_GetLatestSoftBusInfo(NULL, NULL, NULL);
+        x++;
     }
 #endif
     JSON_Delete(root);
@@ -1108,6 +1115,9 @@ static int OnEventsDeleteSubDeviceResponse(int i, EN_IOTA_EVENT *event, JSON *pa
 static int OnEventsDownManagerArrived(int i, char *event_type, EN_IOTA_EVENT *event,
     JSON *paras, const char *message, JSON *serviceEvent)
 {
+    if (event_type == NULL) {
+        return 1;
+    }
     // if it is the platform inform the gateway to add or delete the sub device
     if ((!strcmp(event_type, DELETE_SUB_DEVICE_NOTIFY)) || (!strcmp(event_type, ADD_SUB_DEVICE_NOTIFY))) {
         int ret = OnEventsGatewayAddOrDelete(i, event_type, event, paras, message);
@@ -1265,42 +1275,7 @@ static int OnEventsDownSoftBus(EN_IOTA_SERVICE_EVENT *services, char *event_type
 
 #if defined(SOFT_BUS_OPTION2)
     // 获取g_soft_bus_total地址
-    soft_bus_total *softBusTotal = getSoftBusTotal();
-    cJSON *busInfos = cJSON_GetObjectItem(paras, BUS_INFOS);
-    int  i = 0, j = 0;
-    JSON *busInfosEvent = NULL;
-    JSON *deviceInfoEvent = NULL;
-    cJSON_ArrayForEach(busInfosEvent, busInfos) {
-        cJSON *deviceInfo = cJSON_GetObjectItem(busInfosEvent, DEVICES_INFO);
-        char *busKey = JSON_GetStringFromObject(busInfosEvent, BUS_KEY, "-1");
-        soft_bus_infos *softBusInfos = &softBusTotal->g_soft_bus_info[i];
-        cJSON_ArrayForEach(deviceInfoEvent, deviceInfo) {
-            char *deviceId = JSON_GetStringFromObject(deviceInfoEvent, DEVICE_ID, "-1");
-            char *deviceIp = JSON_GetStringFromObject(deviceInfoEvent, DEVICE_IP, "-1");
-            if (strcmp(deviceId, "-1") == 0 && strcmp(deviceIp, "-1") == 0) {
-                continue;
-            }
-            soft_bus_info *softBusInfo = &softBusInfos->g_device_soft_bus_info[j];
-            MemFree(&softBusInfo->device_id);
-            MemFree(&softBusInfo->device_ip);
-            softBusInfo->device_id = CombineStrings(1, deviceId);
-            softBusInfo->device_ip = CombineStrings(1, deviceIp);
-            j++;
-            if (j >= SOFTBUS_INFO_LEN) {
-                PrintfLog(EN_LOG_LEVEL_ERROR, "the soft_bus_info Exceeding the limit value");
-                break;
-            }
-        }
-        softBusInfos->count = j;
-        i++;
-        if (i >= SOFTBUS_TOTAL_LEN) {
-            PrintfLog(EN_LOG_LEVEL_ERROR, "the soft_bus_infos Exceeding the limit value");
-            break;
-        }
-        MemFree(&softBusInfos->bus_key);
-        softBusInfos->bus_key = CombineStrings(1, busKey);
-    }
-    softBusTotal->count = i;
+    softBusParasToTotal(paras);
 #endif
     return 1;
 }
@@ -1411,10 +1386,16 @@ static int OnEventsDownArrivedJosnSplicing(EN_IOTA_EVENT *event, JSON *services,
     cJSON_ArrayForEach(serviceEvent, services) {
         if (serviceEvent) {
             char *service_id = JSON_GetStringFromObject(serviceEvent, SERVICE_ID, NULL); 
+            if (service_id == NULL) {
+                continue;
+            }
             event->services[i].servie_id = EN_IOTA_EVENT_ERROR;
 
             char *event_type = NULL; // To determine whether to add or delete a sub device
             event_type = JSON_GetStringFromObject(serviceEvent, EVENT_TYPE, NULL);
+            if (event_type == NULL) {
+                continue;
+            }
             event->services[i].event_type = EN_IOTA_EVENT_TYPE_ERROR;
 
             char *event_time = JSON_GetStringFromObject(serviceEvent, EVENT_TIME, NULL);
@@ -1643,7 +1624,7 @@ static int OnBridgeArrived(void *context, int token, int code, char *topic, char
     }
     return -1;
 }
-// todo
+
 static void OnMessageArrived(void *context, int token, int code, char *topic, char *message, int messageLength,
     void *mqttv5)
 {

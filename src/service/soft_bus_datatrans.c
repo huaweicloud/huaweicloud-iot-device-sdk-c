@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,8 +34,9 @@
 #include "callback_func.h"
 #include "string_util.h"
 #include "soft_bus_datatrans.h"
+#include "log_util.h"
 
-soft_bus_total  g_soft_bus_total;
+soft_bus_total g_soft_bus_total;
 
 // 获取g_soft_bus_total
 soft_bus_total *getSoftBusTotal()
@@ -152,7 +153,7 @@ char *getDeviceId(void)
 }
 
 // 释放内存
-char *releaseSoftBusCache(void)
+int releaseSoftBusCache(void)
 {
     int total_cnt = g_soft_bus_total.count;
     int i;
@@ -171,4 +172,55 @@ char *releaseSoftBusCache(void)
         g_soft_bus_total.g_soft_bus_info[i].version = -1;
     }
     g_soft_bus_total.count = 0;
+    return 0;
+}
+
+// 数据处理, 把软总线数据josn格式, 解析成结构体soft_bus_total, 并存放在g_soft_bus_total中。
+int softBusParasToTotal(JSON *paras)
+{
+    cJSON *busInfos = cJSON_GetObjectItem(paras, BUS_INFOS);
+    if (busInfos == NULL) {
+        return -1;
+    }
+
+    int  i = 0, j = 0;
+    JSON *busInfosEvent = NULL;
+    JSON *deviceInfoEvent = NULL;
+    cJSON_ArrayForEach(busInfosEvent, busInfos) {
+        cJSON *deviceInfo = cJSON_GetObjectItem(busInfosEvent, DEVICES_INFO);
+        char *busKey = JSON_GetStringFromObject(busInfosEvent, BUS_KEY, "-1");
+        char *busId = JSON_GetStringFromObject(busInfosEvent, BUS_ID, "-1");
+        soft_bus_infos *softBusInfos = &g_soft_bus_total.g_soft_bus_info[i];
+        cJSON_ArrayForEach(deviceInfoEvent, deviceInfo) {
+            char *deviceId = JSON_GetStringFromObject(deviceInfoEvent, "device_id", "-1");
+            char *deviceIp = JSON_GetStringFromObject(deviceInfoEvent, "device_ip", "-1");
+            if (strcmp(deviceId, "-1") == 0 || strcmp(deviceIp, "-1") == 0) {
+                continue;
+            }
+            soft_bus_info *softBusInfo = &softBusInfos->g_device_soft_bus_info[j];
+            MemFree(&softBusInfo->device_id);
+            MemFree(&softBusInfo->device_ip);
+            softBusInfo->device_id = CombineStrings(1, deviceId);
+            softBusInfo->device_ip = CombineStrings(1, deviceIp);
+            j++;
+            if (j >= SOFTBUS_INFO_LEN) {
+                PrintfLog(EN_LOG_LEVEL_ERROR, "the soft_bus_info Exceeding the limit value");
+                break;
+            }
+        }
+        softBusInfos->count = j;
+        i++;
+        j = 0;
+        if (i >= SOFTBUS_TOTAL_LEN) {
+            PrintfLog(EN_LOG_LEVEL_ERROR, "the soft_bus_infos Exceeding the limit value");
+            break;
+        }
+        MemFree(&softBusInfos->bus_key);
+        MemFree(&softBusInfos->bus_id);
+        softBusInfos->bus_key = CombineStrings(1, busKey);
+        softBusInfos->bus_id = CombineStrings(1, busId);
+    }
+    g_soft_bus_total.count = i;
+
+    return 0;
 }

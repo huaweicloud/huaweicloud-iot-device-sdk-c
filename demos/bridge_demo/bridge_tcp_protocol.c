@@ -216,7 +216,7 @@ void ProcessMessageFromClient(int clientSocket, char *subDeviceId)
 
     int i = 0;
     while (i < 1000) { // In order to receive client data continuously
-        memset_s(recvbuf, MAX_MESSAGE_BUF_LEN, '\0',sizeof(recvbuf));
+        memset_s(recvbuf, MAX_MESSAGE_BUF_LEN, '\0', sizeof(recvbuf));
         int recvLen = recv(clientSocket, recvbuf, MAX_MESSAGE_BUF_LEN - 1, 0);
         if (recvLen <= 0) {
             PrintfLog(EN_LOG_LEVEL_ERROR, "bridge_demo: ProcessMessageFromClient() recv error.\n");

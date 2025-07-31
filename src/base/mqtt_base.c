@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -160,7 +160,10 @@ int GetEncryptedPassword(char **timestamp, char **encryptedPwd)
             returnValue = IOTA_SECRET_ENCRYPT_FAILED;
             break;
         }
-
+        if (encryptedPwd != NULL) {
+            MemFree(encryptedPwd);
+            *encryptedPwd = NULL;
+        }
         if (CopyStrValue(encryptedPwd, (const char *)tempEncryptedPwd, PASSWORD_ENCRYPT_LENGTH) < 0) {
             PrintfLog(EN_LOG_LEVEL_ERROR, "GetEncryptedPassword(): there is not enough memory here.\n");
             returnValue = IOTA_FAILURE;
@@ -233,16 +236,7 @@ static void HandleCallbackFailure5(const char *currentFunctionName, MQTT_BASE_CA
         return;
     }
 
-    if (response) {
-        PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: %s error, messageId %d, code %d, message %s\n", currentFunctionName,
-            response->token, response->code, response->message);
-
-        protocolRsp->mqtt_msg_info->context = context;
-        protocolRsp->mqtt_msg_info->messageId = response->token;
-        protocolRsp->mqtt_msg_info->code = response->code;
-
-        protocolRsp->message = (char *)response->message;
-    } else {
+    if (!response) { 
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: %s error, response is NULL\n", currentFunctionName);
 
         protocolRsp->mqtt_msg_info->context = context;
@@ -250,6 +244,16 @@ static void HandleCallbackFailure5(const char *currentFunctionName, MQTT_BASE_CA
         protocolRsp->mqtt_msg_info->code = IOTA_FAILURE;
 
         protocolRsp->message = NULL;
+       
+    } else {
+         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: %s error, messageId %d, code %d, message %s\n", currentFunctionName,
+            response->token, response->code, response->message);
+
+        protocolRsp->mqtt_msg_info->context = context;
+        protocolRsp->mqtt_msg_info->messageId = response->token;
+        protocolRsp->mqtt_msg_info->code = response->code;
+
+        protocolRsp->message = (char *)response->message;
     }
 
     if (callback) {
@@ -265,34 +269,34 @@ static void HandleCallbackSuccess5(const char *currentFunctionName, MQTT_BASE_CA
 {
     PrintfLog(EN_LOG_LEVEL_INFO, "MqttBase: %s messageId %d\n", currentFunctionName, response ? response->token : -1);
 
-    EN_IOTA_MQTT_PROTOCOL_RSP *protocolRsp = (EN_IOTA_MQTT_PROTOCOL_RSP *)malloc(sizeof(EN_IOTA_MQTT_PROTOCOL_RSP));
+    EN_IOTA_MQTT_PROTOCOL_RSP *protocolSuccessRsp = (EN_IOTA_MQTT_PROTOCOL_RSP *)malloc(sizeof(EN_IOTA_MQTT_PROTOCOL_RSP));
 
-    if (protocolRsp == NULL) {
+    if (protocolSuccessRsp == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
         return;
     }
 
-    protocolRsp->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO *)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
-    if (protocolRsp->mqtt_msg_info == NULL) {
+    protocolSuccessRsp->mqtt_msg_info = (EN_IOTA_MQTT_MSG_INFO *)malloc(sizeof(EN_IOTA_MQTT_MSG_INFO));
+    if (protocolSuccessRsp->mqtt_msg_info == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "MqttBase: there is not enough memory here.\n");
-        MemFree(&protocolRsp);
+        MemFree(&protocolSuccessRsp);
         return;
     }
-    protocolRsp->mqtt_msg_info->context = context;
-    protocolRsp->mqtt_msg_info->messageId = response ? response->token : 0;
-    protocolRsp->mqtt_msg_info->code = IOTA_SUCCESS;
+    protocolSuccessRsp->mqtt_msg_info->context = context;
+    protocolSuccessRsp->mqtt_msg_info->messageId = response ? response->token : 0;
+    protocolSuccessRsp->mqtt_msg_info->code = IOTA_SUCCESS;
 
-    protocolRsp->message = NULL;
+    protocolSuccessRsp->message = NULL;
     if (response->properties.count > 0) {
         PrintfLog(EN_LOG_LEVEL_DEBUG, "response properties:\n");
         LogProperties(&response->properties);
     }
 
     if (callback) {
-        (callback)(protocolRsp);
+        (callback)(protocolSuccessRsp);
     }
-    MemFree(&protocolRsp->mqtt_msg_info);
-    MemFree(&protocolRsp);
+    MemFree(&protocolSuccessRsp->mqtt_msg_info);
+    MemFree(&protocolSuccessRsp);
 }
 
 static MQTTV5_DATA DataConversionArrived(MQTTProperties *props)

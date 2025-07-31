@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2022-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -379,7 +379,7 @@ void ProcessMessageFromClient(int clientSocket, char *subDeviceId, char *product
 
     int i = 0;
     while (i < 1000) { // In order to receive client data continuously
-        memset_s(recvbuf,MAX_MESSAGE_BUF_LEN, '\0',sizeof(recvbuf));
+        memset_s(recvbuf, MAX_MESSAGE_BUF_LEN, '\0', sizeof(recvbuf));
         int recvLen = recv(clientSocket, recvbuf, MAX_MESSAGE_BUF_LEN - 1, 0);
         if (recvLen <= 0) {
             PrintfLog(EN_LOG_LEVEL_ERROR, "geteway_demo: ProcessMessageFromClient() recv error.\n");

@@ -52,7 +52,7 @@ char *g_port = "8883";
 // deviceId, the mqtt protocol requires the user name to be filled in.
 // Here we use deviceId as the username
 char *g_deviceId = "XXXX"; 
-char *g_password = "XXXX";
+char *g_secret = "XXXX";
 
 void TimeSleep(int ms)
 {
@@ -160,7 +160,7 @@ void mqttDeviceCertInit(char *address, char *port, char *deviceId, char *deviceK
 int main(int argc, char **argv) {
 
     // secret authentication initialization
-    mqttDeviceSecretInit(g_address, g_port, g_deviceId, g_password);  
+    mqttDeviceSecretInit(g_address, g_port, g_deviceId, g_secret);  
 
     // Certificate authentication initialization
     // char *deviceKyePassword = ""; // Please enter the device private key password

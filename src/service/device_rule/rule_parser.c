@@ -317,7 +317,7 @@ HW_BOOL GetRuleInfoList(RuleInfoList *list, const cJSON * const propertiesCJSON,
 
         if (version == -1) {
             RuleInfo *p = RuleInfoListPush(delList);
-            if (!CStrDuplicate(&p->ruleId, ruleId)) {
+            if (p == NULL || !CStrDuplicate(&p->ruleId, ruleId)) {
                 DEVICE_RULE_ERROR("[error]: can't allocate memory for target ruleId");
                 RuleInfoListPop(delList);
                 return HW_FALSE;
@@ -326,7 +326,7 @@ HW_BOOL GetRuleInfoList(RuleInfoList *list, const cJSON * const propertiesCJSON,
             DEVICE_RULE_DEBUG("delete this rule");
         } else if ((oneRule == NULL) || (version > oneRule->ruleVersionInShadow)) {
             RuleInfo *p = RuleInfoListPush(addList);
-            if (!CStrDuplicate(&p->ruleId, ruleId)) {
+            if (p == NULL || !CStrDuplicate(&p->ruleId, ruleId)) {
                 DEVICE_RULE_ERROR("[error]: can't allocate memory for target ruleId");
                 RuleInfoListPop(addList);
                 return HW_FALSE;

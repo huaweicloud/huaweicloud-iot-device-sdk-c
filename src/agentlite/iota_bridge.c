@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2022-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -156,7 +156,7 @@ HW_API_FUNC HW_INT IOTA_BridgeDevicePropertiesReport(HW_CHAR *deviceId, ST_IOTA_
     return messageId;
 }
 
-HW_API_FUNC HW_INT IOTA_BridgeDeviceBatchPropertiesReport(HW_CHAR *deviceId, ST_IOTA_SERVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT serviceLenList[], void *context)
+HW_API_FUNC HW_INT IOTA_BridgeDeviceBatchPropertiesReport(HW_CHAR *deviceId, ST_IOTA_DEVICE_DATA_INFO pServiceData[], HW_INT serviceNum, HW_INT serviceLenList[], void *context)
 {
     if (deviceId == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "iota_bridge: IOTA_BridgeDeviceBatchPropertiesReport(), the deviceId cannot be null.\n");

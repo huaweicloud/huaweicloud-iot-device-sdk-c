@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@
 #ifndef SOFT_BUS_DATATRANS_H
 #define SOFT_BUS_DATATRANS_H
 #include <stdbool.h>
+#include "json_util.h"
 
 #define SOFT_BUS_OH
 #define SUCCESSSFUL_RESULT          "success"
@@ -75,6 +76,7 @@ bool isValidDeviceID(const char *device_id);
 char *getIpAddr(char *device_id);
 char *getAuthKey(const char *src_device_id, const char *target_device_id);
 char *getDeviceId(void);
-char *releaseSoftBusCache(void);
+int releaseSoftBusCache(void);
+int softBusParasToTotal(JSON *paras);
 
 #endif /* SOFT_BUS_DATATRANS_H */

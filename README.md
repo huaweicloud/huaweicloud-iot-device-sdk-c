@@ -1,63 +1,14 @@
-﻿[English](./README.md) | [简体中文](./README_CN.md)
+﻿[English](./README.md) | Simplified Chinese
 
 # huaweicloud-iot-device-sdk-c Development Guide
-- [0.Version update instructions](#0)
-- [1.Preface](#1)
-- [2.SDK Introduction](#2)
-  - [2.1 Function Support](#2.1)
-  - [2.2 SDK directory structure](#2.2)
-- [3.Preparation](#3.)
-  - [3.1 Environmental information](#3.1)
-  - [3.2 Compile openssl library](#3.2)
-  - [3.3 Compile paho library](#3.3)
-  - [3.4 Compile zlib library](#3.4)
-  - [3.5 Compile Huawei security function library](#3.5)
-  - [3.6 Compile libssh library](#3.6)
-  - [3.7 Compile libnopoll library](#3.7)
-  - [3.8 Compile curl library](#3.8)
-  - [3.9 Upload profile and register device](#3.9)
-- [4.Quick experience](#4)
-- [5.Device initialization](#5)
-  - [5.1 Underlying data initialization](#5.1)
-  - [5.2 Set log printing function](#5.2)
-  - [5.3 Initialization connection parameters](#5.3)
-  - [5.4 Callback function configuration](#5.4)
-  - [5.5 Device Authentication](#5.5)
-  - [5.6 Subscribe to Topic](#5.6)
-  - [5.7 Compile and run the program](#5.7)
-- [6.SDK function](#6)
-  - [6.1 Generate SDK library files](#6.1)
-  - [6.2 Device Access](#6.2)
-  - [6.3 Device message reporting and delivery](#6.3)
-  - [6.4 Attribute reporting and distribution](#6.4)
-  - [6.5 Command issuance](#6.5)
-  - [6.6 Disconnection and reconnection](#6.6)
-  - [6.7 Device Shadow](#6.7)
-  - [6.8 Time synchronization](#6.8)
-  - [6.9 Software and firmware upgrade (OTA)](#6.9)
-  - [6.10 File upload\download](#6.10)
-  - [6.11 Pan-Protocol & Bridge](#6.11)
-  - [6.12 National secret TLS access](#6.12)
-  - [6.13 Exception storage](#6.13)
-  -  [6.14 MQTT5.0](#6.14)
-  - [6.15 MQTT_DEBUG function](#6.15)
-  - [6.16 Gateways and Subdevices](#6.16)
-  - [6.17 Remote configuration](#6.17)
-  - [6.18 Anomaly Detection](#6.18)
-  - [6.19 Softbus function](#6.19)
-  - [6.20 Log upload](#6.20)
-  - [6.21 Client-side rule engine](#6.21)
-  - [6.22 Remote login](#6.22)
-  - [6.23 Edge M2M function](#6.23)
-  - [6.24 gn compile](#6.24)
-  - [6.25 Use global variables to configure connection parameters](#6.25)
-  - [6.26 Equipment issuance](#6.26)
-- [7.Open Source Agreement](#7)
 
-<h1 id = "0">0. Version update instructions</h1>
+[TOC]
+
+# 0. Version update instructions
 
 | Version number | Change type | Function description |
 | ------ | -------- | ------------------------------------------------------------ |
+| 1.2.1 | Function enhancement | Add intelligent site anomaly detection. |
 | 1.2.0 | Function enhancement | Added SDK test code and demo to optimize code usage. |
 | 1.1.5 | Function enhancement | New usage examples |
 | 1.1.4 | Function enhancement | Update OTA upgrade transmission format |
@@ -72,49 +23,49 @@
 
 *2023/07/22*
 
-<h1 id = "1">1 Introduction</h1>
+# 1 Introduction
 
 This article uses examples to describe how huaweicloud-iot-device-sdk-c (hereinafter referred to as SDK) helps devices quickly connect to the Huawei IoT platform using the MQTT protocol.
 
-<h1 id = "2">2.SDK Introduction</h1>
+# 2.SDK Introduction
 
-<h2 id = "2.1">2.1 Function support</h2>
+## 2.1 Function support
 
 The SDK is oriented to embedded terminal devices with strong computing and storage capabilities. Developers can achieve uplink and downlink communication between the device and the IoT platform by calling the SDK interface. The functions currently supported by the SDK are:  
 
 | Function | Description |
 | ------------------------------------------- | ------------------------------------------------------------ |
-| [Device Access](#6.2) | As a client, use the MQTT protocol to connect to the Huawei Cloud Platform. It is divided into two authentication methods: certificate authentication and key authentication. |
-| [Disconnection and reconnection](#6.6) | When the device's link is disconnected due to network instability or other reasons, the device will reconnect at intervals until the connection is successful. |
-| [Message reporting](#6.3) | Used by devices to report customized data to the platform, and the platform forwards the messages reported by the device to the application server or other Huawei Cloud cloud services for storage and processing. |
-| [Attribute Reporting](#6.4) | Used by the device to report attribute data to the platform in the format defined in the product model. |
-| [Command delivery](#6.5) | Used by the platform to deliver device control commands to the device. After the platform issues a command, the device needs to return the execution result of the command to the platform in a timely manner. |
-| [Device Shadow](#6.6) | Used to store the online status of the device, the device attribute value last reported by the device, and the configuration expected to be delivered by the application server. |
-| [Software and Firmware (OTA) Upgrade](#6.9) | Used to download the OTA upgrade package in conjunction with the platform. |
-| [Time Synchronization](#6.8) | The device initiates a time synchronization request to the platform. |
-| [Gateway and sub-device](#6.16) | Gateway device: A device directly connected to the platform through the protocol supported by the platform. Sub-device: For devices that do not implement the TCP/IP protocol stack, since they cannot communicate directly with the IoT platform, they need to forward data through the gateway. Currently, only devices directly connected to the platform through the mqtt protocol are supported as gateway devices. |
-| [File Upload/Download](#6.10) | The device is supported to upload operation logs, configuration information and other files to the platform, which facilitates users to perform log analysis, fault location, device data backup, etc. |
-| [Anomaly Detection](#6.18) | Provides security detection capabilities to continuously detect security threats to the device. Including: 1. Memory leak detection 2. Abnormal port detection 3. CPU usage detection 4. Disk space detection 5. Battery power detection |
-| [Rule Engine](#6.21) | Through conditional triggering and based on preset rules, it triggers collaborative reactions of multiple devices to achieve device linkage and intelligent control. Currently, the IoT platform supports two types of linkage rules: cloud rules and client-side rules. |
-| [MQTT5.0](#6.14) | The MQTT5.0 version protocol adds new MQTT5.0 features: comparison data, Clean Start and Session Expiry Interval, payload identification and content type, topic alias, user Attributes. |
-| [National Secret Algorithm](#6.12) | A TLS encryption algorithm. |
-| [Remote Configuration](#6.17) | Provides remote configuration function, which allows users to remotely update the system parameters, operating parameters and other configuration information of the device without interrupting the operation of the device. |
-| [Remote Login](#6.22) | Supports remote SSH login to the device through the console. You can enter the commands supported by the device on the console for function debugging and problem location, thereby conveniently realizing device management and remote operation and maintenance |
-| [Pan-Protocol Access](#6.11) | When third-party protocols other than HTTP, MQTT, LWM2M, etc. are accessed, protocol conversion needs to be completed outside the platform. It is recommended to use a gateway to complete protocol conversion and convert third-party protocols into MQTT protocols. |
-| [Softbus](#6.19) | When using Hongmeng system. Through the device group delivered by the platform, the devices can realize the interconnection of things through the soft bus. IoTDA can manage security groups and issue credit identification for communication between group members. |
-| [Equipment Provisioning](#6.26) | Divided into certificate authentication and key authentication. It is mainly used to distribute to different offices and instances and dynamically complete the initial configuration of different batches of equipment. The released data can be accessed through the device for data transmission. |
+| [Device Access](#6.2 Device Access) | As a client, use the MQTT protocol to connect to the Huawei Cloud Platform. It is divided into two authentication methods: certificate authentication and key authentication. |
+| [Disconnection and reconnection](#6.6 Disconnection and reconnection) | When the device's link is disconnected due to network instability or other reasons, the device will reconnect at intervals until the connection is successful. |
+| [Message reporting](#6.3 Device message reporting and delivery) | Used by devices to report customized data to the platform, and the platform forwards the messages reported by the device to the application server or other Huawei Cloud cloud services for storage and processing. |
+| [Attribute Reporting](#6.4 Attribute Reporting and Delivery) | Used by the device to report attribute data to the platform in the format defined in the product model. |
+| [Command delivery](#6.5 Command delivery) | Used by the platform to deliver device control commands to the device. After the platform issues a command, the device needs to return the execution result of the command to the platform in a timely manner. |
+| [Device Shadow](#6.6 Device Shadow) | Used to store the online status of the device, the device attribute value last reported by the device, and the configuration expected to be delivered by the application server. |
+| [Software and Firmware (OTA) Upgrade](#6.9 Software and Firmware Upgrade (OTA)) | Used to download the OTA upgrade package in conjunction with the platform. |
+| [Time Synchronization](#6.8 Time Synchronization) | The device initiates a time synchronization request to the platform. |
+| [Gateway and sub-device](#6.16 Gateway and sub-device) | Gateway device: A device directly connected to the platform through the protocol supported by the platform. Sub-device: For devices that do not implement the TCP/IP protocol stack, since they cannot communicate directly with the IoT platform, they need to forward data through the gateway. Currently, only devices directly connected to the platform through the mqtt protocol are supported as gateway devices. |
+| [File Upload/Download](#6.10 File Upload\Download) | The device is supported to upload operation logs, configuration information and other files to the platform, which facilitates users to perform log analysis, fault location, device data backup, etc. |
+| [Anomaly Detection](#6.18 Anomaly Detection) | Provides security detection capabilities to continuously detect security threats to the device. Including: 1. Memory leak detection 2. Abnormal port detection 3. CPU usage detection 4. Disk space detection 5. Battery power detection |
+| [Rule Engine](#6.21 Client-side Rule Engine) | Through conditional triggering and based on preset rules, it triggers collaborative reactions of multiple devices to achieve device linkage and intelligent control. Currently, the IoT platform supports two types of linkage rules: cloud rules and client-side rules. |
+| [MQTT5.0](#6.14 MQTT5.0) | The MQTT5.0 version protocol adds new MQTT5.0 features: comparison data, Clean Start and Session Expiry Interval, payload identification and content type, topic alias, user Attributes. |
+| [National Secret Algorithm](#6.12 National Secret TLS Access) | A TLS encryption algorithm. |
+| [Remote Configuration](#6.17 Remote Configuration) | Provides remote configuration function, which allows users to remotely update the system parameters, operating parameters and other configuration information of the device without interrupting the operation of the device. |
+| [Remote Login](#6.22 Remote Login) | Supports remote SSH login to the device through the console. You can enter the commands supported by the device on the console for function debugging and problem location, thereby conveniently realizing device management and remote operation and maintenance |
+| [Pan-Protocol Access](#6.11 Pan-Protocol &amp; Bridge) | When third-party protocols other than HTTP, MQTT, LWM2M, etc. are accessed, protocol conversion needs to be completed outside the platform. It is recommended to use a gateway to complete protocol conversion and convert third-party protocols into MQTT protocols. |
+| [Softbus](#6.19 Softbus function) | When using Hongmeng system. Through the device group delivered by the platform, the devices can realize the interconnection of things through the soft bus. IoTDA can manage security groups and issue credit identification for communication between group members. |
+| [Equipment Provisioning](#6.26 Equipment Provisioning) | Divided into certificate authentication and key authentication. It is mainly used to distribute to different offices and instances and dynamically complete the initial configuration of different batches of equipment. The released data can be accessed through the device for data transmission. |
 
-<h2 id = "2.2">SDK directory structure</h2>
+## 2.2 SDK directory structure
 
 ![1718180679109](./doc/doc_cn/sdk_file_content3.png)
 
-<h1 id = "3">3. Preparation work</h1>
+# 3. Preparation work
 
-<h2 id = "3.1">3.1 Environmental information</h2>
+## 3.1 Environmental information
 
 The SDK needs to run on the Linux operating system, and gcc must be installed (version 4.8 and above is recommended). The SDK relies on the openssl library and paho library. If the developer has his own compilation chain, he needs to compile the openssl/paho library files by himself. Please refer to Chapter 3.2/3.3 for general gcc compilation steps for Linux.   
 
-<h2 id = "3.2">3.2 Compile openssl library</h2>
+## 3.2 Compile openssl library
 
 1. Visit [openssl official website](https://www.openssl.org/source), download openssl (it is recommended to use openssl-1.1.1h.tar.gz, there is an openssl installation package in the ./generatingLib directory), and upload it to Linux compiler (take uploading to the directory /home/test as an example), and use the following command to decompress:  
 
@@ -177,7 +128,7 @@ The SDK needs to run on the Linux operating system, and gcc must be installed (v
    
 4. If you need to use the national secret TLS, you can visit [national secret version openssl] (https://github.com/jntass/TASSL-1.1.1). The installation method is the same as the native openssl. This version is currently based on openssl1.1.1s, is compatible with various native interfaces of openssl, and still supports international TLS.
 
-<h2 id = "3.3">3.3 Compile paho library</h2>
+## 3.3 Compile paho library
 
 1. Visit the github download address https://github.com/eclipse/paho.mqtt.c and download the source code of paho.mqtt.c (it is recommended to download the Source code (tar.gz) of the release version 1.3.9 and earlier. file, if you use the latest version, the number of lines in the adapted file below may change, and the header files that need to be copied will be added according to the latest version).
 
@@ -227,7 +178,7 @@ The SDK needs to run on the Linux operating system, and gcc must be installed (v
 6. Copy the paho library file
 	The current SDK only uses libpaho-mqtt3as. Please copy the files libpaho-mqtt3as.so, libpaho-mqtt3as.so.1 and libpaho-mqtt3as.so.1.3 to the lib folder of the SDK (at the same time, copy the src file in the paho source code directory Copy the header files in the folder (MQTTAsync.h/MQTTClient.h/MQTTClientPersistence.h/MQTTProperties.h/MQTTReasonCodes.h/MQTTSubscribeOpts.h) to the include/base directory of the SDK. Note: Some paho versions will have MQTTExportDeclarations. h header file, it is recommended to add all MQTT-related header files).
 
-<h2 id = "3.4">3.4 Compile zlib library</h2>
+## 3.4 Compile zlib library
 
 1. Download the zlib source code https://github.com/madler/zlib/archive/v1.2.11.zip
 	Unzip it with the following command:
@@ -258,7 +209,7 @@ The SDK needs to run on the Linux operating system, and gcc must be installed (v
     Copy the libz.so, libz.so.1, and libz.so.1.2.11 generated in the source code directory to the lib folder of the SDK.	
     				
 
-<h2 id = "3.5">3.5 Compile Huawei security function library</h2>
+## 3.5 Compile Huawei security function library
 
 1. Download the security function library source code https://gitee.com/openeuler/libboundscheck.git
 
@@ -271,7 +222,7 @@ The SDK needs to run on the Linux operating system, and gcc must be installed (v
 3. Copy the so library file
     Copy libboundscheck.so in the lib folder generated in the source code directory to the lib folder of the SDK.
 
-<h2 id = "3.6">3.6 Compile libssh library</h2>
+## 3.6 Compile libssh library
 
 1. Download the libssh source code https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz
 	Unzip it with the following command:
@@ -305,7 +256,7 @@ The SDK needs to run on the Linux operating system, and gcc must be installed (v
     Copy the libssh.so, libssh.so.4, and libssh.so.4.9.4 generated in the build/lib folder in the source directory to the lib folder of the SDK.
    Copy the entire header file directory of libssh under /usr/local/include to the include folder of sdk.
 
-<h2 id = "3.7">3.7 Compile libnopoll library</h2>
+## 3.7 Compile libnopoll library
 
 1. Download the nopoll source code http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz
 	Unzip it with the following command:
@@ -332,9 +283,8 @@ The SDK needs to run on the Linux operating system, and gcc must be installed (v
     Using the path obtained in the previous step, copy libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0 generated under the source code directory src/.libs to the lib folder of the SDK.
    Copy the entire header file directory of nopoll under /usr/local/include to the include folder of sdk.
 
-<h2 id = "3.8">3.8 Compile curl library</h2>
+## 3.8 Compile curl library
 Execute the following command in the generatingLib directory. Note that after --with-openssl, replace it with your own openssl installation path:
-
 ```shell 
     curl https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.tar.gz | tar -xzvf - &amp;&amp;
     cd curl-8.4.0 &amp;&amp;
@@ -346,7 +296,7 @@ Execute the following command in the generatingLib directory. Note that after --
     cp /usr/local/lib64/libcurl.so* ../../lib
 ```
 
-<h2 id = "3.9">3.9 Upload profile and register device</h2>
+## 3.9 Upload profile and register device
 
 1. Profile (product model) definition, specific details can be found at: [Problems related to object model](https://support.huaweicloud.com/iothub_faq/iot_faq_01000.html).
 
@@ -358,7 +308,7 @@ Execute the following command in the generatingLib directory. Note that after --
 
 4. In the IoTDA console interface. Click "Devices" -> "All Devices", and you can see at the top that the status of the device is inactive. When the device goes online once, it exits the inactive state.
 
-<h1 id = "4">4. Quick experience</h1>
+# 4. Quick experience
 
 1. Copy the SDK compressed package to the Linux environment and decompress it through the following command:
 	
@@ -376,7 +326,7 @@ Execute the following command in the generatingLib directory. Note that after --
     You need to modify the following parameters in the src/device_demo/device_demo.c file:  
     g_serverIp: Platform MQTT southbound IP, which can be viewed in "Overview" -> "Access Information" in the IoTDA console.
    g_username: The MQTT protocol requires username. The default device ID of the IoT platform is username. The device ID is the value returned when the device is registered.
-   g_password: device key, the value returned when the device is registered.
+   g_secret: device key, the value returned when the device is registered.
     ![](./doc/doc_en/device_demo.png)
    
 4. Execute the command to compile. It is recommended to use Makefile for compilation:
@@ -400,7 +350,7 @@ Execute the following command in the generatingLib directory. Note that after --
     5.1 Load library files
 
     ```shell
-     export LD_LIBRARY_PATH=./lib/
+     LD_LIBRARY_PATH=./lib/
     ```
 
     5.2 Execute the following command:
@@ -421,11 +371,13 @@ Execute the following command in the generatingLib directory. Note that after --
 6. Check the operation status of the equipment:
   - Directly connected devices are online: Available in Devices -> All Devices in the platform console interface. You can see the device status in . When it is online, the device is online successfully.
 
-<h1 id = "5">5. Device initialization</h1>
+
+
+# 5. Device initialization
 
 Directly connected device connection demo visible code: ./demos/device_demo/basic_test.c. Certificate acquisition: [Certificate Resources](https://support.huaweicloud.com/devg-iothub/iot_02_1004.html#section3).
 
-<h2 id = "5.1">5.1 Initialization of underlying data</h2>
+## 5.1 Initialization of underlying data
 
 Before initiating business, you need to initialize Agent Lite related resources and call the API interface IOTA_Init(HW_CHAR *workPath) to initialize Agent Lite resources. The CA certificate storage path is: ${workPath}/rootcert.pem. For specific API interface parameter usage, please refer to the Agent Lite API interface document. Please refer to the main() method's call to IOTA_Init() in the demo.
 
@@ -441,8 +393,8 @@ Before initiating business, you need to initialize Agent Lite related resources 
 In the ./include/base/mqtt_base.h file, there are MQTT connection related parameters:
 
 ```c
-#define DEFAULT_QOS						1 // Default communication quality (Qos)
-#define DEFAULT_KEEP_ALIVE_INTERVAL		120 // Connection heartbeat duration unit s
+#define DEFAULT_QOS 					1 // Default communication quality (Qos)
+#define DEFAULT_KEEP_ALIVE_INTERVAL 	120 // Connection heartbeat duration unit s
 #define DEFAULT_CONNECT_TIME_OUT 		30 // Maximum connection request duration unit s
 #define DEFAULT_RETRYINTERVAL 			10 // Default retry interval unit s
 #define MQTT_PORT 						"1883" // Default MQTT port
@@ -453,7 +405,7 @@ In the ./include/base/mqtt_base.h file, there are MQTT connection related parame
 #define MAX_BUFFERED_MESSAGES           3 // Maximum number of broken chain storage entries
 ```
 
-<h2 id = "5.2">5.2 Set the log printing function</h2>
+## 5.2 Set the log printing function
 
 The SDK is used by developers in the form of log callback functions. Developers can call the IOTA_SetPrintLogCallback function to set up according to their own needs. For specific API interface parameter usage, please refer to the SDK API interface documentation.
 
@@ -481,7 +433,7 @@ void main() {
 
 
 
-<h2 id = "5.3">5.3 Initialize connection parameters</h2>
+## 5.3 Initialize connection parameters
 
 Before a device is connected to the IoT platform, the platform's address, port, device ID, and device key need to be configured. You can refer to the setAuthConfig() function called in the main() method in the demo.
 
@@ -514,12 +466,12 @@ Before a device is connected to the IoT platform, the platform's address, port, 
 
 
 
-<h2 id = "5.4">5.4 Callback function configuration</h2>
+## 5.4 Callback function configuration
 
 The SDK provides callback functions for developers to call for actions such as success/failure of device authentication, success/failure of device disconnection, success/failure of device subscription messages, success/failure of device publishing messages, and device reception of messages/commands. Developers Callback functions can be set for different events to implement business processing logic.
 
 ```c
-  void setMyCallbacks(){
+  void setMyCallbacks(){	
     IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
   	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
   
@@ -540,7 +492,7 @@ The SDK provides callback functions for developers to call for actions such as s
     // It is recommended to use this API, which can handle custom format messages
   	IOTA_SetUserTopicRawMsgCallback(HandleUserTopicRawMessageDown);
     IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
-  
+      
   	IOTA_SetCmdCallback(HandleCommandRequest);
   	IOTA_SetPropSetCallback(HandlePropertiesSet);
   	IOTA_SetPropGetCallback(HandlePropertiesGet);
@@ -575,7 +527,7 @@ The SDK provides callback functions for developers to call for actions such as s
   - After the device receives the device shadow data, it will call the HandleDeviceShadowRsp function;
 ```
 
-<h2 id = "5.5">5.5 Device Authentication</h2>
+## 5.5 Device Authentication
 
 After the callback function is set, the authentication function can be called. You can refer to the call to this interface in ./demos/device_demo/basic_test.c:
 
@@ -590,7 +542,7 @@ After the authentication interface is called successfully, the words "login succ
 ![](./doc/doc_en/login.png)
 You can stop the program by ctrl + c. After the program is stopped, you can wait for up to 1.5 heartbeats. You can check on the console interface that the device is offline.
 
-<h2 id = "5.6">5.6 Subscribe to Topic</h2>
+## 5.6 Subscribe to Topic
 
 When the connection is successful, Huawei Cloud Platform will automatically subscribe to the system topic with qos (communication quality) of 0. To use a custom topic, you need to call the subscribe from function to subscribe to the topic.
 
@@ -635,7 +587,7 @@ void main(int argc, char **argv)
 }
 ```
 
-<h2 id = "5.7">5.7 Compile and run the program</h2>
+## 5.7 Compile and run the program
 
 1. Copy the huaweicloud-iot-device-sdk-c-master.zip compressed package to the Linux environment and decompress it with the following command:
 
@@ -657,11 +609,11 @@ void main(int argc, char **argv)
    
    ps: If you run the demo in the ./demos/ file, enter ./{file name} in the SDK root directory.
 
-<h1 id = "6">6.SDK function</h1>
+# 6.SDK function
 
 The following is the usage guide for some interfaces. For detailed functions, please refer to the **API documentation** in the main directory.  
 
-<h2 id = "6.1">6.1 Generate SDK library file</h2>
+## 6.1 Generate SDK library file
 
 If you want to generate an so file, you can modify the contents of the Makefile (you can open it locally with Notepad and upload it to the Linux environment, or you can modify it directly through "vim Makefile" on the Linux environment, press the "i" key to edit, and use " wq!" save):
 
@@ -677,7 +629,7 @@ If you want to generate an so file, you can modify the contents of the Makefile 
 
 
 
-<h2 id = "6.2">6.2 Device access</h2>
+## 6.2 Device access
 
 When a device is connected to the IoT platform, it is divided into device key authentication and certificate authentication. It is necessary to configure the platform's address (${address}), port (${port}), device Id (${deviceId}) and device key\certificate private key (${password}, ${deviceKyePassword}). Demo usage example: [./demos/device_demo/basic_test.c](./demos/device_demo/basic_test.c).
 
@@ -688,10 +640,10 @@ Demo compilation and running:
 ```c
 Modify the connection parameters in basic_test.c:
 // You can get the access address from IoT Console "Overview" -> "Access Information"
-char *g_address = "XXXX"; 
+char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "device id";
-char *g_password = "Device Key";
+char *g_secret = "Device Key";
     
 Run in the root directory:
     make device_demo
@@ -719,7 +671,7 @@ Run in the root directory:
   
   void main(int argc, char **argv) {
       //Key authentication initialization
-      mqttDeviceSecretInit(g_address, g_port, g_deviceId, g_password); 
+      mqttDeviceSecretInit(g_address, g_port, g_deviceId, g_secret); 
   }
   ```
   
@@ -817,7 +769,7 @@ Run in the root directory:
   }
   ```
 
-<h2 id = "6.3">6.3 Device message reporting and delivery</h2>
+## 6.3 Device message reporting and delivery
 
 After the device is authenticated, you can call the "Device Message Reporting" interface of the SDK to report data.
 
@@ -828,10 +780,10 @@ Demo example: [./demos/device_demo/message_test.c](./demos/device_demo/message_t
 ```c
 Modify the connection parameters in message_test.c:
 // You can get the access address from IoT Console "Overview" -> "Access Information"
-char *g_address = "XXXX"; 
+char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
     
 Run in the root directory:
     make device_demo
@@ -943,7 +895,7 @@ Run in the root directory:
   
   
 
-<h2 id = "6.4">6.4 Attribute reporting and distribution</h2>
+## 6.4 Attribute reporting and distribution
 
 After the device is authenticated, you can call the "Device Attribute Report" interface of the SDK to report data.
 
@@ -957,7 +909,7 @@ Modify the connection parameters in properties_test.c:
 char *g_address = "XXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
     
 Run in the root directory:
     make device_demo
@@ -977,7 +929,7 @@ A readable and writable integer (int) attribute Smoke_Value is defined in the se
   The data platform reported through this interface will be parsed, and the data in the structure must be consistent with the attributes defined in the profile. ST_IOTA_SERVICE_DATA_INFO is a structure array, which can report multiple services at the same time. serviceNum is the number of reported services. Please refer to the API documentation for specific instructions on entering parameters. The Test_propertiesReport function in the demo demonstrates how to call this interface.
 
   ```c
-  void Test_propertiesReport() {
+void Test_propertiesReport() {
     int serviceNum = 1; // The number of reported services
     ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
   
@@ -1046,7 +998,7 @@ A readable and writable integer (int) attribute Smoke_Value is defined in the se
   }
   ```
 
-<h2 id = "6.5">6.5 Command issuance</h2>
+## 6.5 Command issuance
 
 After the device is authenticated and the relevant callback function is configured, it can accept platform commands (the SDK has automatically implemented subscription to the relevant TOPIC). Note: The platform adopts the implicit subscription function. For downstream system topics, the device does not need to subscribe. By default, the platform subscribes to the system topic with qos 0. If you need a downstream system topic with qos 1, the device needs to call the subscription interface to subscribe.
 
@@ -1060,7 +1012,7 @@ Modify the connection parameters in message_test.c:
 char *g_address = "XXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
     
 Run in the root directory:
     make device_demo
@@ -1121,7 +1073,7 @@ Create a command named Smoke_Control_Beep in the object model; the command param
       IOTA_SetCmdCallback(HandleCommandRequest);
   ```
 
-<h2 id = "6.6">6.6 Disconnect and reconnect</h2>
+## 6.6 Disconnect and reconnect
 
 When calling the IOTA_DefaultCallbackInit() function, the SDK will automatically load a disconnection and reconnection code. It can be viewed in the file [./src/agentlite/iota_defaultCallback.c](./src/agentlite/iota_defaultCallback.c).
 
@@ -1151,7 +1103,7 @@ Modify the connection parameters in reconnection_test.c:
 char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
     
 To run the related demo, run in the root directory:
     make device_demo
@@ -1192,17 +1144,19 @@ void main(int argc, char **argv) {
 
 ```
 
-<h2 id = "6.7">6.7 Device Shadow</h2>
+
+
+## 6.7 Device Shadow
 
  The device shadow is data in JSON format that is used to store the online status of the device and the device attribute value most recently reported by the device. The device can obtain the reported device attribute value. Device shadow sample code: [./demos/device_demo/shadow_test.c](./demos/device_demo/shadow_test.c).
 
 ```c
 Modify the connection parameters in shadow_test.c:
 // You can get the access address from IoT Console "Overview" -> "Access Information"
-char *g_address = "XXXX"; 
+char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
     
 To run the related demo, run in the root directory:
     make device_demo
@@ -1247,7 +1201,7 @@ To run the related demo, run in the root directory:
 
   It can be seen that in [Attribute Reporting and Delivery] (https://support.huaweicloud.com/intl/en-us/api-iothub/iot_06_v5_3010.html): the platform obtains and queries device attributes, and the platform sets device attributes.
 
-<h2 id = "6.8">6.8 Time synchronization</h2>
+## 6.8 Time synchronization
 
 The device side can obtain the time of the platform through the time synchronization function, thereby synchronizing the time of the platform and the device. Time synchronization code example: [./demos/device_demo/time_sync_test.c](./demos/device_demo/time_sync_test.c).
 
@@ -1257,7 +1211,7 @@ Modify the connection parameters in time_sync_test.c:
 char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
     
 To run the related demo, run in the root directory:
     make device_demo
@@ -1313,7 +1267,7 @@ To run the related demo, run in the root directory:
   }
   ```
 
-<h2 id = "6.9">6.9 Software and firmware upgrade (OTA)</h2>
+## 6.9 Software and firmware upgrade (OTA)
 
 Used to download the OTA upgrade package in conjunction with the platform. Software and firmware downloads have been implemented, and the platform usage documentation can be found at: [Usage Documentation](https://support.huaweicloud.com/bestpractice-iothub/iot_bp_0039.html). The relevant API interface upload parameters can be found at: [API Document](https://support.huaweicloud.com/api-iothub/iot_06_v5_3028.html).
 
@@ -1337,7 +1291,7 @@ Modify the connection parameters in ota_test.c:
 char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
     
 To run the related demo, run in the root directory:
     make device_demo
@@ -1465,7 +1419,7 @@ To run the related demo, run in the root directory:
   }
   ```
 
-<h2 id = "6.10">6.10 File upload\download</h2>
+## 6.10 File upload\download
 
 The device is supported to upload operation logs, configuration information and other files to the platform, which facilitates users to perform log analysis, fault location, device data backup, etc. The platform file upload and download configuration can be found at: [File Upload](https://support.huaweicloud.com/intl/en-us/usermanual-iothub/iot_01_0033.html). The device-side API is available: [File Upload\Download API](https://support.huaweicloud.com/intl/en-us/api-iothub/iot_06_v5_3033.html).
 
@@ -1481,7 +1435,7 @@ Modify the connection parameters in file_up_down_test.c:
 char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
 
 char *uploadFilePath = "uploadFilePath.txt"; // directory of files to be uploaded
 char *downloadFilePath = "downloadFilePath.txt"; // The file directory downloaded by OBS
@@ -1572,7 +1526,7 @@ To run the related demo, run in the root directory:
 
 
 
-<h2 id = "6.11">6.11 Pan-Protocol & Bridge</h2>
+## 6.11 Pan-Protocol &amp; Bridge
 
 The pan-protocol demo can be found in the files in the ./demos/bridge_demo/ directory, among which [bridge_server_test.c](./demos/bridge_demo/bridge_server_test.c) is the demo related to the bridge device. If you use the pan-protocol, you can use the ProcessMessageFromClient() interface Process the incoming data, convert the incoming data into the MQTT protocol, and then communicate with the platform. The bidge_client_test.c file is an example of a TCP client. When the corresponding data is input, it will be transmitted to the gateway, which will parse it and then report it to the platform.
 
@@ -1586,7 +1540,7 @@ Modify the connection parameters in bridge_server_test.c:
 char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
 
 To run the related demo, run in the root directory:
     make bridge_demo
@@ -1613,7 +1567,7 @@ HW_API_FUNC HW_INT IOTA_BridgeDevicePropertiesSetResponse(HW_CHAR *deviceId, HW_
 
 The bridge-related API interface can be found at [./include/agentlite/iota_bridge.h](./include/agentlite/iota_bridge.h). Please see the demo for specific usage.
 
-<h2 id = "6.12">6.12 National secret TLS access</h2>
+## 6.12 National secret TLS access
 
 Currently, the SDK supports national security TLS access and data transmission. If you need to use national secret communication, you need to download the national secret version of openssl. For details, please refer to point 4 of [3.2 Compile openssl library] (#3.2 Compile openssl library).
 
@@ -1639,13 +1593,13 @@ const char *passWord = NULL;
 
 After applying the patch, you can check whether the above certificate path field exists in paho.mqtt.c-1.3.9/src/SSLSocket.c. If you use the password login method, you do not need to fill in the corresponding signature certificate, private key and encryption certificate, and private key path. If you use the certificate login method, you need to fill in the path of the corresponding file and use the absolute path to access. After the modification is completed, recompile the paho library.
 
-<h2 id = "6.13">6.13 Exception storage</h2>
+## 6.13 Exception storage
 
 The SDK provides the function of sending and storing messages after disconnection. Data that fails to be reported is stored in the memory and then sent when the connection is successful. The number of stored items can be modified in: [./include/base/mqtt_base.h](./include/base/mqtt_base.h) by setting MAX_BUFFERED_MESSAGES. The default is 3. When this function is not used, it can be set to a negative number.
 
 ![1720513813648](./doc/doc_cn/buffredMessages.png)
 
-<h2 id = "6.14">6.14 MQTT5.0</h2>
+## 6.14 MQTT5.0
 
 If you want to use the MQTT5.0 protocol (default is MQTT3.1.1), you need to uncomment MQTTV5 := 1 in the file MakeFile. Usage examples can be viewed in .[/demos/device_demo/mqttV5_test.c](./demos/device_demo/mqttV5_test.c).
 
@@ -1657,7 +1611,7 @@ Modify the connection parameters in mqttV5_test.c:
 char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
 
 To run the related demo, run in the root directory:
     make device_demo
@@ -1772,7 +1726,7 @@ MQTT5.0 mainly adds Payload to the message header. Supports adding user attribut
   ```
 
 
-<h2 id = "6.15">6.15 MQTT_DEBUG function</h2>
+## 6.15 MQTT_DEBUG function
 
 MQTT_DEBUG is used to print the underlying MQTT connection parameter LOG. If there is no underlying connection problem, it is not recommended to open it. If you want to use the MQTT_DEBUG function, you need to change the value of MQTT_TRACE_ON to 1 in the file ./include/util/mqtt_base.h.
 Among them, MQTT_TRACE_LEVEL is the MQTT_DEBUG log printing level, and the default is the highest level MQTTASYNC_TRACE_MAXIMUM.
@@ -1785,7 +1739,7 @@ When LOG_FILE_ENABLE is 1, the log will be output to the file path set by LOG_FI
 
 
 
-<h2 ip = "6.16">6.16 Gateway and sub-devices</h2>
+## 6.16 Gateway and sub-devices
 
 Gateway device: A device that connects directly to the platform through the protocols supported by the platform. Sub-device: For devices that do not implement the TCP/IP protocol stack, since they cannot communicate directly with the IoT platform, they need to forward data through the gateway. Currently, only devices directly connected to the platform through the mqtt protocol are supported as gateway devices. The platform gateway document can be found at: [Gateway and sub-device](https://support.huaweicloud.com/intl/en-us/usermanual-iothub/iot_01_0052.html); the demo can be found in SKD: ./demos/gateway_demo/ The gateway in the folder ([gateway_server_test. c](./demos/gateway_demo/gateway_server_test.c)) and subdevice ([gateway_client_test.c](./demos/gateway_demo/gateway_client_test.c)) example.
 
@@ -2028,7 +1982,7 @@ Open 2 thread windows and run them one after another:
 
    The gateway deletes the sub-device request response and the platform notifies the gateway of the relevant configuration of the new sub-device.
 
-<h2 id = "6.17">6.17 Remote configuration</h2>
+## 6.17 Remote configuration
 
 Supports remote delivery of configuration parameters, and the SDK receives relevant information through event/down. Users can register a custom callback hook function through IOTA_SetDeviceConfigCallback, which will process relevant data after receiving the configuration information. Examples can be seen: [./demos/device_demo/device_config_test.c](./demos/device_demo/device_config_test.c).
 
@@ -2040,7 +1994,7 @@ Modify the connection parameters in device_config_test.c:
 char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
 
 To run the related demo, run in the root directory:
     make device_demo
@@ -2079,7 +2033,7 @@ To run the related demo, run in the root directory:
   }
   ```
 
-<h2 id = "6.18">6.18 Anomaly detection</h2>
+## 6.18 Anomaly detection
 
 When users use the anomaly detection function, if the following functions are enabled: memory leak detection, abnormal port detection, CPU usage detection, disk space detection, and battery power detection, you can view the SKD sample: [./demos/device_demo/sys_hal_test.c ](./demos/device_demo/sys_hal_test.c) to obtain the test item data used. The detection data reporting cycle can be adjusted in include\agentlite\iota_datatrans.h by adjusting the macro DETECT_REPORT_FREQUENCY. The default is 10 minutes, in seconds. [Cloud platform configuration and usage instructions reference](https://support.huaweicloud.com/intl/en-us/usermanual-iothub/iot_01_0030_5.html).
 
@@ -2091,7 +2045,7 @@ Modify the connection parameters in device_config_test.c:
 char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
 
 To run the related demo, run in the root directory:
     make device_demo
@@ -2101,7 +2055,7 @@ To run the related demo, run in the root directory:
 - Platform side: After configuring anomaly detection, the platform will issue the corresponding configuration. It will be delivered every time the device goes online. When the device reporting result triggers the alarm threshold, an alarm will be initiated.
 - Device side: After receiving the configuration issued by the platform, the corresponding data will be reported at regular intervals. The specific usage method can be found in the SDK: [./demos/device_demo/sys_hal_test.c](./demos/device_demo/sys_hal_test.c).
 
-<h2 id = "6.19">6.19 Soft bus function</h2>
+## 6.19 Soft bus function
 
 Through the device group delivered by the platform, the devices can realize the interconnection of things through the soft bus. IoTDA can manage security groups and issue credit identification for communication between group members.
 
@@ -2112,7 +2066,25 @@ After creating the soft bus name, bind the device, click "Bind" on the interface
 Users can actively obtain device soft bus information through IOTA_GetLatestSoftBusInfo.
  When the soft bus is updated, the version will be obtained from the callback function HandlePropertiesSet issued by the shadow.
 
-<h2 id = "6.20">6.20 Log upload</h2>
+Compilation and Running Demo Guide:
+
+```c
+// Prerequisite for use: Please open this comment in the Makefile:# SOFT_BUS_OPTION2 := 1
+// Modify connection parameters in softobus_test. c
+// You can get the access address from IoT Console "Overview" -> "Access Information"
+char *g_address = "XXXX"; 
+char *g_port = "8883";
+char *g_deviceId = "device id"; // Please enter the device id
+char *g_secret = "Device Key"; // Please enter the device password during key 
+
+To run the related demo, run in the root directory:
+    make softBus_demo
+    ./soft_bus_test
+```
+
+After successful chain building, if the soft bus relationship network is set up successfully, the platform will issue the soft bus information "softobus_info". When the device receives it, it will proceed with soft bus building. If the log shows "softBusInit success!", the initialization is successful. ![img](D:/ohom/iot-device-sdk-c/doc/doc_cn/softBus.png)
+
+## 6.20 Log upload
 
 The log upload example is: [./src/device_demo/file_up_demo_test.c](./src/device_demo/file_up_demo_test.c). Modify the variable `uploadFilePath` to the log file path and enable IOTA_UploadFile(uploadFilePath, url, NULL); code . Log upload can be started, and the corresponding files will be uploaded to obs.
 
@@ -2120,7 +2092,7 @@ The log upload example is: [./src/device_demo/file_up_demo_test.c](./src/device_
 
  The specific interface can be found at: [File Upload, Download](#6.9 File Upload\Download).
 
-<h2 id = "6.21">6.21 Client-side rule engine</h2>
+## 6.21 Client-side rule engine
 
 End-side rule engine example: [./demos/device_demo/device_rule_test.c](./demos/device_demo/device_rule_test.c). The default is off. To use it, you need to uncomment DEVICE_RULE_ENALBE and CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE in the Makefile.
 
@@ -2138,7 +2110,7 @@ Modify the connection parameters in device_config_test.c:
 char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
 
 To run the related demo, run in the root directory:
     make device_demo
@@ -2166,15 +2138,9 @@ To run the related demo, run in the root directory:
 
 
 
-<h2 id = "6.22">6.22 Remote login</h2>
+## 6.22 Remote login
 
 Before using the SSH remote login function, you need to refer to [3.6 Compile libssh library] (#3.6 Compile libssh library) and [3.7 Compile libnopoll library] (#3.7 Compile libnopoll library) to compile libssh and libnopoll libraries, and the device must be online. Platform operations can be found at: [Remote Login](https://support.huaweicloud.com/intl/en-us/usermanual-iothub/iot_01_00301.html). The SDK code implementation can be found in the SDK: [./demos/device_demo/remote_login_test.c](./demos/device_demo/remote_login_test.c).
-
-It is worth noting that the remote login function is turned off by default in this SDK. If you want to enable this function, you need to turn on the following comments in the Makefile.
-
-```c
-  SSH_SWITCH := 1
-```
 
 Instructions for compiling and running the demo:
 
@@ -2184,18 +2150,18 @@ Modify the connection parameters in device_config_test.c:
 char *g_address = "XXXX"; 
 char *g_port = "8883";
 char *g_deviceId = "device id"; // Please enter the device id
-char *g_password = "Device Key"; // Please enter the device password during key authentication
+char *g_secret = "Device Key"; // Please enter the device password during key authentication
 
 To run the related demo, run in the root directory:
     make device_demo
-    ./remote_login_test
+    ./device_rule_test
 ```
 
 Run the demo first, and in the IoTDA console, select "Monitoring operation and maintenance - remote login - {own online device} - enter username and password - confirm"
 
 After the operation, ssh remote login can be achieved. You can enter commands to interact.
 
-<h2 id = "6.23">6.23 Edge M2M functions</h2>
+## 6.23 Edge M2M functions
 
 Currently, it is supported to use the SDK to connect to the edge IoTEdge, and the edge node completes the transfer of messages to the target device, thereby realizing the M2M function. The usage steps are as follows:
 
@@ -2233,7 +2199,7 @@ This certificate is used by the device to verify the identity of the edge node.
   
    char *g_username = "tunnelDeviceA"; // Set in step 1 above
   
-   char *g_password = "xxxx"; // Set in step 1 above
+   char *g_secret = "xxxx"; // Set in step 1 above
   ```
   
 
@@ -2289,7 +2255,7 @@ Device B:
   INFO device_demo: HandleM2mMessageDown(), from:      deviceA
   INFO device_demo: HandleM2mMessageDown(), content:   hello deviceB
 
-<h2 id = "6.24">6.24 gn compile</h2>
+## 6.24 gn compile
 
 Gn compilation is generally used in Hongmeng systems, and the SDK integrates the gn compilation method. The specific usage is as follows:
 
@@ -2318,7 +2284,7 @@ Gn compilation is generally used in Hongmeng systems, and the SDK integrates the
   cd out
   ```
 
-<h2 id = "6.25">6.25 Use global variables to configure connection parameters</h2>
+## 6.25 Use global variables to configure connection parameters
 
 The new version of the SDK supports configuring connection parameters through global variables. The configurable connection parameters are as follows. It is worth noting that they are loaded once when using IOTA_ConnectConfigSet(). To disable this feature, comment "GLOBAL_VAR_CONFIG := 1" in MakeFile.
 
@@ -2341,7 +2307,7 @@ export IOTDA_MQTTC_PORT=8883
 env | grep "IOTDA_MQTTC"
 ```
 
-<h2 id = "6.26">6.26 Equipment issuance</h2>
+## 6.26 Equipment issuance
 
 The device provisioning function can provision devices to different regions.  Note: For the process, please refer to various access examples in "Quick Start". The SDK has automatically implemented the "boot device" in the examples. For detailed steps, please refer to the "User Guide" in the link. Equipment provisioning is mainly divided into two provisioning methods, namely manual registration provision and registration group provision.
 
@@ -2428,7 +2394,20 @@ If you use device group provisioning, run in the root directory:
 
  Currently, the platform uses [DigiCert Global Root CA.](https://cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem) and [GlobalSign Root CA - R3](https://valid.r3.roots.globalsign.com/) Certificates issued by two authoritative CAs. The certificate in the conf directory is bound to the basic version domain name of IoTDA by default. If you need to switch to another IoTDA version, please refer to the [Certificate Resources](https://support.huaweicloud.com/intl/en-us/devg-iothub/iot_02_1004.html#section3) section of the official documentation.
 
-<h1 id = "7">Open Source Agreement</h1>
+# Frequently Asked Questions
+
+- MQTT connection establishment returns: `ERROR MqttBase: MqttBase_OnConnectFailure() error, messageId 0, code 4, message CONNACK return code`, but the username and password are correct.
+
+  Troubleshooting steps:
+
+  1. Check if the `deviceId` is incorrect:
+     - View the device in the console interface.
+     - Copy the `Device ID` shown on the page, which should match the value of `g_deviceId` in the SDK.
+  2. Verify if the password is correct:
+     - The `Secret Key` entered during device creation is the value of `g_secret` in the SDK.
+     - If the password is forgotten, you can reset the secret key on the device details page.
+
+## Open Source Agreement
 
 * Comply with BSD-3 open source license agreement
 

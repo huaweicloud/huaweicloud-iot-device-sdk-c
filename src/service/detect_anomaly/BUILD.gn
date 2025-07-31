@@ -27,6 +27,7 @@
 static_library("detect_anomaly") {
     sources = [
         "detect_anomaly.c",
+        "report_anomaly.c",
     ]
     
     cflags = [ "-Wno-unused-variable" ]
