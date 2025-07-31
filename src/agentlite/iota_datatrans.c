@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -215,7 +215,7 @@ HW_API_FUNC HW_INT IOTA_CommandResponse(HW_CHAR *requestId, HW_INT result_code, 
 HW_API_FUNC HW_INT IOTA_CommandResponseV5(HW_CHAR *requestId, HW_INT result_code, HW_CHAR *response_name,
     HW_CHAR *pcCommandResponse, void *context, MQTTV5_DATA *properties)
 {
-    if ((requestId == NULL)) {
+    if (requestId == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "IOTA_CommandResponseV5:the requestId cannot be null.\n");
         return IOTA_PARAMETER_EMPTY;
     }
@@ -351,7 +351,7 @@ static HW_INT IOTA_OTAv2GetFileNameFromUrl(const char *url, char *fileName, int 
     const char *queryStringStart = strstr(url, HTTP_URL_QUERY_START_MARK);
     const char *start;
     for (start = queryStringStart; start != url; --start) {
-        if (*start == SINGLE_SLANT_CHAR) {
+        if (start != NULL && *start == SINGLE_SLANT_CHAR) {
             start++;
             if (strncpy_s(fileName, fileNameBufferLength, start, queryStringStart - start) != EOK) {
                 return IOTA_FAILURE;
@@ -694,7 +694,6 @@ HW_API_FUNC HW_INT IOTA_OTAVerifySign(HW_CHAR *sign, const HW_CHAR *otaFilePath,
         PrintfLog(EN_LOG_LEVEL_ERROR, "iota_datatrans: IOTA_OTAVerifySign() sign is NULL or strlen(sign) !=  64\n");
         return 0;
     }
-
     if (otaFilePath == NULL) {
         realpath(otaFilename, canonicalFilePath);
     } else {
@@ -725,9 +724,10 @@ HW_API_FUNC HW_INT IOTA_OTAVerifySign(HW_CHAR *sign, const HW_CHAR *otaFilePath,
 
     int i, j;
     char mac32[2] = {0};
+    int sum = 2;
     for(i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        snprintf_s(mac32, 4, 4, "%02x", hash[i]);
-        for (j = 0; j < 2; j++) {
+        snprintf_s(mac32, sum, sum, "%02x", hash[i]);
+        for (j = 0; j < 2; j++) { 
             if (sign[i*2 + j] != mac32[j]) {
                 return IOTA_FAILURE;
             }
@@ -1120,12 +1120,12 @@ static HW_INT IOTA_GetFileUrl(const ST_IOTA_DOWNLOAD_FILE *file, void *context, 
 
 HW_API_FUNC HW_INT IOTA_GetUploadFileUrl(const ST_IOTA_UPLOAD_FILE *upload, void *context)
 {
-    IOTA_GetFileUrl(upload, context, 1);
+    return IOTA_GetFileUrl(upload, context, 1);
 }
 
 HW_API_FUNC HW_INT IOTA_GetDownloadFileUrl(const ST_IOTA_DOWNLOAD_FILE *download, void *context) 
 {
-    IOTA_GetFileUrl(download, context, 0);
+    return IOTA_GetFileUrl(download, context, 0);
 }
 
 static size_t CurlIgnoreOutput(void *ptr, size_t size, size_t nmemb, void *stream)
@@ -1222,6 +1222,9 @@ static int getFileNameToUrl(char *url, char *fileName, int fileNameLen) {
     }
 
     begin = strrchr(data, '/'); // 获取最后一次出现的地址
+    if (begin == NULL) {
+        return IOTA_FAILURE;
+    }
     ret = memcpy_s(fileName, fileNameLen, begin + 1, strlen(begin) - 1);
     if (ret != 0) {
         return IOTA_FAILURE;

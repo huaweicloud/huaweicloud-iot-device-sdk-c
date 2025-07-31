@@ -1,65 +1,16 @@
 
-﻿[English](./README.md) | [简体中文](./README_CN.md)
+
+﻿[English](./README.md) | 简体中文
 
 #  huaweicloud-iot-device-sdk-c 开发指南
 
-- [0.版本更新说明](#0)
-- [1.前言](#1)
-- [2.SDK简介](#2)
-  -  [2.1 功能支持](#2.1)
-  -  [2.2 SDK目录结构](#2.2)
-- [3.准备工作](#3.)
-  -  [3.1 环境信息](#3.1)
-  -  [3.2编译openssl库](#3.2)
-  -  [3.3 编译paho库](#3.3)
-  -  [3.4 编译zlib库](#3.4)
-  -  [3.5 编译华为安全函数库](#3.5)
-  -  [3.6 编译libssh库](#3.6)
-  -  [3.7 编译libnopoll库](#3.7)
-  -  [3.8 编译curl库](#3.8)
-  -  [3.9 上传profile及注册设备](#3.9)
-- [4.快速体验](#4)
-- [5.设备初始化](#5)
-  -  [5.1 底层数据初始化](#5.1)
-  -  [5.2 设置日志打印函数](#5.2)
-  -  [5.3 初始化连接参数](#5.3)
-  -  [5.4 回调函数配置](#5.4)
-  -  [5.5 设备鉴权](#5.5)
-  -  [5.6 订阅Topic](#5.6)
-  -  [5.7 编译并运行程序](#5.7)
-- [6.SDK功能](#6)
-  -  [6.1 生成SDK库文件](#6.1)
-  -  [6.2 设备接入](#6.2)
-  -  [6.3 设备消息上报、下发](#6.3)
-  -  [6.4 属性上报下发](#6.4)
-  -  [6.5 命令下发](#6.5)
-  -  [6.6 断线重连](#6.6)
-  -  [6.7 设备影子](#6.7)
-  -  [6.8 时间同步](#6.8)
-  -  [6.9 软固件升级（OTA）](#6.9)
-  -  [6.10 文件上传\下载](#6.10)
-  -  [6.11 泛协议&网桥](#6.11)
-  -  [6.12 国密TLS接入](#6.12)
-  -  [6.13 异常存储](#6.13)
-  -  [6.14 MQTT5.0](#6.14)
-  -  [6.15 MQTT_DEBUG功能](#6.15)
-  -  [6.16 网关与子设备](#6.16)
-  -  [6.17 远程配置](#6.17)
-  -  [6.18 异常检测](#6.18)
-  -  [6.19 软总线功能](#6.19)
-  -  [6.20 日志上传](#6.20)
-  -  [6.21 端侧规则引擎](#6.21)
-  -  [6.22 远程登录](#6.22)
-  -  [6.23 边缘M2M功能](#6.23)
-  -  [6.24 gn编译](#6.24)
-  -  [6.25 使用全局变量配置连接参数](#6.25)
-  -  [6.26 设备发放](#6.26)
-- [7.开源协议](#7)
+[TOC]
 
-<h1 id = "0">0.版本更新说明</h1>
+# 0.版本更新说明
 
 | 版本号 | 变更类型 | 功能描述说明                                                 |
 | ------ | -------- | ------------------------------------------------------------ |
+| 1.2.1  | 功能增强 | 新增智能站点异常检测                                         |
 | 1.2.0  | 功能增强 | 新增SDK测试代码及Demo，优化代码使用。                        |
 | 1.1.5  | 功能增强 | 新增使用示例                                                 |
 | 1.1.4  | 功能增强 | 更新OTA升级传输格式                                          |
@@ -74,49 +25,49 @@
 
 *2024/07/22*
 
-<h1 id="1"> 1.前言</h1>
+# 1.前言
 
 本文通过实例讲述huaweicloud-iot-device-sdk-c（以下简称SDK）帮助设备用MQTT协议快速连接到华为物联网平台。
 
-<h1 id="2">2.SDK简介</h1>
+# 2.SDK简介
 
-<h2 id="2.1">2.1 功能支持</h2>
+## 2.1 功能支持
 
 SDK面向运算、存储能力较强的嵌入式终端设备，开发者通过调用SDK接口，便可实现设备与物联网平台的上下行通讯。SDK当前支持的功能有：  
 
 | 功能                                        | 描述说明                                                     |
 | ------------------------------------------- | ------------------------------------------------------------ |
-| [设备接入](#6.2)                   | 作为客户端使用MQTT协议接入到华为云平台。分为证书认证与密钥认证两种认证方式。 |
-| [断线重连](#6.6)                   | 当设备由于网络不稳定或其他原因，导致链接断开，设备将每隔一段时间进行重新连接，直到连接成功。 |
-| [消息上报](#6.3)         | 用于设备将自定义数据上报给平台，平台将设备上报的消息转发给应用服务器或华为云其他云服务上进行存储和处理。 |
-| [属性上报](#6.4)               | 用于设备按产品模型中定义的格式将属性数据上报给平台。         |
-| [命令下发](#6.5)                   | 用于平台向设备下发设备控制命令。平台下发命令后，需要设备及时将命令的执行结果返回给平台。 |
-| [设备影子](#6.6)                   | 用于存储设备的在线状态、设备最近一次上报的设备属性值、应用服务器期望下发的配置。 |
-| [软固件（OTA）升级](#6.9) | 用于与平台配合下载OTA升级包。                                |
-| [时间同步](#6.8)                   | 设备向平台发起时间同步请求。                                 |
-| [网关与子设备](#6.16)          | 网关设备：通过平台支持的协议，直接连接到平台的设备。子设备：针对未实现TCP/IP协议栈的设备，由于无法直接同物联网平台通信，它需要通过网关进行数据转发。当前仅支持通过mqtt协议直连到平台的设备作为网关设备。 |
-| [文件上传/下载](#6.10)        | 支持设备将运行日志，配置信息等文件上传至平台，便于用户进行日志分析、故障定位、设备数据备份等。 |
-| [异常检测](#6.18)                  | 提供安全检测能力，可持续检测设备的安全威胁。包括：1、内存泄漏检测 2、异常端口检测3、CPU使用率检测 4、磁盘空间检测 5、电池电量检测 |
-| [规则引擎](#6.21)              | 通过条件触发，基于预设的规则，引发多设备的协同反应，实现设备联动、智能控制。目前物联网平台支持两种联动规则：云端规则和端侧规则。 |
-| [MQTT5.0](#6.14)                    | MQTT5.0版本协议，新增了MQTT5.0新特性：对比数据、Clean Start 与 Session Expiry Interval、有效载荷标识与内容类型、主题别名、用户属性。 |
-| [国密算法](#6.12)               | 一种TLS加密算法。                                            |
-| [远程配置](#6.17)                  | 提供远程配置功能，用户可用于在不中断设备运行的情况下，远程更新设备的系统参数、运行参数等配置信息。 |
-| [远程登录](#6.22)                  | 支持通过控制台远程SSH登录设备，可在控制台输入设备支持的命令，进行功能调试及问题定位，从而方便地实现设备管理及远程运维 |
-| [泛协议接入](#6.11)             | 当非HTTP、MQTT、LWM2M等第三方协议接入时，需要在平台外部完成协议转换。推荐使用网关来完成协议转换，将第三方协议转成MQTT协议。 |
-| [软总线](#6.19)                  | 当使用鸿蒙系统时。通过平台下发设备组，设备可通过软总线实现物物互联。IoTDA可以进行安全群组管理以及下发群成员之间通信的授信标识。 |
-| [设备发放](#6.26)                  | 分为证书认证、密钥认证。主要用于分发到不同局点、实例，动态完成不同批次设备初始化配置。发放完成的数据可以通过设备接入进行数据传输。 |
+| [设备接入](#6.2 设备接入)                   | 作为客户端使用MQTT协议接入到华为云平台。分为证书认证与密钥认证两种认证方式。 |
+| [断线重连](#6.6 断线重连)                   | 当设备由于网络不稳定或其他原因，导致链接断开，设备将每隔一段时间进行重新连接，直到连接成功。 |
+| [消息上报](#6.3 设备消息上报、下发)         | 用于设备将自定义数据上报给平台，平台将设备上报的消息转发给应用服务器或华为云其他云服务上进行存储和处理。 |
+| [属性上报](#6.4 属性上报下发)               | 用于设备按产品模型中定义的格式将属性数据上报给平台。         |
+| [命令下发](#6.5 命令下发)                   | 用于平台向设备下发设备控制命令。平台下发命令后，需要设备及时将命令的执行结果返回给平台。 |
+| [设备影子](#6.6 设备影子)                   | 用于存储设备的在线状态、设备最近一次上报的设备属性值、应用服务器期望下发的配置。 |
+| [软固件（OTA）升级](#6.9 软固件升级（OTA）) | 用于与平台配合下载OTA升级包。                                |
+| [时间同步](#6.8 时间同步)                   | 设备向平台发起时间同步请求。                                 |
+| [网关与子设备](#6.16 网关与子设备)          | 网关设备：通过平台支持的协议，直接连接到平台的设备。子设备：针对未实现TCP/IP协议栈的设备，由于无法直接同物联网平台通信，它需要通过网关进行数据转发。当前仅支持通过mqtt协议直连到平台的设备作为网关设备。 |
+| [文件上传/下载](#6.10 文件上传\下载)        | 支持设备将运行日志，配置信息等文件上传至平台，便于用户进行日志分析、故障定位、设备数据备份等。 |
+| [异常检测](#6.18 异常检测)                  | 提供安全检测能力，可持续检测设备的安全威胁。包括：1、内存泄漏检测 2、异常端口检测3、CPU使用率检测 4、磁盘空间检测 5、电池电量检测 |
+| [规则引擎](#6.21 端侧规则引擎)              | 通过条件触发，基于预设的规则，引发多设备的协同反应，实现设备联动、智能控制。目前物联网平台支持两种联动规则：云端规则和端侧规则。 |
+| [MQTT5.0](#6.14 MQTT5.0)                    | MQTT5.0版本协议，新增了MQTT5.0新特性：对比数据、Clean Start 与 Session Expiry Interval、有效载荷标识与内容类型、主题别名、用户属性。 |
+| [国密算法](#6.12 国密TLS接入)               | 一种TLS加密算法。                                            |
+| [远程配置](#6.17 远程配置)                  | 提供远程配置功能，用户可用于在不中断设备运行的情况下，远程更新设备的系统参数、运行参数等配置信息。 |
+| [远程登录](#6.22 远程登录)                  | 支持通过控制台远程SSH登录设备，可在控制台输入设备支持的命令，进行功能调试及问题定位，从而方便地实现设备管理及远程运维 |
+| [泛协议接入](#6.11 泛协议&网桥)             | 当非HTTP、MQTT、LWM2M等第三方协议接入时，需要在平台外部完成协议转换。推荐使用网关来完成协议转换，将第三方协议转成MQTT协议。 |
+| [软总线](#6.19 软总线功能)                  | 当使用鸿蒙系统时。通过平台下发设备组，设备可通过软总线实现物物互联。IoTDA可以进行安全群组管理以及下发群成员之间通信的授信标识。 |
+| [设备发放](#6.26 设备发放)                  | 分为证书认证、密钥认证。主要用于分发到不同局点、实例，动态完成不同批次设备初始化配置。发放完成的数据可以通过设备接入进行数据传输。 |
 
-<h2 id="2.2">2.2 SDK目录结构</h2>
+## 2.2 SDK目录结构
 
 ![1718180679109](./doc/doc_cn/sdk_file_content3.png)
 
-<h1 id = "3">3.准备工作</h1>
+# 3.准备工作
 
-<h2 id = "3.1">3.1 环境信息</h2>
+## 3.1 环境信息
 
 SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本）。SDK依赖openssl库和paho库，如果开发者有自己的编译链，需要自行编译openssl/paho库文件。Linux通用的gcc编译步骤请参考章节3.2/3.3。   
 
-<h2 id = "3.2">3.2编译openssl库</h2>
+## 3.2编译openssl库
 
 1. 访问[openssl官网](https://www.openssl.org/source) ，下载openssl（推荐使用openssl-1.1.1h.tar.gz，在./generatingLib目录下有openssl安装包），上传到linux编译机上（以上传到目录/home/test为例），并使用如下命令解压：  
 
@@ -179,7 +130,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
    
 4. 若需要使用国密TLS，可访问[国密版本openssl](https://github.com/jntass/TASSL-1.1.1)，安装方法同原生openssl。该版本当前基于openssl1.1.1s，兼容openssl各类原生接口，仍支持国际TLS。
 
-<h2 id = "3.3">3.3 编译paho库</h2>
+## 3.3 编译paho库
 
 1. 访问github下载地址https://github.com/eclipse/paho.mqtt.c, 下载paho.mqtt.c源码(建议下载release版本中1.3.9及之前的版本的Source code (tar.gz)文件，如果使用最新的版本，下方适配的文件中的行数可能会有所改变，以及需要拷贝的头文件按照最新版本增加)。
 
@@ -229,7 +180,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 6. 拷贝paho库文件
 	当前SDK仅用到了libpaho-mqtt3as，请将文件libpaho-mqtt3as.so、libpaho-mqtt3as.so.1和libpaho-mqtt3as.so.1.3拷贝到SDK的lib文件夹下（同时将paho源码目录下src文件夹里的头文件（MQTTAsync.h/MQTTClient.h/MQTTClientPersistence.h/MQTTProperties.h/MQTTReasonCodes.h/MQTTSubscribeOpts.h）拷贝到SDK的include/base目录下，注意：有的paho版本会有 MQTTExportDeclarations.h 头文件，建议可以将MQTT相关的头文件都添加进去)。
 
-<h2 id = "3.4">3.4 编译zlib库</h2>
+## 3.4 编译zlib库
 
 1. 下载zlib源码https://github.com/madler/zlib/archive/v1.2.11.zip 
 	通过如下命令解压缩：
@@ -260,7 +211,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
     将源码目录下生成的libz.so、libz.so.1、libz.so.1.2.11拷贝到sdk的lib文件夹下。	
     				
 
-<h2 id = "3.5">3.5 编译华为安全函数库</h2>
+## 3.5 编译华为安全函数库
 
 1. 下载安全函数库源码https://gitee.com/openeuler/libboundscheck.git
 
@@ -273,7 +224,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 3. 拷贝so库文件
     将源码目录下生成的lib文件夹下的libboundscheck.so拷贝到sdk的lib文件夹下。
 
-<h2 id = "3.6">3.6 编译libssh库</h2>
+## 3.6 编译libssh库
 
 1. 下载libssh源码https://www.libssh.org/files/0.10/libssh-0.10.4.tar.xz
 	通过如下命令解压缩：
@@ -307,7 +258,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
     将源码目录下build/lib文件夹中生成的libssh.so、libssh.so.4、libssh.so.4.9.4拷贝到sdk的lib文件夹下。
    将/usr/local/include下的libssh的整个头文件目录拷贝到sdk的include文件夹下。
 
-<h2 id = "3.7">3.7 编译libnopoll库</h2>
+## 3.7 编译libnopoll库
 
 1. 下载nopoll源码http://www.aspl.es/nopoll/downloads/nopoll-0.4.8.b429.tar.gz
 	通过如下命令解压缩：
@@ -334,11 +285,10 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
     通过上一步获取到的路径，将源码目录src/.libs下生成的libnopoll.so libnopoll.so.0 libnopoll.so.0.0.0拷贝到sdk的lib文件夹下。
    将/usr/local/include下的nopoll的整个头文件目录拷贝到sdk的include文件夹下。
 
-<h2 id = "3.8">3.8 编译curl库</h2>
+## 3.8 编译curl库
 在generatingLib目录下执行以下命令， 注意--with-openssl后面换成自己的openssl安装路径：
-
 ```shell 
-    curl https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.tar.gz | tar -xzvf - &&
+  curl https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.tar.gz | tar -xzvf - &&
     cd curl-8.4.0 &&
     ./configure --with-openssl=/home/test/openssl &&
     make &&
@@ -348,7 +298,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
     cp /usr/local/lib64/libcurl.so* ../../lib
 ```
 
-<h2 id = "3.9">3.9 上传profile及注册设备</h2>
+## 3.9 上传profile及注册设备
 
 1. profile（产品模型）定义，具体详情可见：[物模型相关问题](https://support.huaweicloud.com/iothub_faq/iot_faq_01000.html)。
 
@@ -361,7 +311,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 4. 在IoTDA控制台界面。点击”设备“->“所有设备”，在最上方可看到该设备的状态是未激活。当设备上线一次后，退出未激活状态。
 
-<h1 id = "4">4.快速体验</h1>
+# 4.快速体验
 
 1. 将SDK压缩包拷贝到Linux环境中，通过如下命令解压：
 	
@@ -379,7 +329,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
     需要修改src/device_demo/device_demo.c文件中的如下参数：  
     g_serverIp：平台MQTT南向IP，可在IoTDA控制台的“总览”->“接入信息”中查看。
    g_username：MQTT协议需要填写username，iot平台默认设备ID为username，设备ID是设备注册时返回的值。
-    g_password：设备密钥，设备注册时返回的值。
+    g_secret：设备密钥，设备注册填写的值。
     ![](./doc/doc_cn/device_demo.png)
    
 4. 执行命令进行编译，推荐使用Makefile进行编译：
@@ -403,7 +353,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
     5.1 加载库文件
 
     ```shell
-     export LD_LIBRARY_PATH=./lib/
+     LD_LIBRARY_PATH=./lib/
     ```
 
     5.2 执行如下命令：
@@ -426,11 +376,11 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 
 
 
-<h1 id = "5">5.设备初始化</h1>
+# 5.设备初始化
 
 直连设备连接demo可见代码：./demos/device_demo/basic_test.c。证书获取： [证书资源](https://support.huaweicloud.com/devg-iothub/iot_02_1004.html#section3) 。
 
-<h2 id = "5.1">5.1 底层数据初始化</h2>
+## 5.1 底层数据初始化
 
 在发起业务前，需要先初始化Agent Lite相关资源，调用API接口  IOTA_Init(HW_CHAR *workPath)，初始化Agent Lite资源，其中CA证书存放路径为：${workPath}/rootcert.pem。具体API接口的参数使用请参考Agent Lite API接口文档。可参考demo中main()方法对IOTA_Init()的调用。
 
@@ -458,7 +408,7 @@ SDK需运行在Linux操作系统上，并安装好gcc（建议4.8及以上版本
 #define MAX_BUFFERED_MESSAGES           3 // Maximum number of broken chain storage entries
 ```
 
-<h2 id = "5.2">5.2 设置日志打印函数</h2>
+## 5.2 设置日志打印函数
 
 SDK以日志回调函数的方式供开发者使用，开发者可以根据自己的需求调用IOTA_SetPrintLogCallback函数设置。具体API接口的参数使用请参考SDK API接口文档。
 
@@ -486,7 +436,7 @@ void main() {
 
 
 
-<h2 id = "5.3">5.3 初始化连接参数</h2>
+## 5.3 初始化连接参数
 
 设备连接到IoT平台之前，需配置平台的地址、端口、设备Id及设备密钥。可以参考demo中main()方法中调用的setAuthConfig()函数。
 
@@ -519,39 +469,39 @@ void main() {
 
 
 
-<h2 id = "5.4">5.4 回调函数配置</h2>
+## 5.4 回调函数配置
 
 SDK针对设备鉴权成功/失败、设备断链成功/失败、设备订阅消息成功/失败、设备发布消息成功/失败、设备接收消息/命令等动作，以回调函数的方式供开发者调用，开发者可以针对不同的事件设置回调函数来实现业务处理逻辑。
 
 ```c
-void setMyCallbacks(){	
-	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
-	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
+  void setMyCallbacks(){	
+    IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_SUCCESS, HandleConnectSuccess);
+  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECT_FAILURE, HandleConnectFailure);
   
-	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisConnectSuccess);
-	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisConnectFailure);
-	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);
+  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_SUCCESS, HandleDisConnectSuccess);
+  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_DISCONNECT_FAILURE, HandleDisConnectFailure);
+  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_CONNECTION_LOST, HandleConnectionLost);
   
-	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);
-	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);
+  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_SUCCESS, HandleSubscribesuccess);
+  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_SUBSCRIBE_FAILURE, HandleSubscribeFailure);
   
-	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);
-	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
+  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_SUCCESS, HandlePublishSuccess);
+  	IOTA_SetProtocolCallback(EN_IOTA_CALLBACK_PUBLISH_FAILURE, HandlePublishFailure);
   
-	IOTA_SetMessageCallback(HandleMessageDown);
-	// 推荐使用此API，可以处理自定格式的消息
-	IOTA_SetRawMessageCallback(HandleRawMessageDown);
-	IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
-	// 推荐使用此API，可以处理自定格式的消息
-	IOTA_SetUserTopicRawMsgCallback(HandleUserTopicRawMessageDown);
-	IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
-  
-	IOTA_SetCmdCallback(HandleCommandRequest);
-	IOTA_SetPropSetCallback(HandlePropertiesSet);
-	IOTA_SetPropGetCallback(HandlePropertiesGet);
-	IOTA_SetEventCallback(HandleEventsDown);
-	IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
-}
+  	IOTA_SetMessageCallback(HandleMessageDown);
+    // 推荐使用此API，可以处理自定格式的消息
+  	IOTA_SetRawMessageCallback(HandleRawMessageDown);
+  	IOTA_SetUserTopicMsgCallback(HandleUserTopicMessageDown);
+    // 推荐使用此API，可以处理自定格式的消息
+  	IOTA_SetUserTopicRawMsgCallback(HandleUserTopicRawMessageDown);
+    IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
+      
+  	IOTA_SetCmdCallback(HandleCommandRequest);
+  	IOTA_SetPropSetCallback(HandlePropertiesSet);
+  	IOTA_SetPropGetCallback(HandlePropertiesGet);
+  	IOTA_SetEventCallback(HandleEventsDown);
+  	IOTA_SetShadowGetCallback(HandleDeviceShadowRsp);
+  }
 ```
 
 ```C
@@ -580,7 +530,7 @@ void setMyCallbacks(){
   - 设备接收到设备影子数据后，将调用HandleDeviceShadowRsp函数；
 ```
 
-<h2 id = "5.5">5.5 设备鉴权</h2>
+## 5.5 设备鉴权
 
 回调函数设置完毕后，可以调用鉴权函数。可以参考./demos/device_demo/basic_test.c中对该接口的调用：
 
@@ -595,7 +545,7 @@ int ret = IOTA_Connect();
 ![](./doc/doc_cn/login.png)
 可以通过ctrl + c停止程序运行，程序停止后最长等待1.5个心跳时间，可以在控制台界面上查看设备已离线。
 
-<h2 id = "5.6">5.6 订阅Topic</h2>
+## 5.6 订阅Topic
 
 当连接成功时，华为云平台会自动订阅qos（通信质量）为0的系统Topic。若要使用自定义Topic，需要调用订阅自函数进行Topic订阅。
 
@@ -640,7 +590,7 @@ void main(int argc, char **argv)
 }
 ```
 
-<h2 id = "5.7">5.7 编译并运行程序</h2>
+## 5.7 编译并运行程序
 
 1. 将huaweicloud-iot-device-sdk-c-master.zip压缩包拷贝到Linux环境中，通过如下命令解压：
 
@@ -664,11 +614,11 @@ void main(int argc, char **argv)
    
    ps：如果运行./demos/文件中的demo，在SDK根目录输入 ./{文件名}。
 
-<h1 id = "6">6.SDK功能</h1>
+# 6.SDK功能
 
 以下是部分接口的使用指导，详细的功能请参考主目录下的**API文档**。  
 
-<h2 id = "6.1">6.1 生成SDK库文件</h2>
+## 6.1 生成SDK库文件
 
 如果想生成so文件，可以修改Makefile的内容（可以本地用记事本打开后上传到Linux环境，也可以在Linux环境上直接通过"vim Makefile"修改，按"i"键编辑，编辑完毕后用"wq!”保存）:
 
@@ -684,7 +634,7 @@ void main(int argc, char **argv)
 
 
 
-<h2 id = "6.2">6.2 设备接入</h2>
+## 6.2 设备接入
 
 设备连接到IoT平台，分为设备密钥认证与证书认证。需配置平台的地址（${address}）、端口（${port}）、设备Id（${deviceId}）及设备密钥\证书私钥（${password}、${deviceKyePassword}）。Demo使用示例: [./demos/device_demo/basic_test.c](./demos/device_demo/basic_test.c)。
 
@@ -698,7 +648,7 @@ Demo编译及运行：
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; 
-char *g_password = "设备密钥";
+char *g_secret = "设备密钥";
     
 在根目录运行： 
     make device_demo
@@ -726,7 +676,7 @@ char *g_password = "设备密钥";
   
   void main(int argc, char **argv) {
       // 密钥认证初始化
-      mqttDeviceSecretInit(g_address, g_port, g_deviceId, g_password); 
+      mqttDeviceSecretInit(g_address, g_port, g_deviceId, g_secret); 
   }
   ```
   
@@ -824,7 +774,7 @@ char *g_password = "设备密钥";
   }
   ```
 
-<h2 id = "6.3">6.3 设备消息上报、下发</h2>
+## 6.3 设备消息上报、下发
 
 设备鉴权通过后, 可以调用SDK的“设备消息上报”接口上报数据。
 
@@ -838,7 +788,7 @@ Demo示例：[./demos/device_demo/message_test.c](./demos/device_demo/message_te
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
     
 在根目录运行： 
     make device_demo
@@ -887,10 +837,10 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
     
     int main(int argc, char **argv)
     {
-        ...
-        // 消息下发回调函数注册
-        IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
-        ...
+          ...
+            // 消息下发回调函数注册
+          IOTA_SetUndefinedMessageCallback(HandletUndefinedMessageDown);
+            ...
     }
     ```
 
@@ -950,7 +900,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
   
   
 
-<h2 id = "6.4">6.4 属性上报下发</h2>
+## 6.4 属性上报下发
 
 设备鉴权通过后, 可以调用SDK的“设备属性上报”接口上报数据。
 
@@ -964,7 +914,7 @@ properties_test.c中修改连接参数：
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
     
 在根目录运行： 
     make device_demo
@@ -984,7 +934,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
   通过该接口上报的数据平台会解析，并且结构体中的数据需跟profile中定义的属性保持一致，ST_IOTA_SERVICE_DATA_INFO为结构体数组，可以同时上报多个服务，serviceNum为上报的服务个数。入参具体说明请参考API文档，demo中的Test_propertiesReport函数演示了对该接口的调用方法。
 
   ```c
-  void Test_propertiesReport() {
+void Test_propertiesReport() {
     int serviceNum = 1;//上报的service个数
     ST_IOTA_SERVICE_DATA_INFO services[serviceNum];
   
@@ -1053,7 +1003,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
   }
   ```
 
-<h2 id = "6.5">6.5 命令下发</h2>
+## 6.5 命令下发
 
 设备鉴权通过并且配置了相关回调函数后，可以接受平台命令（SDK已自动实现相关TOPIC的订阅）。注意：平台采用了隐式订阅的功能，对于下行的系统topic，设备无需订阅，平台默认该设备订阅了qos为0的系统topic。如果需要qos为1的下行系统topic，需要设备自行调用订阅接口来订阅。
 
@@ -1067,7 +1017,7 @@ Demo示例：[./demos/device_demo/command_test.c](./demos/device_demo/command_te
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
     
 在根目录运行： 
     make device_demo
@@ -1128,7 +1078,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
       IOTA_SetCmdCallback(HandleCommandRequest);
   ```
 
-<h2 id = "6.6">6.6 断线重连</h2>
+## 6.6 断线重连
 
 在调用IOTA_DefaultCallbackInit()函数时，SDK会自动装载一个断线重连代码。可在文件[./src/agentlite/iota_defaultCallback.c](./src/agentlite/iota_defaultCallback.c)中查看。
 
@@ -1158,7 +1108,7 @@ demo配置&运行：
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
     
 若要运行相关demo，在根目录运行： 
     make device_demo
@@ -1201,7 +1151,7 @@ void main(int argc, char **argv) {
 
 
 
-<h2 id = "6.7">6.7 设备影子</h2>
+## 6.7 设备影子
 
  设备影子是一个JSON格式的数据，用于存储设备的在线状态、设备最近一次上报的设备属性值，设备可以获取上报的设备属性值。设备影子示例代码：[./demos/device_demo/shadow_test.c](./demos/device_demo/shadow_test.c)。
 
@@ -1211,7 +1161,7 @@ void main(int argc, char **argv) {
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
     
 若要运行相关demo，在根目录运行： 
     make device_demo
@@ -1256,7 +1206,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
 
   可见[属性上报下发]( https://support.huaweicloud.com/api-iothub/iot_06_v5_3010.html)中的：平台获取查询设备属性、平台设置设备属性实现。
 
-<h2 id = "6.8">6.8 时间同步</h2>
+## 6.8 时间同步
 
 设备侧可通过时间同步功能获取平台的时间，从而同步平台与设备的时间。时间同步代码示例：[./demos/device_demo/time_sync_test.c](./demos/device_demo/time_sync_test.c)。
 
@@ -1266,7 +1216,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
     
 若要运行相关demo，在根目录运行： 
     make device_demo
@@ -1322,7 +1272,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
   }
   ```
 
-<h2 id = "6.9">6.9 软固件升级（OTA）</h2>
+## 6.9 软固件升级（OTA）
 
 用于与平台配合下载OTA升级包。实现了软固件下载，平台使用文档可见：[使用文档](https://support.huaweicloud.com/bestpractice-iothub/iot_bp_0039.html)。相关API接口上传参数可见：[API文档](https://support.huaweicloud.com/api-iothub/iot_06_v5_3028.html)。
 
@@ -1346,7 +1296,7 @@ Demo使用&编译：
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
     
 若要运行相关demo，在根目录运行： 
     make device_demo
@@ -1470,7 +1420,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
   }
   ```
 
-<h2 id = "6.10">6.10 文件上传\下载</h2>
+## 6.10 文件上传\下载
 
 支持设备将运行日志，配置信息等文件上传至平台，便于用户进行日志分析、故障定位、设备数据备份等。平台文件上传下载配置可见：[文件上传](https://support.huaweicloud.com/usermanual-iothub/iot_01_0033.html)。设备侧API可见：[文件上传\下载API](https://support.huaweicloud.com/api-iothub/iot_06_v5_3033.html)。
 
@@ -1486,7 +1436,7 @@ Demo路径：[./demos/device_demo/file_up_down_test.c](./demos/device_demo/file_
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
 
 char *uploadFilePath = "uploadFilePath.txt"; // directory of files to be uploaded
 char *downloadFilePath = "downloadFilePath.txt"; // The file directory downloaded by OBS
@@ -1504,10 +1454,10 @@ char *downloadFilePath = "downloadFilePath.txt"; // The file directory downloade
 
   ```c
   	ST_IOTA_UPLOAD_FILE uploadFile = {NULL , NULL, 0};
-    uploadFile.file_name = "hello.txt";
+      uploadFile.file_name = "hello.txt";
   	uploadFile.hash_code = NULL;
   	uploadFile.size = 0;
-    IOTA_GetUploadFileUrl(&uploadFile, NULL);
+      IOTA_GetUploadFileUrl(&uploadFile, NULL);
   ```
 
 - 获取文件下载URL：
@@ -1517,11 +1467,11 @@ char *downloadFilePath = "downloadFilePath.txt"; // The file directory downloade
   该函数用于获取文件下载URL。upload为结构体，包括上传到OBS中的文件名称、文件hash值、文件大小(如果为0则默认为)等参数。具体API参数说明请见：[API文档](https://support.huaweicloud.com/api-iothub/iot_06_v5_3036.html)。
 
   ```c
-    ST_IOTA_UPLOAD_FILE downloadFlie = {NULL , NULL, 0};
-    downloadFlie.file_name = "hello.txt";
+      ST_IOTA_UPLOAD_FILE downloadFlie = {NULL , NULL, 0};
+      downloadFlie.file_name = "hello.txt";
   	downloadFlie.hash_code = NULL;
   	downloadFlie.size = 0;
-    IOTA_GetDownloadFileUrl(&downloadFlie, NULL);
+      IOTA_GetDownloadFileUrl(&downloadFlie, NULL);
   ```
 
 - 文件上传下载回调函数：
@@ -1577,7 +1527,7 @@ char *downloadFilePath = "downloadFilePath.txt"; // The file directory downloade
 
 
 
-<h2 id = "6.11">6.11 泛协议&网桥</h2>
+## 6.11 泛协议&网桥
 
 泛协议demo可见./demos/bridge_demo/目录下的文件，其中[bridge_server_test.c](./demos/bridge_demo/bridge_server_test.c)为网桥设备相关demo，如若使用泛协议，可以在ProcessMessageFromClient（）接口处理传入的数据，把传入的数据转换成MQTT协议，再与平台通信。bidge_client_test.c文件中为TCP客户端示例，当输入对应的数据时，会传输到网关，网关解析后再上报到平台。
 
@@ -1591,7 +1541,7 @@ char *downloadFilePath = "downloadFilePath.txt"; // The file directory downloade
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
 
 若要运行相关demo，在根目录运行： 
     make bridge_demo
@@ -1618,7 +1568,7 @@ HW_API_FUNC HW_INT IOTA_BridgeDevicePropertiesSetResponse(HW_CHAR *deviceId, HW_
 
 网桥相关API接口可见[./include/agentlite/iota_bridge.h](./include/agentlite/iota_bridge.h)，具体使用方式请看demo。
 
-<h2 id = "6.12">6.12 国密TLS接入</h2>
+## 6.12 国密TLS接入
 
 当前SDK已支持国密TLS方式接入并进行数据传输。若需要采用国密通信，需要下载国密版本的openssl，具体可参考[3.2 编译openssl库](#3.2编译openssl库)第4点。
 
@@ -1644,13 +1594,13 @@ const char *passWord = NULL;
 
 打完补丁后，可以查看paho.mqtt.c-1.3.9/src/SSLSocket.c中是否存在上述证书路径字段。若使用口令登录的方式则不需要填写对应的签名证书、私钥和加密证书、私钥路径，若使用证书登录的方式则需要填写对应文件的路径，并使用绝对路径来进行访问。修改完成后重新编译paho库即可。
 
-<h2 id = "6.13">6.13 异常存储</h2>
+## 6.13 异常存储
 
 SDK提供断线后消息发送存储功能，对于上报失败的数据存储到内存中，当连接成功后再发送。存储条数可在：[./include/base/mqtt_base.h](./include/base/mqtt_base.h)中可以通过设置 MAX_BUFFERED_MESSAGES 来修改存储最大条数，默认为3。当不使用该功能时，可以设置为负数。
 
 ![1720513813648](./doc/doc_cn/buffredMessages.png)
 
-<h2 id = "6.14">6.14 MQTT5.0</h2>
+## 6.14 MQTT5.0
 
 如果想使用MQTT5.0协议（默认为MQTT3.1.1），需要在文件MakeFile 中取消对 MQTTV5 := 1 的注释。可以在.[/demos/device_demo/mqttV5_test.c](./demos/device_demo/mqttV5_test.c)中查看使用示例。
 
@@ -1662,7 +1612,7 @@ SDK提供断线后消息发送存储功能，对于上报失败的数据存储�
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
 
 若要运行相关demo，在根目录运行： 
     make device_demo
@@ -1777,7 +1727,7 @@ MQTT5.0主要是在消息头部新增 Payload。支持在头部添加用户属�
   ```
 
 
-<h2 id = "6.15">6.15 MQTT_DEBUG功能</h2>
+## 6.15 MQTT_DEBUG功能
 
 MQTT_DEBUG是用于打印底层MQTT连接参数LOG，若无出现底层连接问题，不建议打开。如果想使用 MQTT_DEBUG 功能，需要在文件./include/util/mqtt_base.h 中把 MQTT_TRACE_ON 的值改为1。 
 其中，MQTT_TRACE_LEVEL 是 MQTT_DEBUG 日志打印级别，默认为最高等级 MQTTASYNC_TRACE_MAXIMUM。
@@ -1787,7 +1737,7 @@ MQTT_DEBUG是用于打印底层MQTT连接参数LOG，若无出现底层连接问
 
 LOG_FILE_ENABLE 为 1 时，的log就会输出到 LOG_FILE_NAME 设置的文件路径中。当 LOG_FILE_ENABLE 为 0 时，log会直接输出。
 
-<h2 id = "6.16">6.16 网关与子设备</h2>
+## 6.16 网关与子设备
 
 网关设备：通过平台支持的协议，直接连接到平台的设备。子设备：针对未实现TCP/IP协议栈的设备，由于无法直接同物联网平台通信，它需要通过网关进行数据转发。当前仅支持通过mqtt协议直连到平台的设备作为网关设备。平台网关文档可见：[网关与子设备](https://support.huaweicloud.com/usermanual-iothub/iot_01_0052.html)；demo可见SKD：./demos/gateway_demo/ 文件夹中的网关（[gateway_server_test.c](./demos/gateway_demo/gateway_server_test.c)）与子设备（[gateway_client_test.c](./demos/gateway_demo/gateway_client_test.c)）示例。 
 
@@ -2032,7 +1982,7 @@ char *gSubProductId = "XXXX"; // 注册子设备的产品id
 
    网关删除子设备请求响应可见平台通知网关新增子设备的相关配置。
 
-<h2 id = "6.17">6.17 远程配置</h2>
+## 6.17 远程配置
 
 支持配置参数通过远程下发，SDK通过event/down接收相关信息，用户可通过IOTA_SetDeviceConfigCallback注册自定义的回调钩子函数，该回调函数会在接收到配置信息后进行处理相关数据。示例可见：[./demos/device_demo/device_config_test.c](./demos/device_demo/device_config_test.c)。
 
@@ -2044,7 +1994,7 @@ char *gSubProductId = "XXXX"; // 注册子设备的产品id
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
 
 若要运行相关demo，在根目录运行： 
     make device_demo
@@ -2083,7 +2033,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
   }
   ```
 
-<h2 id = "6.18">6.18 异常检测</h2>
+## 6.18 异常检测
 
 当用户使用异常检测功能时，若开启如下功能：内存泄漏检测、异常端口检测、CPU使用率检测、磁盘空间检测、电池电量检测，可以查看SKD样例：[./demos/device_demo/sys_hal_test.c](./demos/device_demo/sys_hal_test.c)，获取所使用的检测项数据。检测数据上报周期可以在include\agentlite\iota_datatrans.h中对宏DETECT_REPORT_FREQUENCY进行调整，默认为10分钟，单位为秒。[云平台配置使用说明参考](https://support.huaweicloud.com/usermanual-iothub/iot_01_0030_5.html)。
 
@@ -2095,7 +2045,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
 
 若要运行相关demo，在根目录运行： 
     make device_demo
@@ -2105,7 +2055,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
 - 平台侧：配置异常检测后，平台会下发对应配置。每次设备上线都会下发一次，当设备上报结果触发告警阈值，将发起告警。
 - 设备侧：收到平台下发的配置后，每隔一段时间，上报对应的数据。具体使用方法可见SDK：[./demos/device_demo/sys_hal_test.c](./demos/device_demo/sys_hal_test.c)。
 
-<h2 id = "6.19">6.19 软总线功能</h2>
+## 6.19 软总线功能
 
 通过平台下发设备组，设备可通过软总线实现物物互联。IoTDA可以进行安全群组管理以及下发群成员之间通信的授信标识。
 
@@ -2113,10 +2063,26 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
 
 创建软总线名称后进行绑定设备，在界面点击“绑定”，选择要绑定到该群组的设备，之后再点击状态中的小半圆，进行同步软总线信息。
 
-用户可通过 IOTA_GetLatestSoftBusInfo主动获取设备软总线信息。
- 当软总线更新时，会在影子下发的回调函数HandlePropertiesSet中获取版本。
+用户可通过 IOTA_GetLatestSoftBusInfo主动获取设备软总线信息。当软总线更新时，会在影子下发的回调函数HandlePropertiesSet中获取版本。
+编译及运行demo指导：
 
-<h2 id = "6.20">6.20 日志上传</h2>
+```c
+使用前请在Makefile中打开该注释：#SOFT_BUS_OPTION2 := 1
+在 soft_bus_test.c中修改连接参数：
+// You can get the access address from IoT Console "Overview" -> "Access Information"
+char *g_address = "域名"; 
+char *g_port = "8883";
+char *g_deviceId = "设备id"; // 请输入设备id
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
+
+若要运行相关demo，在根目录运行： 
+    make softBus_demo
+    ./soft_bus_test
+```
+
+![](./doc/doc_cn/softBus.png)
+
+## 6.20 日志上传
 
 日志上传示例为：[./src/device_demo/file_up_demo_test.c](./src/device_demo/file_up_demo_test.c)，将变量`uploadFilePath`修改为日志文件路径，启用IOTA_UploadFile(uploadFilePath, url, NULL);代码。即可开启日志上传，对应文件将被上传到obs中。
 
@@ -2124,7 +2090,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
 
  具体接口可见：[文件上传、下载](#6.9 文件上传\下载)。
 
-<h2 id = "6.21">6.21 端侧规则引擎</h2>
+## 6.21 端侧规则引擎
 
 端侧规则引擎示例：[./demos/device_demo/device_rule_test.c](./demos/device_demo/device_rule_test.c)。默认为关闭，若要使用，需要在Makefile中取消DEVICE_RULE_ENALBE与CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE的注释。
 
@@ -2142,7 +2108,7 @@ CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE := y
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
 
 若要运行相关demo，在根目录运行： 
     make device_demo
@@ -2170,15 +2136,14 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
 
 
 
-<h2 id = "6.22">6.22 远程登录</h2>
+## 6.22 远程登录
 
-使用SSH远程登录功能前，需参考[3.6 编译libssh库](#3.6)和[3.7 编译libnopoll库](#3.7)实现libssh和libnopoll库的编译，并且设备必须在线。平台操作可见：[远程登录](https://support.huaweicloud.com/usermanual-iothub/iot_01_00301.html)。SDK代码实现可见SDK：[./demos/device_demo/remote_login_test.c](./demos/device_demo/remote_login_test.c)。
+   使用SSH远程登录功能前，需参考[3.6 编译libssh库](#3.6)和[3.7 编译libnopoll库](#3.7)实现libssh和libnopoll库的编译，并且设备必须在线。平台操作可见：[远程登录](https://support.huaweicloud.com/usermanual-iothub/iot_01_00301.html)。SDK代码实现可见SDK：[./demos/device_demo/remote_login_test.c](./demos/device_demo/remote_login_test.c)。
 
-值得注意的是：在该SDK中远程登陆功能是默认关闭的，若是想要开启该功能，需要在MakeFile中将以下注释打开。
-
-```c
-SSH_SWITCH := 1
-```
+   值得注意的是：在该SDK中远程登录功能默认是关闭的，若是想要开启该功能，需要在Makefile中将以下注释打开。
+   ```c
+   SSH_SWITCH := 1
+   ```
 
 编译及运行demo指导：
 
@@ -2188,8 +2153,8 @@ SSH_SWITCH := 1
 char *g_address = "域名"; 
 char *g_port = "8883";
 char *g_deviceId = "设备id"; // 请输入设备id
-char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
- 
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
+
 若要运行相关demo，在根目录运行： 
     make device_demo
     ./remote_login_test
@@ -2199,7 +2164,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
 
 操作之后即可实现ssh远程登录。可输入命令进行交互。
 
-<h2 id = "6.23">6.23 边缘M2M功能</h2>
+## 6.23 边缘M2M功能
 
 目前支持使用SDK对接边缘IoTEdge，边缘节点完成消息的中转到目标设备，从而实现M2M的功能。使用步骤如下：
 
@@ -2223,8 +2188,8 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
   替换为：
   
   ```c
-  #define MQTT_PORT							"7882"
-  #define MQTTS_PORT						"7883"
+  #define MQTT_PORT         				"7882"
+  #define MQTTS_PORT         				"7883"
   ```
   
 - 4.测试Demo：
@@ -2237,7 +2202,7 @@ char *g_password = "设备密钥"; // 密钥认证时请输入设备密码
   
    char *g_username = "tunnelDeviceA"; // 上述步骤1当中设置
   
-   char *g_password = "xxxx"; // 上述步骤1中设置
+   char *g_secret = "xxxx"; // 上述步骤1中设置
   ```
   
 
@@ -2293,7 +2258,7 @@ void HandleM2mMessageDown(EN_IOTA_M2M_MESSAGE *rsp)
   INFO device_demo: HandleM2mMessageDown(), from:      deviceA
   INFO device_demo: HandleM2mMessageDown(), content:   hello deviceB
 
-<h2 id = "6.24">6.24 gn编译</h2>
+## 6.24 gn编译
 
 gn编译一般用于鸿蒙系统中，SDK集成了gn编译的方法。具体使用如下：
 
@@ -2322,7 +2287,7 @@ gn编译一般用于鸿蒙系统中，SDK集成了gn编译的方法。具体使�
   cd out
   ```
 
-<h2 id = "6.25">6.25 使用全局变量配置连接参数</h2>
+## 6.25 使用全局变量配置连接参数
 
 SDK新版本支持通过全局变量配置连接参数，其中可配置的连接参数如下，值得注意的是，使用IOTA_ConnectConfigSet()时加载一次。若要禁止该功能，可以在MakeFile中对 "GLOBAL_VAR_CONFIG := 1" 进行注释。
 
@@ -2345,7 +2310,7 @@ export IOTDA_MQTTC_PORT=8883
 env | grep "IOTDA_MQTTC"
 ```
 
-<h2 id = "6.26">6.26 设备发放</h2>
+## 6.26 设备发放
 
 设备发放功能，可以将设备发放到不同的region，参考文档：[设备发放示例](https://support.huaweicloud.com/qs-iotps/iot_03_0006.html)。注意：流程可参考“快速入门”中的各种接入示例，SDK已自动实现示例中的“引导设备”。详细的步骤可参考链接中的“用户指南”。设备发放主要分为两种发放方式，分别为手动注册发放与注册组发放。
 
@@ -2432,7 +2397,184 @@ char *password = "设备密钥"; // 密钥认证时请输入设备密码
 
  当前，平台使用了 [DigiCert Global Root CA.](https://cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem) 和 [GlobalSign Root CA - R3](https://valid.r3.roots.globalsign.com/) 两个权威CA签发的证书。conf目录下的证书默认是跟IoTDA的基础版域名绑定的。如果需要切换到其他IoTDA版本，请参考官方文档的 [证书资源](https://support.huaweicloud.com/devg-iothub/iot_02_1004.html#section3) 章节。
 
-<h1 id = "7">开源协议<h1>
+## 6.27 智能站点异常检测
+
+SDK支持智能站点的异常检测功能，默认关闭。支持智能站点 CVE漏洞库检测、恶意文件检测、不安全协议检测、 不安全功能检测、 进程异常检测。使用时需要将Makefile中的注释 #SECURITY_AWARENESS_ENABLE := 1打开，可以通过以下异常接口，上报数据。
+
+智能站点异常检测示例可见：SDK目录：./demos/device_demo/report_anomaly_test.c 。运行demo前，需要先在平台开启异常检测功能，并打开Makefile中的注释 #SECURITY_AWARENESS_ENABLE := 1的注释。
+
+编译及运行demo指导：
+
+```c
+在 report_anomaly_test.c中修改连接参数：
+// You can get the access address from IoT Console "Overview" -> "Access Information"
+char *g_address = "域名"; 
+char *g_port = "8883";
+char *g_deviceId = "设备id"; // 请输入设备id
+char *g_secret = "设备密钥"; // 密钥认证时请输入设备密码
+
+若要运行相关demo，在根目录运行： 
+    make report_anomaly_test
+    ./report_anomaly_test
+```
+
+- 上报CVE漏洞库检测：
+
+  `int IOTA_AnomalyCveValnerabilityReport(ANOMALY_CVE_VNLNERABILITY cveLoophole[], int contentNum) `
+
+  通过该接口可以上报CVE漏洞库数据。cveLoophole为需要上报的内容，contentNum为上报个数。可以参考demo中对该函数对该接口的调用。
+
+  ```c
+  static void Test_ReportCveVnlnerability()
+  {
+      int contentNum = 2;
+      ANOMALY_CVE_VNLNERABILITY cveLoophole[contentNum];
+  
+      cveLoophole[0].cve_number = "CVE-2024-11452";
+      cveLoophole[0].vulnerability_name = "WeGIA 在文件上传字段中存在跨站点脚本 (XSS) (CVE-2025-22132)";
+      cveLoophole[0].desc = NULL;
+      cveLoophole[1].cve_number = "CVE-2024-11453";
+      cveLoophole[1].vulnerability_name = "WeGIA 在文件上传字段中存在跨站点脚本 (XSS) (CVE-2024-11453)";
+      cveLoophole[1].desc = NULL;
+  
+      IOTA_AnomalyCveValnerabilityReport(cveLoophole, contentNum);
+  }
+  
+  void main() {
+  	...
+  	Test_ReportCveVnlnerability();
+      ...
+  }
+  ```
+
+- 上报恶意文件：
+
+  `int IOTA_AnomalyFileReport(ANOMALY_MALICIOUS_FILE maliciousFile[], int contentNum) `
+
+  通过该接口可以上报恶意文件数据。maliciousFile为需要上报的内容，contentNum为上报个数。可以参考demo中对该函数对该接口的调用。
+
+  ```c
+  static void Test_ReportMaliciousFile()
+  {
+      int contentNum = 1;
+      ANOMALY_MALICIOUS_FILE maliciousFile[contentNum];
+  
+      maliciousFile[0].file = "/opt/gardener/docs/backup/24330/default/hw-iot-edge/gateway-manager.yaml";
+      maliciousFile[0].desc = NULL;
+  
+      IOTA_AnomalyFileReport(maliciousFile, contentNum);
+  }
+  
+  void main() {
+  	...
+  	Test_ReportMaliciousFile();
+      ...
+  }
+  ```
+
+  
+
+- 上报不安全协议：
+
+  `int IOTA_AnomalyProtocolReport(ANOMALY_PROTOCOL unsafeProtocol[], int contentNum) `
+
+  通过该接口可以上报不安全协议数据。unsafeProtocol为需要上报的内容，contentNum为上报个数。可以参考demo中对该函数对该接口的调用。
+
+  ```c
+  static void Test_ReportProtocolReport()
+  {
+      int contentNum = 2;
+      ANOMALY_PROTOCOL unsafeProtocol[contentNum];
+  
+      unsafeProtocol[0].protocol = "mqtt";
+      unsafeProtocol[0].version = "5.0";
+      unsafeProtocol[0].desc = "Not allowed agreement";
+      unsafeProtocol[1].protocol = "ftp";
+      unsafeProtocol[1].version = "FTP-5";
+      unsafeProtocol[1].desc = "Not allowed agreemen ftp";
+  
+      IOTA_AnomalyProtocolReport(unsafeProtocol, contentNum);
+  }
+  
+  void main() {
+  	...
+  	Test_ReportProtocolReport();
+      ...
+  }
+  ```
+
+  
+
+- 上报不安全功能：
+
+  `int IOTA_AnomalyUnsafeFunctionReport(ANOMALY_UNSAFE_FUNCTION unsafeFunction[], int contentNum) `
+
+  通过该接口可以上报不安全功能检测数据。unsafeFunction为需要上报的内容，contentNum为上报个数。可以参考demo中对该函数对该接口的调用。
+
+  ```c
+  // 上报不安全功能
+  static void Test_ReportUnsafeFunction()
+  {
+      int contentNum = 2;
+      ANOMALY_UNSAFE_FUNCTION unsafeFunction[contentNum];
+      
+      unsafeFunction[0].name = "root login";
+      unsafeFunction[0].desc = "Enable all 0 monitoring on the device";
+      unsafeFunction[1].name = "all zero monitor";
+      unsafeFunction[1].desc = "Enable root SSH login for the device";
+  
+      IOTA_AnomalyUnsafeFunctionReport(unsafeFunction, contentNum);
+  }
+  
+  void main() {
+  	...
+  	Test_ReportUnsafeFunction();
+      ...
+  }
+  ```
+
+- 上报进程异常数据：
+
+  `int IOTA_AnomalyAbnormalProcessReport(ANOMALY_ABNORMAL_PROCES abnormalProcess[], int contentNum) `
+
+  通过该接口可以上报进程异常数据。abnormalProcess为需要上报的内容，contentNum为上报个数。可以参考demo中对该函数对该接口的调用。
+
+  ```c
+  static void Test_ReportAbnormalProcess()
+  {
+      int contentNum = 1;
+      ANOMALY_ABNORMAL_PROCES abnormalProcess[contentNum];
+  
+      abnormalProcess[0].pid = "12534";
+      abnormalProcess[0].cmd = "python /usr/bin/osmt_server";
+      abnormalProcess[0].desc = NULL;
+  
+      IOTA_AnomalyAbnormalProcessReport(abnormalProcess, contentNum);
+  }
+  
+  void main() {
+  	...
+  	Test_ReportAbnormalProcess();
+      ...
+  }
+  ```
+
+  
+  
+  
+
+# 常见问题
+
+- MQTT建链返回：`ERROR MqttBase: MqttBase_OnConnectFailure() error, messageId 0, code 4, message CONNACK return code`，未错误的用户名和密码。
+
+  排查方法：
+
+  1. 查看deviceId是否错误：在控制台界面查看设备，在界面中复制`设备ID` ，即为SDK中g_deviceId的值。
+  2. 确认密码是否正确：在设备创建时用户填入的`密钥` 即为SDK中g_secret的值。若是忘记密码，可在设备详情页面重置密钥。
+
+
+
+## 开源协议
 
 * 遵循BSD-3开源许可协议
 

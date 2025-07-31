@@ -150,11 +150,13 @@ int CopyStrValue(char **dst, const char *src, int length)
     }
     errno_t ret = memset_s(*dst, length + 1, 0, length);
     if (ret != EOK) {
+        MemFree(dst);
         return -1;
     }
 
     ret = strncat_s(*dst, length + 1, src, length);
     if (ret != EOK) {
+        MemFree(dst);
         return -1;
     }
     return 0;

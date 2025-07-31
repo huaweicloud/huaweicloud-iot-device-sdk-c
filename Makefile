@@ -60,6 +60,12 @@ CFLAGS += -DMQTTV5
 OBJS +=  $(OUT_PATH)/mqttv5_util.o
 endif
 
+#SECURITY_AWARENESS_ENABLE := 1
+ifdef SECURITY_AWARENESS_ENABLE
+CFLAGS += -DSECURITY_AWARENESS_ENABLE
+OBJS +=  $(OUT_PATH)/report_anomaly.o
+endif
+
 # enable device rule compilation
 #DEVICE_RULE_ENALBE := y
 #CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE := y
@@ -149,6 +155,12 @@ remote_login_test: $(OBJ_DIRS) $(OUT_PATH)/remote_login_test.o $(OBJS)
 reconnection_test: $(OBJ_DIRS) $(OUT_PATH)/reconnection_test.o $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OUT_PATH)/reconnection_test.o $(OBJS)  $(LIBS)
 
+soft_bus_test: $(OBJ_DIRS) $(OUT_PATH)/soft_bus_test.o $(OUT_PATH)/soft_bus_data_process.o $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OUT_PATH)/soft_bus_test.o $(OUT_PATH)/soft_bus_data_process.o $(OBJS)  $(LIBS)
+
+report_anomaly_test: $(OBJ_DIRS) $(OUT_PATH)/report_anomaly_test.o $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OUT_PATH)/report_anomaly_test.o $(OBJS)  $(LIBS)
+	
 ##-----------base----------------##
 $(OUT_PATH)/hmac_sha256.o: $(SRC_PATH)/base/hmac_sha256.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/base/ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/libboundscheck/ $(HEADER_PATH)
@@ -287,6 +299,9 @@ $(OUT_PATH)/ota_test.o: $(SRC_PATH)/../demos/device_demo/ota_test.c
 $(OUT_PATH)/report_device_info_test.o: $(SRC_PATH)/../demos/device_demo/report_device_info_test.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)
 
+$(OUT_PATH)/report_anomaly_test.o: $(SRC_PATH)/../demos/device_demo/report_anomaly_test.c
+	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/service/detect_anomaly/  $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)
+
 $(OUT_PATH)/log_report_test.o: $(SRC_PATH)/../demos/device_demo/log_report_test.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)
 
@@ -308,6 +323,14 @@ $(OUT_PATH)/remote_login_test.o: $(SRC_PATH)/../demos/device_demo/remote_login_t
 $(OUT_PATH)/reconnection_test.o: $(SRC_PATH)/../demos/device_demo/reconnection_test.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/service/sys_hal $(HEADER_PATH)
 
+##--------------softBus demo ----------------##
+ifdef SOFT_BUS_OPTION2
+$(OUT_PATH)/soft_bus_test.o: $(SRC_PATH)/../demos/softBus_demo/soft_bus_test.c
+	$(CC) $(CFLAGS) -c $< -o $@ $(SRC_PATH)/../demos/softBus_demo/ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/service/sys_hal $(HEADER_PATH)
+
+$(OUT_PATH)/soft_bus_data_process.o: $(SRC_PATH)/../demos/softBus_demo/soft_bus_data_process.c
+	$(CC) $(CFLAGS) -c $< -o $@ $(SRC_PATH)/../demos/softBus_demo/ $(HEADER_PATH)/agentlite/ $(HEADER_PATH)/service/ $(HEADER_PATH)/util/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/service/sys_hal $(HEADER_PATH)
+endif
 ##--------------sysHal--------------##
 SYS_HAL_SRC = $(SRC_PATH)/service/sys_hal
 SYS_HAL_HEADER_PATH = ./include/service/sys_hal
@@ -326,6 +349,9 @@ DETECT_ANOMOLY_INC = -I$(DETECT_ANOMOLY_HEADER_PATH) $(HEADER_PATH)/third_party/
 $(OUT_PATH)/detect_anomaly.o: $(DETECT_ANOMOLY_SRC)/detect_anomaly.c $(OUT_PATH)/sys_hal_imp.o $(OUT_PATH)/sys_hal.o
 	$(CC) $(CFLAGS) -c $< -o $@ $(DETECT_ANOMOLY_INC) $(HEADER_PATH)
 
+$(OUT_PATH)/report_anomaly.o: $(DETECT_ANOMOLY_SRC)/report_anomaly.c $(OUT_PATH)/sys_hal_imp.o $(OUT_PATH)/sys_hal.o
+	$(CC) $(CFLAGS) -c $< -o $@ $(DETECT_ANOMOLY_INC) $(HEADER_PATH)
+
 ##-----------device rule-------------##
 DEVICE_RULE_HEADER_PATH = ./include/service/device_rule/
 DEVICE_RULE_INC = -I$(DEVICE_RULE_HEADER_PATH)  $(HEADER_PATH)/third_party/cjson/ $(HEADER_PATH)/third_party/libboundscheck/ $(HEADER_PATH)/agentlite $(HEADER_PATH)/util/ $(HEADER_PATH)/service/ $(HEADER_PATH)/base/ $(HEADER_PATH)
@@ -334,12 +360,16 @@ $(DEVICE_RULE_OBJS):$(OUT_PATH)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(DEVICE_RULE_INC)
 
 BOOTSTREP_TEST = bootstrap_test bootstrap_groups_test
-DEVICE_TEST = basic_test mqttV5_test message_test properties_test command_test shadow_test time_sync_test ota_test report_device_info_test log_report_test file_up_down_test device_rule_test sys_hal_test device_config_test remote_login_test reconnection_test
+DEVICE_TEST = basic_test mqttV5_test message_test properties_test command_test shadow_test time_sync_test ota_test report_device_info_test report_anomaly_test log_report_test file_up_down_test device_rule_test sys_hal_test device_config_test remote_login_test reconnection_test
 GATEWAY_TEST = gateway_client_test gateway_server_test
 BRIDGE_TEST = bridge_client_test bridge_server_test
+SOFT_BUS_TEST = 
+ifdef SOFT_BUS_OPTION2
+SOFT_BUS_TEST += soft_bus_test
+endif
 
 .PHONY: all
-all:	$(TARGET) $(BOOTSTREP_TEST) $(DEVICE_TEST) $(BRIDGE_TEST) $(GATEWAY_TEST)
+all:	$(TARGET) $(BOOTSTREP_TEST) $(DEVICE_TEST) $(BRIDGE_TEST) $(GATEWAY_TEST) $(SOFT_BUS_TEST)
 
 
 .PHONY: bootstrap_demo
@@ -354,14 +384,17 @@ gateway_demo: $(GATEWAY_TEST)
 .PHONY: bridge_demo
 bridge_demo: $(BRIDGE_TEST)
 
+.PHONY: softBus_demo
+softBus_demo: $(SOFT_BUS_TEST)
+
 .PHONY: test
-test: $(TARGET) $(BOOTSTREP_TEST) $(DEVICE_TEST) 
+test: $(TARGET) $(BOOTSTREP_TEST) $(DEVICE_TEST) $(GATEWAY_TEST) $(SOFT_BUS_TEST)
 
 $(OBJ_DIRS):
 	mkdir -p $@
 
 clean:
-	rm -f $(TARGET) $(BOOTSTREP_TEST) $(DEVICE_TEST) $(GATEWAY_TEST) $(BRIDGE_TEST)
+	rm -f $(TARGET) $(BOOTSTREP_TEST) $(DEVICE_TEST) $(GATEWAY_TEST) $(BRIDGE_TEST) $(SOFT_BUS_TEST)
 	rm -f bootstrap_demo
 	rm -rf ./out
 

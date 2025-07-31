@@ -75,7 +75,7 @@ static int g_port = 8883;
 // deviceId, The mqtt protocol requires the user name to be filled in.
 // Here we use deviceId as the username
 static char *g_username = "设备id";
-static char *g_password = "设备密钥";
+static char *g_secret = "设备密钥";
 
 // for batch properties report
 static char *g_subDeviceId = "XXXX";
@@ -1269,7 +1269,7 @@ static void SetAuthConfig(void)
     IOTA_ConfigSetStr(EN_IOTA_CFG_MQTT_ADDR, g_serverIp);
     IOTA_ConfigSetUint(EN_IOTA_CFG_MQTT_PORT, g_port);
     IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICEID, g_username);
-    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, g_password);
+    IOTA_ConfigSetStr(EN_IOTA_CFG_DEVICESECRET, g_secret);
     IOTA_ConfigSetUint(EN_IOTA_CFG_AUTH_MODE, EN_IOTA_CFG_AUTH_MODE_SECRET);
     IOTA_ConfigSetUint(EN_IOTA_CFG_CHECK_STAMP_METHOD, EN_IOTA_CFG_CHECK_STAMP_OFF);
     /* *

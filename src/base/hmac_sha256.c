@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -41,7 +41,7 @@
 
 int EncryptWithHMac(const char *inputData, char **inputKey, int inEncryDataLen, char *outData, int checkTimestamp)
 {
-    if ((inputData == NULL) || ((*inputKey) == NULL)) {
+    if ((inputData == NULL) || ((*inputKey) == NULL) || outData == NULL) {
         PrintfLog(EN_LOG_LEVEL_ERROR, "EncryptWithHMac(): the input is invalid.\n");
         return IOTA_FAILURE;
     }
@@ -96,25 +96,28 @@ int EncryptWithHMac(const char *inputData, char **inputKey, int inEncryDataLen, 
 
 unsigned char *base64_encode(unsigned char *str)  
 {  
-    long len;  
-    long str_len;  
+    size_t len;  
+    size_t str_len;  
     unsigned char *res;  
-    int i,j;  
+    size_t i,j;  
     //定义base64编码表  
     unsigned char *base64_table="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";  
   
     //计算经过base64编码后的字符串长度  
-    str_len=strlen(str);  
+    str_len = strlen(str);  
     if(str_len % 3 == 0)  
-        len=str_len/3*4;  
+        len = str_len/3*4;  
     else  
-        len=(str_len/3+1)*4;  
+        len = (str_len/3+1)*4;  
   
-    res=malloc(sizeof(unsigned char)*len+1);  
+    res = malloc(sizeof(unsigned char)*len+1);  
+    if (res == NULL) {
+        return res;
+    }
     res[len]='\0';  
   
     //以3个8位字符为一组进行编码  
-    for(i=0,j=0;i<len-2;j+=3,i+=4)  
+    for(i=0, j=0; i<len-2; j+=3, i+=4)  
     {  
         res[i]=base64_table[str[j]>>2]; //取出第一个字符的前6位并找出对应的结果字符  
         res[i+1]=base64_table[(str[j]&0x3)<<4 | (str[j+1]>>4)]; //将第一个字符的后位与第二个字符的前4位进行组合并找到对应的结果字符  
@@ -158,10 +161,10 @@ unsigned char *base64_decode(unsigned char *code)
     		 36,37,38,39,40,41,42,43,44,
     		 45,46,47,48,49,50,51
     	       };  
-    long len;  
-    long str_len;  
+    size_t len;  
+    size_t str_len;  
     unsigned char *res;  
-    int i,j;  
+    size_t i,j;  
   
     //计算解码后的字符串长度  
     len=strlen(code);  
@@ -173,7 +176,10 @@ unsigned char *base64_decode(unsigned char *code)
     else  
         str_len=len/4*3;  
   
-    res=malloc(sizeof(unsigned char)*str_len+1);  
+    res = malloc(sizeof(unsigned char)*str_len+1);  
+    if (res == NULL) {
+        return res;
+    }
     res[str_len]='\0';  
   
     //以4个字符为一位进行解码  

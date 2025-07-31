@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2022 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+# Copyright (c) 2022-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
 # 1. Redistributions of source code must retain the above copyright notice, this list of
@@ -27,12 +27,25 @@
 #import("//build/ohos.gni")
 #import("//build/lite/config/component/lite_component.gni")
 
+config("iot_sdk_config") {
+  defines = [
+    #"SSH_SWITCH = 1",
+    #"BRIDGE_SWITCH = 1",
+    #"MQTTV5 = 1",
+    #"DEVICE_RULE_ENALBE = y",
+    #"CONFIG_ENALBE_DEVICE_RULE_FILE_STORAGE = y",
+    #"SOFT_BUS_OPTION2 = 1" 
+    #"SECURITY_AWARENESS_ENABLE = 1" 
+  ]
+}
 
 declare_args() {
     test_demo = "device_demo"
 }
 
 executable("mqtt_device_demo") {
+  
+  public_configs = [ ":iot_sdk_config" ]
 
   deps = [
     ":conf_copy",
@@ -47,6 +60,7 @@ executable("mqtt_device_demo") {
     "src/service/sys_hal:sys_hal",
     "src/service/detect_anomaly:detect_anomaly",
     "src/service/bridge:bridge_topic",
+    "src:dconncaseone_interface",
   ]
   
   if(test_demo == "device_demo"){

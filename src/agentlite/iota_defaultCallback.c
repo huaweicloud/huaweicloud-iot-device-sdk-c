@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2024-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,11 +30,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <unistd.h>
 #include "callback_func.h"
 #include "log_util.h"
 #include "iota_datatrans.h"
 #include "iota_defaultCallback.h"
 #include "string_util.h"
+#include "iota_login.h"
 
 #ifdef SSH_SWITCH
 #include "wss_client.h"
@@ -57,9 +59,9 @@ static void IOTA_HandleConnectFailure(EN_IOTA_MQTT_PROTOCOL_RSP *rsp)
         rsp->mqtt_msg_info->messageId, rsp->mqtt_msg_info->code, rsp->message);
 
     /* Set up a disconnection and reconnection mechanism */
-    int lowBound = (int) (IOTA_DEFAULE_BACKOFF * 0.8);
-    int highBound = (int) (IOTA_DEFAULE_BACKOFF * 1.0);
-    unsigned long randomBackOff = rand() % (highBound - lowBound) + lowBound;
+    unsigned long lowBound = (unsigned long) (IOTA_DEFAULE_BACKOFF * 0.8);
+    unsigned long highBound = (unsigned long) (IOTA_DEFAULE_BACKOFF * 1.0);
+    unsigned long randomBackOff = (unsigned long) (rand() % (highBound - lowBound) + lowBound);
     int power = retryTimes >= 32 ? 31 : retryTimes;
     unsigned long powParameter = (unsigned long) (pow(2.0, (double) power));
     long backOffWithJitter = powParameter * (randomBackOff + lowBound);

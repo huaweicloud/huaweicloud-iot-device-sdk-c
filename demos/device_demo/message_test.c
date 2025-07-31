@@ -52,7 +52,7 @@ char *g_port = "8883";
 // deviceId, the mqtt protocol requires the user name to be filled in.
 // Please fill in the deviceId
 char *g_deviceId = "XXXX"; 
-char *g_password = "XXXX";
+char *g_secret = "XXXX";
 
 void TimeSleep(int ms)
 {
@@ -192,7 +192,7 @@ int main(int argc, char **argv)
 {
 
     // secret authentication initialization
-    mqttDeviceSecretInit(g_address, g_port, g_deviceId, g_password); 
+    mqttDeviceSecretInit(g_address, g_port, g_deviceId, g_secret); 
 
     // message down callback function
     IOTA_SetMessageCallback(HandleMessageDown);

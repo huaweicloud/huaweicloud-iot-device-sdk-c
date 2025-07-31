@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,8 +36,8 @@
 #define SOFT_BUS_INIT_STATUS "STATUS"
 #define SOFT_BUS_INIT_CLIENT_OR_SERVER "CLIENT_OR_SERVER"
 
-int InitServerKit(char *ipAry);
-int InitClientKit(char *ipAry);
+int InitServerKit(char *ipAry, char *errorIp);
+int InitClientKit(char *ipAry, char *errorIp);
 void DestroyKit(void);
 
 #endif /* SOFT_BUS_INIT_H */

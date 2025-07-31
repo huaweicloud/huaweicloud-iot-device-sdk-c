@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2022-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -583,7 +583,7 @@ static void LoginBruteForceReport(cJSON *content)
             const char *repeatedTimeMessage = strstr(logLine, "message repeated ");
             if ((repeatedTimeMessage != NULL) &&
                 (sscanf_s(repeatedTimeMessage, "message repeated %d times", &msgCount) > 0)) {
-                PrintfLog(EN_LOG_LEVEL_DEBUG, "can't get message repeated %d times", &msgCount);
+                PrintfLog(EN_LOG_LEVEL_DEBUG, "can't get message repeated times");
             }
             struct timeval tv;
 
@@ -784,6 +784,43 @@ static SituationAwarenessTasks g_mTasks[] = {
         .getReport = MaliciousIPCheckGetReport,
         .destroy = NULL
     },
+#if defined (SECURITY_AWARENESS_ENABLE)    
+    {
+        .checkName = UNSAFE_FUNCTION_CHECK,
+        .reportType = UNSAFE_FUNCTION_REPORT,
+        .init = NULL,
+        .getReport = NULL,
+        .destroy = NULL
+    },
+    {
+        .checkName = CVE_VULNERABILITY_CHECK,
+        .reportType = CVE_VULNERABILITY_REPORT,
+        .init = NULL,
+        .getReport = NULL,
+        .destroy = NULL
+    },
+    {
+        .checkName = MALICIOUS_FILE_CHECK,
+        .reportType = FILE_REPORT,
+        .init = NULL,
+        .getReport = NULL,
+        .destroy = NULL
+    },
+    {
+        .checkName = PROCESS_CHECK,
+        .reportType = ABNORMAL_PROCESS_REPORT,
+        .init = NULL,
+        .getReport = NULL,
+        .destroy = NULL
+    },
+    {
+        .checkName = UNSAFE_PROTOCOL_CHECK,
+        .reportType = UNSAFE_FUNCTION_REPORT,
+        .init = NULL,
+        .getReport = NULL,
+        .destroy = NULL
+    },
+#endif
 };
 
 static void *Detect_ReportDetectionInfoEntry(void *args)
@@ -831,6 +868,48 @@ static void Detect_ReportDetectionInfo(void)
     }
 }
 
+static char *Detect_FileStoreRead(void) {
+    const char *filename = DetectConfigPath;
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        return NULL;
+    }
+    // 获取文件大小
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // 分配内存
+    char *json_string = (char *)malloc(file_size + 1);
+    if (json_string == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Detect_FileStoreRead() Failed to allocate memory.\n");
+        fclose(file);
+        return NULL;
+    }
+
+    fread(json_string, 1, file_size, file);
+    json_string[file_size] = '\0'; // 添加字符串结束符
+    
+    // 关闭文件
+    fclose(file);
+    return json_string;
+}
+
+static void Detect_FileStoreWrite(char *json_string) {
+    const char *filename = DetectConfigPath;
+    FILE *file = fopen(filename, "w+");
+    if (file == NULL) {
+        PrintfLog(EN_LOG_LEVEL_ERROR, "Failed to open file for writing.\n");
+        return NULL;
+    }
+
+    fprintf(file, "%s", json_string);
+    // 关闭文件
+    fclose(file);
+
+    return cJSON_Parse(json_string);
+}
+
 static void Detect_ReportShadowDesired(SecurityDetection securityDetection)
 {
     cJSON *properties = cJSON_CreateObject();
@@ -845,6 +924,9 @@ static void Detect_ReportShadowDesired(SecurityDetection securityDetection)
         cJSON_AddNumberToObject(properties, g_mTasks[i].checkName, g_mTasks[i].newCheck);
     }
     char *service = cJSON_Print(properties);
+#if defined (SECURITY_AWARENESS_ENABLE)    
+    Detect_FileStoreWrite(service);
+#endif
     cJSON_Delete(properties);
 
     services[0].event_time = NULL;
@@ -858,44 +940,55 @@ static void Detect_ReportShadowDesired(SecurityDetection securityDetection)
     MemFree(&service);
 }
 
-void Detect_ParseShadowGetOrPropertiesSet(char *propertiesDown)
-{
-    cJSON *properties = cJSON_Parse(propertiesDown);
-    if (properties == NULL) {
+static void Detect_LoadJsonData(char *strData) {
+    cJSON *jsonData = cJSON_Parse(strData);
+    if (jsonData == NULL) {
         return;
     }
-
-    cJSON *memoryThreshold = cJSON_GetObjectItem(properties, MEMORY_THRESHOLD);
+    cJSON *memoryThreshold = cJSON_GetObjectItem(jsonData, MEMORY_THRESHOLD);
     if (memoryThreshold != NULL) {
         g_securityDetection.memoryThreshold = (int)cJSON_GetNumberValue(memoryThreshold);
     }
 
-    cJSON *cpuUsageThreshold = cJSON_GetObjectItem(properties, CPU_USAGE_THRESHOLD);
+    cJSON *cpuUsageThreshold = cJSON_GetObjectItem(jsonData, CPU_USAGE_THRESHOLD);
     if (cpuUsageThreshold != NULL) {
         g_securityDetection.cpuUsageThreshold = (int)cJSON_GetNumberValue(cpuUsageThreshold);
     }
 
-    cJSON *diskSpaceThreshold = cJSON_GetObjectItem(properties, DISK_SPACE_THRESHOLD);
+    cJSON *diskSpaceThreshold = cJSON_GetObjectItem(jsonData, DISK_SPACE_THRESHOLD);
     if (diskSpaceThreshold != NULL) {
         g_securityDetection.diskSpaceThreshold = (int)cJSON_GetNumberValue(diskSpaceThreshold);
     }
 
-    cJSON *batteryPctThreshold = cJSON_GetObjectItem(properties, BATTERY_PERCENTAGE_THRESHOLD);
+    cJSON *batteryPctThreshold = cJSON_GetObjectItem(jsonData, BATTERY_PERCENTAGE_THRESHOLD);
     if (batteryPctThreshold != NULL) {
         g_securityDetection.batteryPercentageThreshold = (int)cJSON_GetNumberValue(batteryPctThreshold);
     }
 
     size_t i;
     for (i = 0; i < sizeof(g_mTasks) / sizeof(g_mTasks[0]); i++) {
-        cJSON *check = cJSON_GetObjectItem(properties, g_mTasks[i].checkName);
+        cJSON *check = cJSON_GetObjectItem(jsonData, g_mTasks[i].checkName);
         if (check != NULL) {
             g_mTasks[i].newCheck = (int)cJSON_GetNumberValue(check);
         }
     }
+    cJSON_Delete(jsonData);
+}
 
+void Detect_ParseShadowGetOrPropertiesSet(char *propertiesDown)
+{
+    char *fileData = NULL;
+#if defined (SECURITY_AWARENESS_ENABLE)
+    fileData = Detect_FileStoreRead();
+    if (fileData != NULL) {
+        Detect_LoadJsonData(fileData);
+    }
+#endif
+
+    Detect_LoadJsonData(propertiesDown);
     Detect_ReportDetectionInfo();
     Detect_ReportShadowDesired(g_securityDetection);
 
-    cJSON_Delete(properties);
+    MemFree(&fileData);
     return;
 }

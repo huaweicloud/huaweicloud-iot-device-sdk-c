@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2025 Huawei Cloud Computing Technology Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -42,6 +42,7 @@
 #define MaxDelSubDevCount 50
 #define MaxDescriptionLen 100
 
+#define DetectConfigPath "detectConfig.json" // Store historical data path. If you want to use the open global variable REPORT_SNOMALY
 typedef struct {
     HW_CHAR *service_id; // the device service id obtained from the profile
     HW_CHAR *event_time; // UTC time, e.g. 20190531T011540Z
@@ -642,7 +643,7 @@ HW_API_FUNC HW_INT IOTA_MessageReportV5(ST_IOTA_MESS_REP_INFO mass, HW_INT compr
 HW_API_FUNC HW_INT IOTA_RawTopicMessageReportV5(HW_CHAR *topic, HW_CHAR *payload, int qos, void *context, MQTTV5_DATA *mqttv5);
 #endif
 
-#define SDK_VERSION                     "C_v1.2.0"
+#define SDK_VERSION                     "C_v1.2.1"
 #define OTA_PORT                        8943
 #define BUFSIZE                         4096
 #define PKGNAME_MAX                     1024  // the max length of the package name
@@ -690,6 +691,7 @@ HW_API_FUNC HW_INT IOTA_RawTopicMessageReportV5(HW_CHAR *topic, HW_CHAR *payload
 #define RESPONSE_NAME                   "response_name"
 #define PARAS                           "paras"
 #define RESULT_DESC                     "result_desc"
+#define DESC                            "desc"
 #define CONTENT                         "content"
 #define ID                              "id"
 #define NAME                            "name"
@@ -705,6 +707,7 @@ HW_API_FUNC HW_INT IOTA_RawTopicMessageReportV5(HW_CHAR *topic, HW_CHAR *payload
 #define OTA                             "$ota"
 #define VERSION                         "version"
 #define SERVICE_ID                      "service_id"
+#define PROTOCOL                        "protocol"
 #define SUB_DEVICE_MANAGER              "$sub_device_manager"
 #define ADD_SUB_DEVICE_NOTIFY           "add_sub_device_notify"
 #define PARENT_DEVICE_ID                "parent_device_id"
@@ -828,6 +831,23 @@ HW_API_FUNC HW_INT IOTA_RawTopicMessageReportV5(HW_CHAR *topic, HW_CHAR *payload
 #define LEAK_ALARM                                  "leak_alarm"
 #define MEMORY_CHECK                                "memoryCheck"
 #define MEMORY_THRESHOLD                            "memoryThreshold"
+#define UNSAFE_FUNCTION_CHECK                       "unsafeFunctionCheck"
+#define CVE_VULNERABILITY_CHECK                     "cveVulnerabilityCheck" 
+#define MALICIOUS_FILE_CHECK                        "maliciousFileCheck"
+#define PROCESS_CHECK                               "processCheck"
+#define UNSAFE_PROTOCOL_CHECK                       "unsafeProtocolCheck"
+#define FILE_REPORT                                 "FILE_REPORT"
+#define MALICIOUS_FILES                             "malicious_files"
+#define CVE_VULNERABILITY_REPORT                    "CVE_VULNERABILITY_REPORT"
+#define VNLNERABILITIES                             "vulnerabilities"
+#define CVE_NUMBER                                  "cve_number"
+#define VNLNERABILITIES_NAME                        "vulnerabilities_name"
+#define PROTOCOL_REPORT                             "PROTOCOL_REPORT"
+#define USED_PROTOCOLS                              "used_protocols"
+#define ABNORMAL_PROCESS_REPORT                     "ABNORMAL_PROCESS_REPORT"
+#define ABNORMAL_PROCESSES                          "abnormal_processes"
+#define UNSAFE_FUNCTION_REPORT                      "UNSAFE_FUNCTION_REPORT"
+#define UNSAFE_FUNCTIONS                            "unsafe_functions"
 #define PORT_CHECK                                  "portCheck"
 #define SECURITY_DETECTION_CONFIG_REQUEST_ID        "security_detection_config_request_id"
 #define CPU_USAGE_REPORT                            "CPU_USAGE_REPORT"
