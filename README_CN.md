@@ -2318,7 +2318,9 @@ env | grep "IOTDA_MQTTC"
 ```
 
 <h2 id = "6.26">6.26 设备发放</h2>
-设备发放功能，可以将设备发放到不同的region，参考文档：[设备发放示例](https://support.huaweicloud.com/qs-iotps/iot_03_0006.html)。注意：流程可参考“快速入门”中的各种接入示例，SDK已自动实现示例中的“引导设备”。详细的步骤可参考链接中的“用户指南”。设备发放主要分为两种发放方式，分别为手动注册发放与注册组发放。
+
+设备发放功能，可以将设备发放到不同的region，参考文档：[设备发放示例](https://support.huaweicloud.com/qs-iotps/iot_03_0006.html)。
+注意：流程可参考“快速入门”中的各种接入示例，SDK已自动实现示例中的“引导设备”。详细的步骤可参考链接中的“用户指南”。设备发放主要分为两种发放方式，分别为手动注册发放与注册组发放。
 
  设备发放示例可见：SDK目录：./demos/bootstrap_demo/ 。其中bootstrap_groups_test.c为注册组发放。bootstrap_test.c为手动注册发放。运行demo前，需要先在平台配置对应的发放策略。
 
